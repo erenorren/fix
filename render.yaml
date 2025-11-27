@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: project-uas-pbo
+    env: php
+    region: singapore
+    plan: free
+    buildCommand: |
+      composer install --no-dev --optimize-autoloader
+      # Setup Apache
+      cp render-apache.conf /opt/render/project/apache/conf/httpd.conf
+    startCommand: |
+      apache2-foreground
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: db_penitipan_hewan
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: db_penitipan_hewan
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: db_penitipan_hewan
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: db_penitipan_hewan
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: db_penitipan_hewan
+          property: password
+    
+databases:
+  - name: db_penitipan_hewan
+    region: singapore
+    plan: free
