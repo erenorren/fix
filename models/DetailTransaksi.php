@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../core/Database.php';
 
 class DetailTransaksi
 {
@@ -8,7 +8,7 @@ class DetailTransaksi
 
     public function __construct()
     {
-        $this->db = getDB();
+        $this->db = new Database();
     }
 
     /**
@@ -22,7 +22,7 @@ class DetailTransaksi
                     VALUES 
                     (:id_transaksi, :kode_layanan, :nama_layanan, :harga, :quantity, :subtotal)";
 
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->db->query($sql);
 
             return $stmt->execute([
                 "id_transaksi" => $data["id_transaksi"],
@@ -45,7 +45,7 @@ class DetailTransaksi
     public function getByTransaksiId($id_transaksi)
     {
         $sql = "SELECT * FROM {$this->table} WHERE id_transaksi = ? ORDER BY created_at";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->query($sql);
         $stmt->execute([$id_transaksi]);
         return $stmt->fetchAll();
     }
@@ -56,7 +56,7 @@ class DetailTransaksi
     public function deleteByTransaksiId($id_transaksi)
     {
         $sql = "DELETE FROM {$this->table} WHERE id_transaksi = ?";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->query($sql);
         return $stmt->execute([$id_transaksi]);
     }
 
@@ -66,7 +66,7 @@ class DetailTransaksi
     public function getTotalLayananTambahan($id_transaksi)
     {
         $sql = "SELECT SUM(subtotal) as total FROM {$this->table} WHERE id_transaksi = ?";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->query($sql);
         $stmt->execute([$id_transaksi]);
         $result = $stmt->fetch();
         return $result['total'] ?? 0;

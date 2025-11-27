@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../core/Database.php';
 
 class Kandang
 {
@@ -7,7 +7,7 @@ class Kandang
 
     public function __construct()
     {
-        $this->db = getDB();
+        $this->db = new Database();
     }
 
     /**
@@ -24,8 +24,7 @@ class Kandang
                 FROM kandang k 
                 ORDER BY k.kode_kandang";
         
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute();
+        $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
     }
 
@@ -35,8 +34,7 @@ class Kandang
     public function countByType($type)
     {
         $sql = "SELECT COUNT(*) as total FROM kandang WHERE tipe = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$type]);
+        $stmt = $this->db->query($sql, [$type]);        
         $result = $stmt->fetch();
         return $result['total'] ?? 0;
     }
@@ -47,14 +45,11 @@ class Kandang
     public function getAvailableKandang($jenisHewan, $ukuranHewan)
     {
         // Tentukan tipe kandang berdasarkan jenis dan ukuran hewan
-        $tipeKandang = 'Kecil'; // default
-        
-        if ($jenisHewan === 'Anjing' || $ukuranHewan === 'Besar') {
+        $tipeKandang = 'Kecil'; 
+        if ($jenisHewan === 'Anjing' || $ukuranHewan === 'Besar' || $ukuranHewan === 'Sedang') {
             $tipeKandang = 'Besar';
-        } elseif ($ukuranHewan === 'Sedang') {
-            $tipeKandang = 'Besar'; // Sedang juga pakai kandang besar
         }
-        
+
         $sql = "SELECT 
                     k.id_kandang as id,
                     k.kode_kandang as kode,
@@ -66,8 +61,7 @@ class Kandang
                 AND k.status = 'tersedia'
                 ORDER BY k.kode_kandang";
         
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute(['tipe' => $tipeKandang]);
+        $stmt = $this->db->query($sql, ['tipe' => $tipeKandang]);
         return $stmt->fetchAll();
     }
 
@@ -77,8 +71,7 @@ class Kandang
     public function getById($id)
     {
         $sql = "SELECT * FROM kandang WHERE id_kandang = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$id]);
+        $stmt = $this->db->query($sql, [$id]);
         return $stmt->fetch();
     }
 
@@ -91,10 +84,9 @@ public function updateStatus($id, $status) {
     }
 
     $sql = "UPDATE kandang SET status = :status WHERE id_kandang = :id";
-    $stmt = $this->db->prepare($sql);
-    return $stmt->execute([
-        "id" => $id,
-        "status" => $status
-    ]);
+    return $this->db->execute($sql, [
+            "id" => $id,
+            "status" => $status
+        ]);
 }
 }

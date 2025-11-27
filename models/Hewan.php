@@ -1,14 +1,14 @@
 <?php
-require_once __DIR__ . '/../config/database.php'; // penerapan Konsep OOP Class Hewan, Layanan, Pelanggan, dan Transaksi sama-sama menggunakan DB
+require_once __DIR__ . '/../core/Database.php';
 
 class Hewan // Menggunakan Encapsulation private $db, public function getLastInsertId() {return$this->db->lastInsertId();}
 {
     private $db;
-
     public function __construct()
     {
-        $this->db = getDB();
+        $this->db = new Database();
     }
+
 
     /**
      * Ambil semua data hewan dengan format yang sesuai untuk view
@@ -30,7 +30,7 @@ class Hewan // Menggunakan Encapsulation private $db, public function getLastIns
                 LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan
                 ORDER BY h.created_at DESC";
 
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->query($sql);
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -46,7 +46,7 @@ class Hewan // Menggunakan Encapsulation private $db, public function getLastIns
                     SUM(CASE WHEN jenis = 'Anjing' THEN 1 ELSE 0 END) as total_anjing
                 FROM hewan";
 
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->query($sql);
         $stmt->execute();
         return $stmt->fetch();
     }
@@ -67,7 +67,7 @@ public function create($data) {
                 VALUES 
                 (:id_pelanggan, :nama_hewan, :jenis, :ras, :ukuran, :warna, :catatan, :status)";
 
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->query($sql);
 
         $result = $stmt->execute([
             "id_pelanggan" => $data["id_pelanggan"],
@@ -112,7 +112,7 @@ public function create($data) {
                         status = :status
                     WHERE id_hewan = :id";
 
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->db->query($sql);
 
             return $stmt->execute([
                 "id" => $id,
@@ -153,7 +153,7 @@ public function create($data) {
                 OR p.nama_pelanggan LIKE :key
                 ORDER BY h.created_at DESC";
 
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->query($sql);
         $stmt->execute(["key" => "%{$keyword}%"]);
         return $stmt->fetchAll();
     }
@@ -176,10 +176,13 @@ public function create($data) {
                 WHERE h.jenis = :jenis
                 ORDER BY h.nama_hewan";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute(["jenis" => $jenis]);
-        return $stmt->fetchAll();
-    }
+            // 1. Definisikan parameter
+            $params = ["jenis" => $jenis];
+            // 2. FIX: Panggil query() sekali dengan parameter
+            $stmt = $this->db->query($sql, $params); // Menggunakan $this->db->query($sql, $params)
+            // 3. Kembalikan hasil
+            return $stmt->fetchAll();
+            }
 
     /**
      * Ambil hewan berdasarkan pemilik
@@ -198,10 +201,13 @@ public function create($data) {
                 LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan
                 WHERE h.id_pelanggan = :id_pelanggan
                 ORDER BY h.nama_hewan";
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute(["id_pelanggan" => $id_pelanggan]);
-        return $stmt->fetchAll();
+                // FIX: Hapus $stmt->execute() dan masukkan parameter ke dalam $this->db->query()
+                $params = ["id_pelanggan" => $id_pelanggan];
+                $stmt = $this->db->query($sql, $params); // FIX: Menggunakan query(sql, params)
+                
+                // HAPUS BARIS SALAH: $stmt->execute(["id_pelanggan" => $id_pelanggan]);
+                
+                return $stmt->fetchAll();
     }
 
     /**
@@ -222,8 +228,7 @@ public function create($data) {
                 WHERE h.status = 'tersedia'
                 ORDER BY h.nama_hewan";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute();
+        $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
     }
 
@@ -245,8 +250,7 @@ public function create($data) {
                 WHERE h.status = 'sedang_dititipkan'
                 ORDER BY h.nama_hewan";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute();
+        $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
     }
 
@@ -256,8 +260,7 @@ public function create($data) {
     public function countByStatus($status)
     {
         $sql = "SELECT COUNT(*) as total FROM hewan WHERE status = :status";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute(["status" => $status]);
+        $stmt = $this->db->query($sql);
         $result = $stmt->fetch();
         return $result['total'] ?? 0;
     }
@@ -276,8 +279,7 @@ public function create($data) {
                 WHERE h.status = 'tersedia'
                 ORDER BY h.nama_hewan";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute();
+        $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
     }
 
@@ -301,8 +303,10 @@ public function create($data) {
             $params["exclude_id"] = $exclude_id;
         }
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
+        // FIX: Gunakan query dengan parameter
+        $stmt = $this->db->query($sql, $params);
+        // HAPUS: $stmt->execute();
+        
         $result = $stmt->fetch();
         return ($result['total'] ?? 0) > 0;
     }
@@ -325,11 +329,14 @@ public function create($data) {
                 ORDER BY h.created_at DESC
                 LIMIT :limit OFFSET :offset";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll();
+                $params = [
+                    // arameter PDO 
+                    "limit" => (int)$limit, 
+                    "offset" => (int)$offset
+                ];
+
+                $stmt = $this->db->query($sql, $params);
+                return $stmt->fetchAll();
     }
 
     /**
@@ -338,8 +345,8 @@ public function create($data) {
     public function getTotalCount()
     {
         $sql = "SELECT COUNT(*) as total FROM hewan";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute();
+        $stmt = $this->db->query($sql);
+
         $result = $stmt->fetch();
         return $result['total'] ?? 0;
     }
@@ -354,8 +361,7 @@ public function updateStatus($id, $status) {
     }
 
     $sql = "UPDATE hewan SET status = :status WHERE id_hewan = :id";
-    $stmt = $this->db->prepare($sql);
-    return $stmt->execute([
+    return $this->db->execute($sql, [
         "id" => $id,
         "status" => $status
     ]);

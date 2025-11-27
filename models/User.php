@@ -1,6 +1,5 @@
 <?php
-require_once __DIR__ . '/../config/database.php'; // configurasi db
-
+require_once __DIR__ . '/../core/Database.php';
 /**
  * Model User
  * Untuk autentikasi user saat login
@@ -11,7 +10,7 @@ class User {
     private $db;
     
     public function __construct() {
-        $this->db = getDB();
+        $this->db = new Database();
     }
     
     /**
@@ -24,7 +23,7 @@ class User {
     public function login($username, $password) {
         $sql = "SELECT * FROM user WHERE username = :username LIMIT 1";
         
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->query($sql);
         $stmt->execute(['username' => $username]);
         $user = $stmt->fetch();
         
@@ -49,7 +48,7 @@ class User {
                 FROM user 
                 WHERE id_user = :id";
         
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->query($sql);
         $stmt->execute(['id' => $id]);
         return $stmt->fetch();
     }
@@ -64,7 +63,7 @@ class User {
                 FROM user 
                 ORDER BY created_at DESC";
         
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->query($sql);
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -82,7 +81,7 @@ class User {
         $sql = "INSERT INTO user (username, password, nama_lengkap, role) 
                 VALUES (:username, :password, :nama_lengkap, :role)";
         
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->query($sql);
         return $stmt->execute([
             'username' => $data['username'],
             'password' => $hashedPassword,
@@ -105,7 +104,7 @@ class User {
                     role = :role
                 WHERE id_user = :id";
         
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->query($sql);
         return $stmt->execute([
             'id' => $id,
             'username' => $data['username'],
@@ -126,7 +125,7 @@ class User {
         
         $sql = "UPDATE user SET password = :password WHERE id_user = :id";
         
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->query($sql);
         return $stmt->execute([
             'id' => $id,
             'password' => $hashedPassword
@@ -142,7 +141,7 @@ class User {
     public function delete($id) {
         $sql = "DELETE FROM user WHERE id_user = :id";
         
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->query($sql);
         return $stmt->execute(['id' => $id]);
     }
     
@@ -157,11 +156,11 @@ class User {
         if ($excludeId) {
             $sql = "SELECT COUNT(*) as total FROM user 
                     WHERE username = :username AND id_user != :id";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->db->query($sql);
             $stmt->execute(['username' => $username, 'id' => $excludeId]);
         } else {
             $sql = "SELECT COUNT(*) as total FROM user WHERE username = :username";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->db->query($sql);
             $stmt->execute(['username' => $username]);
         }
         

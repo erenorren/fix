@@ -1,4 +1,5 @@
 <?php
+// views/hewan
 $pageTitle  = 'Data Hewan & Kandang';
 $activeMenu = 'hewan';
 include __DIR__ . '/template/header.php';
