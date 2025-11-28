@@ -9,15 +9,11 @@
  * @return array
  */
 function getDatabaseConfig() {
-    // --- KONFIGURASI LOKAL (Laragon/XAMPP) ---
     return [
         'host' => 'localhost',
         'port' => '3306',
         'dbname' => 'db_penitipan_hewan', // Pastikan nama DB ini benar
         'username' => 'root',
-        // Ganti password ini jika password MySQL lokal Anda berbeda
         'password' => 'Sh3Belajar!SQL', 
     ];
 }
-
-// Hapus fungsi helper getDB(), isDBConnected(), dll.

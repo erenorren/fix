@@ -132,7 +132,6 @@ class Pelanggan
     {
         $sql = "SELECT COUNT(*) as total FROM pelanggan";
         $stmt = $this->db->query($sql);
-        $stmt->execute();
         $result = $stmt->fetch();
         return $result['total'] ?? 0;
     }
@@ -150,7 +149,6 @@ class Pelanggan
                 ORDER BY p.nama_pelanggan";
 
         $stmt = $this->db->query($sql);
-        $stmt->execute();
         return $stmt->fetchAll();
     }
 
@@ -170,11 +168,10 @@ class Pelanggan
             $params["exclude_id"] = $exclude_id;
         }
 
-        $stmt = $this->db->query($sql);
-        $stmt->execute($params);
+        $stmt = $this->db->query($sql, $params);
         $result = $stmt->fetch();
         return ($result['total'] ?? 0) > 0;
-    }
+}
 public function getLastInsertId() {
     return $this->db->lastInsertId();
 }

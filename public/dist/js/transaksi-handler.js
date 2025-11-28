@@ -1,18 +1,12 @@
-// File: public/dist/js/transaksi-handler.js
-// --- KODE JAVASCRIPT DIMULAI ---
-
-// Asumsi: Variabel global PHP_DATA.kandangTersedia sudah didefinisikan di views/transaksi.php
+// public/dist/js/transaksi-handler.js
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log("=== SCRIPT TRANSAKSI DIMULAI (External) ===");
 
     // Akses variabel global yang didefinisikan di PHP
     const kandangTersedia = (typeof PHP_DATA !== 'undefined' && PHP_DATA.kandangTersedia) ? PHP_DATA.kandangTersedia : [];
-    // const hewanMenginap = (typeof PHP_DATA !== 'undefined' && PHP_DATA.hewanMenginap) ? PHP_DATA.hewanMenginap : [];
     
-    // =============================================
-    // ELEMEN UTAMA (Pastikan ID-nya sesuai)
-    // =============================================
+    // ELEMEN UTAMA
     const selectPelanggan = document.getElementById('selectPelanggan');
     const noHpInput = document.getElementById('p_hp');
     const alamatInput = document.getElementById('p_alamat');
@@ -40,41 +34,25 @@ document.addEventListener('DOMContentLoaded', function() {
     function formatRupiah(angka) {
         return 'Rp ' + (angka || 0).toLocaleString('id-ID');
     }
-    
-    function validateForm() {
-        const formPendaftaran = document.getElementById('formPendaftaran');
-        // ... (Logika Validasi yang sudah ada) ...
-        
-        // 1. Validasi Kandang
-        if (!idKandangInput || !idKandangInput.value) {
-            alert('Harap pilih kandang terlebih dahulu!');
-            return false;
-        }
-        
-        // 2. Validasi HTML5 default
-        if (!formPendaftaran.checkValidity()) {
-             return false;
-        }
-
-        return true;
-    }
-
 
     // =============================================
-    // 1. AUTO-FILL & LOGIKA PELANGGAN
+    // 1. AUTO-FILL & LOGIKA PELANGGAN (FIX: Masalah Dropdown)
     // =============================================
     if (selectPelanggan && newCustomerFields && namaBaruInput) {
         
         function toggleNewCustomerFields(isNew) {
             if (isNew) {
+                // Tampilkan field nama baru
                 newCustomerFields.style.display = 'block';
                 namaBaruInput.required = true;
                 namaBaruInput.disabled = false;
                 
+                // Kosongkan HP dan Alamat saat membuat baru
                 noHpInput.value = '';
                 alamatInput.value = '';
 
             } else {
+                // Sembunyikan field nama baru
                 newCustomerFields.style.display = 'none';
                 namaBaruInput.required = false;
                 namaBaruInput.disabled = true;
@@ -88,11 +66,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedOption = this.options[this.selectedIndex];
             
             if (selectedOption.value === 'new') {
-                toggleNewCustomerFields(true);
+                toggleNewCustomerFields(true); 
                 
             } else if (selectedOption.value) {
                 toggleNewCustomerFields(false);
 
+                // Auto-fill data pelanggan yang dipilih (Menggunakan data-attribute)
                 noHpInput.value = selectedOption.dataset.hp || '';
                 alamatInput.value = selectedOption.dataset.alamat || '';
                 
@@ -103,9 +82,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
+        // Inisialisasi awal
         toggleNewCustomerFields(selectPelanggan.value === 'new');
     }
-
 
     // =============================================
     // 2. KALKULASI TOTAL HARGA
@@ -160,9 +139,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     hitungTotal();
 
-
     // =============================================
-    // 3. PEMILIHAN KANDANG
+    // 3. PEMILIHAN KANDANG (Menggunakan data PHP_DATA)
     // =============================================
     if (btnPilihKandang) {
         
@@ -185,6 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 tipeKandangYangCocok = ['Besar'];
             }
             
+            // Tampilkan loading sementara
             panelKandang.innerHTML = `
                 <div class="text-center py-2">
                     <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
@@ -198,7 +177,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 let kandangDitemukan = false;
                 
                 kandangTersedia.forEach(kandang => {
-                    // Koreksi: Menggunakan kode kandang.status = 'tersedia'
                     if (kandang.status === 'tersedia' && tipeKandangYangCocok.includes(kandang.tipe)) { 
                         kandangDitemukan = true;
                         
@@ -217,8 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         kandangItem.addEventListener('click', function() {
                             kandangLabel.textContent = `${kandang.kode_kandang} - ${kandang.tipe}`;
-                            kandangLabel.title = kandang.kode_kandang; // Tambahkan title untuk visual
-                            idKandangInput.value = kandang.id_kandang; // <--- PASTIKAN KEY DATABASE BENAR
+                            idKandangInput.value = kandang.id; 
                             panelKandang.classList.add('d-none');
                             kandangInfo.innerHTML = `<span class="text-success"><i class="bi bi-check-circle"></i> Kandang ${kandang.kode_kandang} dipilih</span>`;
                             validateKandang();
@@ -275,6 +252,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // =============================================
     const formPendaftaran = document.getElementById('formPendaftaran');
     if (formPendaftaran) {
+        
+        function validateForm() {
+            const idKandangInput = document.getElementById('id_kandang');
+            
+            if (!formPendaftaran.checkValidity()) {
+                 return false;
+            }
+
+            if (!idKandangInput || !idKandangInput.value) {
+                alert('Harap pilih kandang terlebih dahulu!');
+                return false;
+            }
+
+            return true;
+        }
+        
         formPendaftaran.addEventListener('submit', function(e) {
             if (!validateForm()) {
                 e.preventDefault();
@@ -283,6 +276,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
 
     // =============================================
     // 5. FUNGSI CHECKOUT & BUKTI PEMBAYARAN (Globalized)

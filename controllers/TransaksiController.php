@@ -25,54 +25,29 @@ class TransaksiController extends BaseController { // <--- IMPLEMENTASI PEWARISA
     private $layananModel; // Tambahkan Layanan
 
     public function __construct() {
-        // COMMENT: Pemanggilan Model sebagai objek & Encapsulation
         $this->transaksiModel = new Transaksi();
         $this->pelangganModel = new Pelanggan();
-        $this->hewanModel = new Hewan();
-        
-        // Inisialisasi Model yang sebelumnya berulang (MENGHILANGKAN PERULANGAN)
+        $this->hewanModel = new Hewan(); 
         $this->detailTransaksiModel = new DetailTransaksi();
         $this->kandangModel = new Kandang();
         $this->layananModel = new Layanan();
     }
-
-    /**
-     * Menyiapkan dan memuat tampilan utama transaksi (Pendaftaran & Pengembalian).
-     * Ini adalah Controller murni yang menyiapkan data untuk View.
-     * Kriteria OOP: Modularitas & Reusability.
-     */
-    public function index() {
-        try {
-        $test_data = $this->pelangganModel->getAll();
-        if (empty($test_data)) {
-             // Kirim pesan error jika data kosong (tapi koneksi sukses)
-             error_log("Koneksi sukses, tapi tabel pelanggan kosong.");
-        }
-    } catch (Exception $e) {
-        // Tampilkan error koneksi yang lebih besar
-        die("FATAL: Koneksi/Query GAGAL. Pesan: " . $e->getMessage());
-    }
-        // Ambil parameter tab dari URL
-        $tab = $_GET['tab'] ?? 'pendaftaran';
         
         // Ambil semua data yang dibutuhkan oleh views/transaksi.php
+        public function index() {
+        $tab = $_GET['tab'] ?? 'pendaftaran';
+        
         $data = [
             'tab' => $tab,
             
-            // 1. Data untuk Tab Pendaftaran (Form)
-            'pelangganList' => $this->pelangganModel->getAll(), // <--- Tambah ini
+            // Data untuk View: Menggunakan Model property yang sudah diinisialisasi
+            'pelangganList' => $this->pelangganModel->getAll(), 
             'paketList' => $this->layananModel->getAll(),
             'kandangTersedia' => $this->kandangModel->getAll(),
-            
-            // 2. Data untuk Tab Pengembalian
             'hewanMenginap' => $this->transaksiModel->getActiveTransactions(),
-            
-            // Default nilai dari backend
-            'hasilPencarian' => $hasilPencarian ?? [],
-            'transaksi'      => $transaksi ?? null, 
         ];
 
-        // Memuat View menggunakan BaseController (Reusability)
+        // FIX: Menggunakan metode view() dari BaseController
         $this->view('transaksi', $data); 
     }
 

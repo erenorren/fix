@@ -1,3 +1,9 @@
+<?php
+// views/login.php
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -6,11 +12,8 @@
     <title>Login | Sistem Penitipan Hewan</title>
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css">
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta1/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/public/dist/css/adminlte.css">
 
     <style>
         /* Custom CSS */
@@ -19,18 +22,16 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            /* Mengubah warna background di luar card menjadi biru */
             background-color: #0265FE !important; 
         }
         .login-box {
             width: 360px;
         }
-        /* style judul */
         .login-title {
-            font-size: 1.5rem; /* Ukuran font h3 standar Bootstrap */
-            font-weight: 500; /* Tidak terlalu tebal */
-            color: #212529; /* Warna teks gelap standar */
-            text-decoration: none; /* Menghilangkan garis bawah link */
+            font-size: 1.5rem; 
+            font-weight: 500; 
+            color: #212529; 
+            text-decoration: none;
         }
     </style>
 </head>
@@ -48,7 +49,6 @@
         <div class="card-body p-4">
             <p class="login-box-msg text-muted">Silakan login untuk masuk sistem</p>
 
-            <!-- Alert untuk error dari PHP session (opsional) -->
             <?php if (isset($_SESSION['error_message'])): ?>
                 <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
                     <i class="bi bi-exclamation-circle-fill me-2"></i>
@@ -58,10 +58,8 @@
                 <?php unset($_SESSION['error_message']); ?>
             <?php endif; ?>
 
-            <!-- Alert container untuk error dari JS -->
             <div id="alert-container"></div>
 
-            <!-- Form dengan ID dan closing tag di akhir -->
             <form id="loginForm" action="index.php?action=login" method="post">
                 <div class="input-group mb-3">
                     <input type="text" name="username" class="form-control form-control-lg bg-light" placeholder="Username" required autofocus>
@@ -82,7 +80,7 @@
                         <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm fw-bold">Sign In</button>
                     </div>
                 </div>
-            </form>  <!-- Closing tag form di sini -->
+            </form>
 
         </div>
     </div>
@@ -92,26 +90,26 @@
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta1/dist/js/adminlte.min.js"></script>
 
 <script>
-    // Handle form submit dengan AJAX (agar tidak reload halaman)
     document.getElementById('loginForm').addEventListener('submit', function(e) {
-        e.preventDefault(); // Stop default submit
+        e.preventDefault(); 
         
         const formData = new FormData(this);
         
-        fetch('index.php?action=login', {
+        fetch(this.action, { 
             method: 'POST',
-            body: formData
+            body: new URLSearchParams(formData).toString(), 
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
         })
         .then(response => response.json())
         .then(data => {
             const alertContainer = document.getElementById('alert-container');
-            alertContainer.innerHTML = ''; // Clear previous alerts
+            alertContainer.innerHTML = ''; 
             
             if (data.success) {
-                // Login berhasil, redirect ke dashboard
-                window.location.href = 'index.php?page=dashboard';
+                // Login berhasil, redirect
+                window.location.href = data.redirect || 'index.php?page=dashboard';
             } else {
-                // Show error
+                // Tampilkan error dari Controller
                 alertContainer.innerHTML = `
                     <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
                         <i class="bi bi-exclamation-circle-fill me-2"></i>${data.error}

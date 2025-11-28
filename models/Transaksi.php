@@ -296,24 +296,6 @@ class Transaksi
         return $stmt->fetchAll();
     }
     
-    /**
-     * GET LAPORAN HARIAN
-     * 
-     * @param string $tanggal (Y-m-d)
-     * @return array
-     */
-    public function getLaporanHarian($tanggal) {
-        $sql = "SELECT t.*, p.nama_pelanggan, h.nama_hewan
-                FROM transaksi t
-                LEFT JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan
-                LEFT JOIN hewan h ON t.id_hewan = h.id_hewan
-                WHERE DATE(t.tanggal_masuk) = :tanggal
-                ORDER BY t.tanggal_masuk DESC";
-        
-        $stmt = $this->db->query($sql);
-        $stmt->execute(['tanggal' => $tanggal]);
-        return $stmt->fetchAll();
-    }
     
     /**
      * HITUNG TOTAL PENDAPATAN

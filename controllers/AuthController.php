@@ -1,5 +1,7 @@
 <?php
 // controllers/AuthController.php
+require_once __DIR__ . '/../models/User.php'; 
+
 class AuthController {
     private $userModel;
 
@@ -7,8 +9,14 @@ class AuthController {
         $this->userModel = new User();
     }
 
+    /**
+     * Menangani proses login via AJAX (dari form login)
+     */
     public function login() {
-        // Validasi server-side
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+
         $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
 
@@ -17,27 +25,39 @@ class AuthController {
             return;
         }
 
-        if (strlen($username) < 3 || strlen($password) < 6) {
-            echo json_encode(['error' => 'Username minimal 3 karakter, password minimal 6 karakter']);
-            return;
-        }
-
         $user = $this->userModel->login($username, $password);
+        
         if ($user) {
             // Set session
-            $_SESSION['user_id'] = $user['id_user'];
+            $_SESSION['user_id'] = $user['id']; 
             $_SESSION['username'] = $user['username'];
             $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
             $_SESSION['role'] = $user['role'];
-            echo json_encode(['success' => 'Login berhasil', 'user' => $user]);
+            
+            echo json_encode(['success' => 'Login berhasil', 'redirect' => 'index.php?page=dashboard']); 
+            
         } else {
             echo json_encode(['error' => 'Username atau password salah']);
         }
     }
 
+    /**
+     * Menangani proses logout
+     */
     public function logout() {
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
         session_destroy();
-        echo json_encode(['success' => 'Logout berhasil']);
+        header('Location: index.php?page=login');
+        exit;
+    }
+    
+    /**
+     * Metode untuk menampilkan view login (Dipanggil dari index.php)
+     */
+    public function showLogin() {
+         // Memuat view login
+         include __DIR__ . '/../views/login.php';
     }
 }
-?>
