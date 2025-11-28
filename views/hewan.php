@@ -24,8 +24,10 @@ $totalAnjing = $summary['total_anjing'] ?? 0;
 $kandangList = $kandangModel->getAll();
 
 // Hitung total kandang per tipe
-$totalkandangKecil = $kandangModel->countByType('Kecil');
-$totalkandangBesar = $kandangModel->countByType('Besar');
+$kandangCounts = $kandangModel->countByType();
+$totalkandangKecil = $kandangCounts['Kecil'] ?? 0;
+$totalkandangSedang = $kandangCounts['Sedang'] ?? 0;
+$totalkandangBesar = $kandangCounts['Besar'] ?? 0;
 ?>
 
 <!-- HTML Anda tetap sama -->
@@ -96,28 +98,66 @@ $totalkandangBesar = $kandangModel->countByType('Besar');
                         <th>Catatan</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <?php if (empty($hewanList)): ?>
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-3">
-                                Belum ada data hewan.
-                            </td>
-                        </tr>
-                    <?php else: ?>
-                        <?php $no = 1;
-                        foreach ($hewanList as $h): ?>
-                            <tr>
-                                <td><?= $no++; ?></td>
-                                <td><?= htmlspecialchars($h['nama']); ?></td>
-                                <td><?= htmlspecialchars($h['jenis']); ?></td>
-                                <td><?= htmlspecialchars($h['ras']); ?></td>
-                                <td><?= htmlspecialchars($h['pemilik']); ?></td>
-                                <td><?= htmlspecialchars($h['no_telp']); ?></td>
-                                <td class="small text-muted"><?= htmlspecialchars($h['catatan'] ?? '-'); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
+<tbody id="hewanTableBody">
+    <?php if (empty($hewanList)): ?>
+        <tr>
+            <td colspan="7" class="text-center text-muted py-4"> <!-- Kurangi colspan dari 8 ke 7 -->
+                <div class="d-flex flex-column align-items-center">
+                    <i class="bi bi-inbox fs-3 mb-1"></i>
+                    <span>Belum ada data hewan.</span>
+                </div>
+            </td>
+        </tr>
+    <?php else: ?>
+        <?php foreach ($hewanList as $h): ?>
+            <tr>
+                <td><?= htmlspecialchars($h['nama'] ?? ''); ?></td> <!-- Hapus kolom kode -->
+                <td>
+                    <?php 
+                    $jenis = $h['jenis'] ?? '';
+                    $badgeClass = $jenis === 'Kucing' ? 'bg-info' : 'bg-warning';
+                    ?>
+                    <span class="badge <?= $badgeClass ?>"><?= htmlspecialchars($jenis); ?></span>
+                </td>
+                <td><?= htmlspecialchars($h['ras'] ?? '-'); ?></td>
+                <td>
+                    <?php 
+                    $ukuran = $h['ukuran'] ?? '';
+                    $ukuranClass = '';
+                    if ($ukuran === 'Kecil') $ukuranClass = 'bg-success';
+                    if ($ukuran === 'Sedang') $ukuranClass = 'bg-warning';
+                    if ($ukuran === 'Besar') $ukuranClass = 'bg-danger';
+                    ?>
+                    <span class="badge <?= $ukuranClass ?>"><?= htmlspecialchars($ukuran); ?></span>
+                </td>
+                <td><?= htmlspecialchars($h['warna'] ?? '-'); ?></td>
+                <td class="small"><?= htmlspecialchars($h['catatan'] ?? '-'); ?></td>
+                <td>
+                    <?php 
+                    $status = $h['status'] ?? '';
+                    $statusClass = 'bg-secondary';
+                    if ($status === 'tersedia') $statusClass = 'bg-success';
+                    if ($status === 'sedang_dititipan') $statusClass = 'bg-warning';
+                    if ($status === 'sudah_diambil') $statusClass = 'bg-info';
+                    ?>
+                    <span class="badge <?= $statusClass ?>"><?= htmlspecialchars($status); ?></span>
+                </td>
+                <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary" 
+                                onclick="editHewan(<?= $h['id'] ?>)">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-danger"
+                                onclick="deleteHewan(<?= $h['id'] ?>, '<?= htmlspecialchars($h['nama'] ?? '') ?>')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+    <?php endif; ?>
+</tbody>
             </table>
         </div>
     </div>
@@ -187,14 +227,12 @@ $totalkandangBesar = $kandangModel->countByType('Besar');
                         foreach ($kandangList as $k): ?>
                             <tr>
                                 <td><?= $no++; ?></td>
-                                <td class="fw-semibold"><?= htmlspecialchars($k['kode']); ?></td>
-                                <td>
+                                    <td class="fw-semibold"><?= htmlspecialchars($h['kode_hewan'] ?? $h['kode'] ?? '-'); ?></td>                                <td>
                                     <span class="badge <?= $k['tipe'] === 'Kecil' ? 'bg-primary' : 'bg-warning'; ?>">
                                         <?= htmlspecialchars($k['tipe']); ?>
                                     </span>
                                 </td>
-                                <td class="text-muted small"><?= htmlspecialchars($k['catatan'] ?: '-'); ?></td>
-                                <td>
+                                <td class="small"><?= htmlspecialchars($h['catatan'] ?? '-'); ?></td>                                       <td>
                                     <span class="badge bg-success">Tersedia</span>
                                 </td>
                             </tr>

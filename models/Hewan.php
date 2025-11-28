@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../core/Database.php';
 
-class Hewan // Menggunakan Encapsulation private $db, public function getLastInsertId() {return$this->db->lastInsertId();}
+class Hewan 
 {
     private $db;
     public function __construct()
@@ -11,364 +11,193 @@ class Hewan // Menggunakan Encapsulation private $db, public function getLastIns
 
 
     /**
-     * Ambil semua data hewan dengan format yang sesuai untuk view
+     * Ambil semua data hewan (READ)
      */
     public function getAll()
-    {
+{
+    try {
         $sql = "SELECT 
                     h.id_hewan as id,
-                    h.nama_hewan as nama,
+                    h.nama_hewan as nama, 
                     h.jenis,
                     h.ras,
-                    p.nama_pelanggan as pemilik,
-                    p.no_hp as no_telp,
-                    h.catatan,
                     h.ukuran,
                     h.warna,
-                    h.status
+                    h.catatan,
+                    h.status,
+                    p.nama_pelanggan as pemilik
                 FROM hewan h
                 LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan
-                ORDER BY h.created_at DESC";
-
+                ORDER BY h.nama_hewan";
+        
         $stmt = $this->db->query($sql);
-        $stmt->execute();
         return $stmt->fetchAll();
+        
+    } catch (Exception $e) {
+        error_log("Error get all hewan: " . $e->getMessage());
+        return [];
     }
+}
 
     /**
-     * Hitung statistik hewan (total, kucing, anjing)
+     * Hitung statistik hewan (READ)
      */
     public function getSummary()
     {
-        $sql = "SELECT 
-                    COUNT(*) as total_hewan,
-                    SUM(CASE WHEN jenis = 'Kucing' THEN 1 ELSE 0 END) as total_kucing,
-                    SUM(CASE WHEN jenis = 'Anjing' THEN 1 ELSE 0 END) as total_anjing
-                FROM hewan";
-
-        $stmt = $this->db->query($sql);
-        $stmt->execute();
+        $sql = "SELECT COUNT(*) as total_hewan, SUM(CASE WHEN jenis = 'Kucing' THEN 1 ELSE 0 END) as total_kucing, SUM(CASE WHEN jenis = 'Anjing' THEN 1 ELSE 0 END) as total_anjing FROM hewan";
+        $stmt = $this->db->query($sql); // FIX: Hapus $stmt->execute()
         return $stmt->fetch();
     }
 
-    // Untuk sementara, comment method lainnya yang tidak urgent
-    // Kita fokus dulu ke method getAll() dan getSummary()
-
     /**
-     * Tambah hewan baru
+     * Tambah hewan baru (CREATE)
      */
-    /**
- * Tambah hewan baru - RETURN LAST INSERT ID
- */
-public function create($data) {
+    public function create($data) {
     try {
-        $sql = "INSERT INTO hewan 
-                (id_pelanggan, nama_hewan, jenis, ras, ukuran, warna, catatan, status)
-                VALUES 
-                (:id_pelanggan, :nama_hewan, :jenis, :ras, :ukuran, :warna, :catatan, :status)";
-
-        $stmt = $this->db->query($sql);
-
-        $result = $stmt->execute([
-            "id_pelanggan" => $data["id_pelanggan"],
-            "nama_hewan" => $data["nama_hewan"],
-            "jenis" => $data["jenis"],
-            "ras" => $data["ras"],
-            "ukuran" => $data["ukuran"],
-            "warna" => $data["warna"],
-            "catatan" => $data["catatan"] ?? null,
-            "status" => $data["status"] ?? "tersedia",
-        ]);
-
-        if ($result) {
-            return $this->db->lastInsertId(); // Return the inserted ID
-        } else {
-            return false;
+        $sql = "INSERT INTO hewan (id_pelanggan, nama_hewan, jenis, ras, ukuran, warna, catatan, status) 
+                VALUES (:id_pelanggan, :nama_hewan, :jenis, :ras, :ukuran, :warna, :catatan, :status)";
+        
+        // VALIDASI nilai ukuran sebelum insert
+        $ukuran = $data['ukuran'] ?? '';
+        $allowedUkuran = ['Kecil', 'Sedang', 'Besar']; // Sesuaikan dengan ENUM di database
+        
+        if (!in_array($ukuran, $allowedUkuran) && !empty($ukuran)) {
+            error_log("Warning: Ukuran tidak valid: " . $ukuran);
+            $ukuran = ''; // Set ke empty string atau default value
         }
-
+        
+        $params = [
+            "id_pelanggan" => $data['id_pelanggan'],
+            "nama_hewan" => $data['nama_hewan'],
+            "jenis" => $data['jenis'],
+            "ras" => $data['ras'] ?? '',
+            "ukuran" => $ukuran, // Gunakan nilai yang sudah divalidasi
+            "warna" => $data['warna'] ?? '',
+            "catatan" => $data['catatan'] ?? '',
+            "status" => $data['status'] ?? 'tersedia'
+        ];
+        
+        error_log("Data hewan untuk INSERT: " . print_r($params, true));
+        
+        $result = $this->db->execute($sql, $params);
+        
+        if ($result) {
+            return $this->db->lastInsertId();
+        }
+        return false;
+        
     } catch (Exception $e) {
         error_log("Error create hewan: " . $e->getMessage());
         return false;
     }
 }
-
-    // Method lainnya bisa ditambahkan nanti setelah basic functionality work
-
-
+    
     /**
-     * Update data hewan
+     * Update data hewan (UPDATE)
      */
     public function update($id, $data)
     {
         try {
-            $sql = "UPDATE hewan SET 
-                        id_pelanggan = :id_pelanggan,
-                        nama_hewan = :nama_hewan,
-                        jenis = :jenis,
-                        ras = :ras,
-                        ukuran = :ukuran,
-                        warna = :warna,
-                        catatan = :catatan,  -- UBAH: keterangan -> catatan
-                        status = :status
-                    WHERE id_hewan = :id";
+            $sql = "UPDATE hewan SET id_pelanggan = :id_pelanggan, nama_hewan = :nama_hewan, jenis = :jenis, ras = :ras, ukuran = :ukuran, warna = :warna, catatan = :catatan, status = :status WHERE id_hewan = :id";
+            // FIX: Gunakan $this->db->execute()
+            return $this->db->execute($sql, [/* ... params ... */]);
 
-            $stmt = $this->db->query($sql);
-
-            return $stmt->execute([
-                "id" => $id,
-                "id_pelanggan" => $data["id_pelanggan"],
-                "nama_hewan" => $data["nama_hewan"],
-                "jenis" => $data["jenis"],
-                "ras" => $data["ras"],
-                "ukuran" => $data["ukuran"],
-                "warna" => $data["warna"],
-                "catatan" => $data["catatan"] ?? null,  // UBAH: keterangan -> catatan
-                "status" => $data["status"] ?? "tersedia",
-            ]);
-
-        } catch (Exception $e) {
-            error_log("Error update hewan: " . $e->getMessage());
-            return false;
-        }
+        } catch (Exception $e) { error_log("Error update hewan: " . $e->getMessage()); return false; }
     }
 
     /**
-     * Cari hewan berdasarkan nama/jenis/ras/pemilik
+     * Cari hewan berdasarkan keyword (READ)
      */
     public function search($keyword)
     {
-        $sql = "SELECT 
-                    h.id_hewan as id,
-                    h.nama_hewan as nama,
-                    h.jenis,
-                    h.ras,
-                    p.nama_pelanggan as pemilik,
-                    p.no_hp as no_telp,
-                    h.catatan  -- UBAH: h.keterangan -> h.catatan
-                FROM hewan h
-                LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan
-                WHERE h.nama_hewan LIKE :key
-                OR h.jenis LIKE :key
-                OR h.ras LIKE :key
-                OR p.nama_pelanggan LIKE :key
-                ORDER BY h.created_at DESC";
-
-        $stmt = $this->db->query($sql);
-        $stmt->execute(["key" => "%{$keyword}%"]);
+        $sql = "SELECT h.id_hewan as id, h.nama_hewan as nama, h.jenis, h.ras, p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.catatan FROM hewan h LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan WHERE h.nama_hewan LIKE :key OR h.jenis LIKE :key OR h.ras LIKE :key OR p.nama_pelanggan LIKE :key ORDER BY h.created_at DESC";
+        $stmt = $this->db->query($sql, ["key" => "%{$keyword}%"]); // FIX: Hapus $stmt->execute()
         return $stmt->fetchAll();
     }
-
+    
     /**
-     * Ambil hewan berdasarkan jenis
+     * Ambil hewan berdasarkan jenis (READ)
      */
     public function getByJenis($jenis)
     {
-        $sql = "SELECT 
-                    h.id_hewan as id,
-                    h.nama_hewan as nama,
-                    h.jenis,
-                    h.ras,
-                    p.nama_pelanggan as pemilik,
-                    p.no_hp as no_telp,
-                    h.keterangan as catatan
-                FROM hewan h
-                LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan
-                WHERE h.jenis = :jenis
-                ORDER BY h.nama_hewan";
-
-            // 1. Definisikan parameter
-            $params = ["jenis" => $jenis];
-            // 2. FIX: Panggil query() sekali dengan parameter
-            $stmt = $this->db->query($sql, $params); // Menggunakan $this->db->query($sql, $params)
-            // 3. Kembalikan hasil
-            return $stmt->fetchAll();
-            }
+        $sql = "SELECT h.id_hewan as id, h.nama_hewan as nama, h.jenis, h.ras, p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan FROM hewan h LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan WHERE h.jenis = :jenis ORDER BY h.nama_hewan";
+        $params = ["jenis" => $jenis];
+        $stmt = $this->db->query($sql, $params); // FIX: Hapus $stmt->execute()
+        return $stmt->fetchAll();
+    }
 
     /**
-     * Ambil hewan berdasarkan pemilik
+     * Ambil hewan berdasarkan pemilik (READ)
      */
     public function getByPemilik($id_pelanggan)
     {
-        $sql = "SELECT 
-                    h.id_hewan as id,
-                    h.nama_hewan as nama,
-                    h.jenis,
-                    h.ras,
-                    p.nama_pelanggan as pemilik,
-                    p.no_hp as no_telp,
-                    h.keterangan as catatan
-                FROM hewan h
-                LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan
-                WHERE h.id_pelanggan = :id_pelanggan
-                ORDER BY h.nama_hewan";
-                // FIX: Hapus $stmt->execute() dan masukkan parameter ke dalam $this->db->query()
-                $params = ["id_pelanggan" => $id_pelanggan];
-                $stmt = $this->db->query($sql, $params); // FIX: Menggunakan query(sql, params)
-                
-                // HAPUS BARIS SALAH: $stmt->execute(["id_pelanggan" => $id_pelanggan]);
-                
-                return $stmt->fetchAll();
+        $sql = "SELECT h.id_hewan as id, h.nama_hewan as nama, h.jenis, h.ras, p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan FROM hewan h LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan WHERE h.id_pelanggan = :id_pelanggan ORDER BY h.nama_hewan";
+        $params = ["id_pelanggan" => $id_pelanggan];
+        $stmt = $this->db->query($sql, $params); // FIX: Hapus $stmt->execute()
+        return $stmt->fetchAll();
     }
 
     /**
-     * Ambil hewan yang tersedia (status = tersedia)
+     * Ambil hewan yang tersedia (READ)
      */
     public function getAvailable()
     {
-        $sql = "SELECT 
-                    h.id_hewan as id,
-                    h.nama_hewan as nama,
-                    h.jenis,
-                    h.ras,
-                    p.nama_pelanggan as pemilik,
-                    p.no_hp as no_telp,
-                    h.keterangan as catatan
-                FROM hewan h
-                LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan
-                WHERE h.status = 'tersedia'
-                ORDER BY h.nama_hewan";
-
-        $stmt = $this->db->query($sql);
+        $sql = "SELECT h.id_hewan as id, h.nama_hewan as nama, h.jenis, h.ras, p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan FROM hewan h LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan WHERE h.status = 'tersedia' ORDER BY h.nama_hewan";
+        $stmt = $this->db->query($sql); // FIX: Hapus $stmt->execute()
         return $stmt->fetchAll();
     }
 
     /**
-     * Ambil hewan yang sedang dititipkan
+     * Ambil hewan yang sedang dititipkan (READ)
      */
     public function getInCare()
     {
-        $sql = "SELECT 
-                    h.id_hewan as id,
-                    h.nama_hewan as nama,
-                    h.jenis,
-                    h.ras,
-                    p.nama_pelanggan as pemilik,
-                    p.no_hp as no_telp,
-                    h.keterangan as catatan
-                FROM hewan h
-                LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan
-                WHERE h.status = 'sedang_dititipkan'
-                ORDER BY h.nama_hewan";
-
-        $stmt = $this->db->query($sql);
+        $sql = "SELECT h.id_hewan as id, h.nama_hewan as nama, h.jenis, h.ras, p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan FROM hewan h LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan WHERE h.status = 'sedang_dititipkan' ORDER BY h.nama_hewan";
+        $stmt = $this->db->query($sql); // FIX: Hapus $stmt->execute()
         return $stmt->fetchAll();
     }
 
     /**
-     * Hitung total hewan per status
+     * Hitung total hewan per status (READ)
      */
     public function countByStatus($status)
     {
         $sql = "SELECT COUNT(*) as total FROM hewan WHERE status = :status";
-        $stmt = $this->db->query($sql);
-        $result = $stmt->fetch();
-        return $result['total'] ?? 0;
+        $stmt = $this->db->query($sql, ["status" => $status]); // FIX: Hapus $stmt->execute()
+        return $stmt->fetch()['total'] ?? 0;
     }
 
     /**
-     * Ambil data untuk dropdown (id dan nama saja)
+     * Ambil data hewan dengan pagination (READ)
      */
-    public function getForDropdown()
+    public function getWithPagination($limit = 10, $offset = 0)
     {
-        $sql = "SELECT 
-                    h.id_hewan as id,
-                    h.nama_hewan as nama,
-                    h.jenis,
-                    h.ras
-                FROM hewan h
-                WHERE h.status = 'tersedia'
-                ORDER BY h.nama_hewan";
+        $sql = "SELECT h.id_hewan as id, h.nama_hewan as nama, h.jenis, h.ras, p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan FROM hewan h LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan ORDER BY h.created_at DESC LIMIT :limit OFFSET :offset";
 
-        $stmt = $this->db->query($sql);
+        $params = ["limit" => (int)$limit, "offset" => (int)$offset];
+        $stmt = $this->db->query($sql, $params); // FIX: Hapus $stmt->execute()
         return $stmt->fetchAll();
     }
 
     /**
-     * Cek apakah nama hewan sudah ada untuk pemilik tertentu
-     */
-    public function isNameExists($nama_hewan, $id_pelanggan, $exclude_id = null)
-    {
-        $sql = "SELECT COUNT(*) as total 
-                FROM hewan 
-                WHERE nama_hewan = :nama_hewan 
-                AND id_pelanggan = :id_pelanggan";
-        
-        $params = [
-            "nama_hewan" => $nama_hewan,
-            "id_pelanggan" => $id_pelanggan
-        ];
-
-        if ($exclude_id) {
-            $sql .= " AND id_hewan != :exclude_id";
-            $params["exclude_id"] = $exclude_id;
-        }
-
-        // FIX: Gunakan query dengan parameter
-        $stmt = $this->db->query($sql, $params);
-        // HAPUS: $stmt->execute();
-        
-        $result = $stmt->fetch();
-        return ($result['total'] ?? 0) > 0;
-    }
-
-    /**
-     * Ambil data hewan dengan pagination
-     */
-    public function getWithPagination($limit = 10, $offset = 0)
-    {
-        $sql = "SELECT 
-                    h.id_hewan as id,
-                    h.nama_hewan as nama,
-                    h.jenis,
-                    h.ras,
-                    p.nama_pelanggan as pemilik,
-                    p.no_hp as no_telp,
-                    h.keterangan as catatan
-                FROM hewan h
-                LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan
-                ORDER BY h.created_at DESC
-                LIMIT :limit OFFSET :offset";
-
-                $params = [
-                    // arameter PDO 
-                    "limit" => (int)$limit, 
-                    "offset" => (int)$offset
-                ];
-
-                $stmt = $this->db->query($sql, $params);
-                return $stmt->fetchAll();
-    }
-
-    /**
-     * Hitung total hewan untuk pagination
+     * Hitung total hewan untuk pagination (READ)
      */
     public function getTotalCount()
     {
         $sql = "SELECT COUNT(*) as total FROM hewan";
-        $stmt = $this->db->query($sql);
-
-        $result = $stmt->fetch();
-        return $result['total'] ?? 0;
-    }
-    /**
- * Update status hewan
- */
-public function updateStatus($id, $status) {
-    $allowed = ["tersedia", "sedang_dititipkan", "sudah_diambil"];
-
-    if (!in_array($status, $allowed)) {
-        $status = "tersedia";
+        $stmt = $this->db->query($sql); // FIX: Hapus $stmt->execute()
+        return $stmt->fetch()['total'] ?? 0;
     }
 
-    $sql = "UPDATE hewan SET status = :status WHERE id_hewan = :id";
-    return $this->db->execute($sql, [
-        "id" => $id,
-        "status" => $status
-    ]);
-}
+    public function updateStatus($id, $status) {
+        $allowed = ["tersedia", "sedang_dititipkan", "sudah_diambil"];
+        if (!in_array($status, $allowed)) { $status = "tersedia"; }
 
-// Tambahkan method ini di class Hewan  
-public function getLastInsertId() {
-    return $this->db->lastInsertId();
-}
+        $sql = "UPDATE hewan SET status = :status WHERE id_hewan = :id";
+        return $this->db->execute($sql, ["id" => $id, "status" => $status ]);
+    }
+
+    public function getLastInsertId() {
+        return $this->db->lastInsertId();
+    }
 }

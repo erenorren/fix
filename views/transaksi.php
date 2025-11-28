@@ -18,7 +18,7 @@ include __DIR__ . '/template/header.php';
 <?php if (isset($_GET['status'])): ?>
     <div class='alert alert-<?= $_GET['status'] === 'success' ? 'success' : 'danger' ?> alert-dismissible fade show'>
         <?php if ($_GET['status'] === 'success'): ?>
-            <strong>Sukses!</strong> Transaksi berhasil dibuat.
+            <strong>Sukses!</strong> <?= htmlspecialchars($_GET['message'] ?? 'Transaksi berhasil dibuat') ?>
         <?php else: ?>
             <strong>Error!</strong> <?= htmlspecialchars($_GET['message'] ?? 'Terjadi kesalahan') ?>
         <?php endif; ?>
@@ -52,7 +52,6 @@ include __DIR__ . '/template/header.php';
                     <h5 class="mb-3">Form Pendaftaran Penitipan</h5>
                     <form method="post" action="index.php?action=createTransaksi" id="formPendaftaran">
                         <div class="row g-4">
-
                             <div class="col-lg-6">
                                 <div class="card p-3 h-100 position-relative">
                                     <h6 class="mb-3 text-primary">Informasi Pemilik</h6>
@@ -73,17 +72,21 @@ include __DIR__ . '/template/header.php';
                                         <small class="text-muted">Pilih dari daftar pelanggan terdaftar</small>
                                     </div>
 
-                                    <div class="mb-3" id="newCustomerFields" style="display: none;">
-                                        <label class="form-label">Nama Pemilik Baru <span class="text-danger">*</span></label>
-                                        <input type="text" name="nama_pelanggan_baru" class="form-control"
-                                            placeholder="Ketik nama pemilik baru">
-                                    </div>
+                                        <div class="mb-3" id="newCustomerFields" style="display: none;">
+                                                <label class="form-label">Nama Pemilik Baru <span class="text-danger">*</span></label>
+                                                <input type="text" name="nama_pelanggan_baru" class="form-control" 
+                                                    placeholder="Ketik nama pemilik baru" required>
+                                            </div>
 
-                                    <div class="mb-3">
-                                        <label class="form-label">Nomor HP <span class="text-danger">*</span></label>
-                                        <input type="text" name="hp" id="p_hp" class="form-control"
-                                            placeholder="Contoh: 08123456789" required>
-                                    </div>
+                                            <!-- Field untuk pelanggan existing (jika menggunakan search/autocomplete) -->
+                                            <input type="hidden" name="search_pemilik" id="search_pemilik">
+                                            
+                                            <!-- Field lainnya -->
+                                            <div class="mb-3">
+                                                <label class="form-label">Nomor HP <span class="text-danger">*</span></label>
+                                                <input type="text" name="no_hp" id="p_hp" class="form-control"
+                                                    placeholder="Contoh: 08123456789" required>
+                                            </div>
 
                                     <div class="mb-3">
                                         <label class="form-label">Alamat <span class="text-danger">*</span></label>
@@ -226,9 +229,16 @@ include __DIR__ . '/template/header.php';
                                             </div>
 
                                             <input type="hidden" name="id_kandang" id="id_kandang">
-                                            <small class="text-muted d-block mt-1" id="kandangInfo">
-                                                Pilih kandang yang sesuai dengan jenis dan ukuran hewan
-                                            </small>
+                                                <small class="text-muted d-block mt-1" id="kandangInfo">
+                                                    Pilih kandang: 
+                                                    <span id="kandangRuleInfo">
+                                                        <?php 
+                                                        // Info default
+                                                        echo "Kucing kecil: semua kandang | Kucing sedang: sedang & besar | Kucing besar: besar saja | ";
+                                                        echo "Anjing kecil/sedang: sedang & besar | Anjing besar: besar saja";
+                                                        ?>
+                                                    </span>
+                                                </small>
                                         </div>
                                     </div>
                                 </div>

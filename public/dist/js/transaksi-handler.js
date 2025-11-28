@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Akses variabel global yang didefinisikan di PHP
     const kandangTersedia = (typeof PHP_DATA !== 'undefined' && PHP_DATA.kandangTersedia) ? PHP_DATA.kandangTersedia : [];
+    const hewanMenginap = (typeof PHP_DATA !== 'undefined' && PHP_DATA.hewanMenginap) ? PHP_DATA.hewanMenginap : [];
     
     // ELEMEN UTAMA
     const selectPelanggan = document.getElementById('selectPelanggan');
@@ -27,6 +28,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const kandangInfo = document.getElementById('kandangInfo');
     const jenisHewanSelect = document.getElementById('jenisHewanSelect');
     const ukuranHewanSelect = document.getElementById('ukuranHewanSelect');
+
+    const formPendaftaran = document.getElementById('formPendaftaran');
+
+    // Elemen Pengembalian (Checkout)
+    const searchCheckout = document.getElementById('searchCheckout');
+    const filterKandang = document.getElementById('filterKandang');
+    const btnCariCheckout = document.getElementById('btnCariCheckout');
+    const tabelHewanMenginapBody = document.querySelector('.table-responsive table tbody');
+
 
     // =============================================
     // Fungsi Utility
@@ -96,6 +106,11 @@ document.addEventListener('DOMContentLoaded', function() {
         let namaPaket = '';
         
         lamaInap = parseInt(lamaInapInput ? lamaInapInput.value : 1) || 1;
+        // Pastikan lamaInap tidak kurang dari 1
+        if (lamaInap < 1) {
+            lamaInap = 1;
+            if(lamaInapInput) lamaInapInput.value = 1;
+        }
 
         if (paketSelect && paketSelect.value) {
             const selectedOption = paketSelect.options[paketSelect.selectedIndex];
@@ -139,223 +154,282 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     hitungTotal();
 
-    // =============================================
-    // 3. PEMILIHAN KANDANG (Menggunakan data PHP_DATA)
-    // =============================================
-    if (btnPilihKandang) {
+// =============================================
+// 3. PEMILIHAN KANDANG (FIXED - TIDAK AUTO-TRIGGER)
+// =============================================
+if (btnPilihKandang) {
+    
+    function filterKandang() {
+        const jenisHewan = jenisHewanSelect.value;
+        const ukuranHewan = ukuranHewanSelect ? ukuranHewanSelect.value : '';
         
-        function filterKandang() {
-            const jenisHewan = jenisHewanSelect.value;
-            const ukuranHewan = ukuranHewanSelect ? ukuranHewanSelect.value : '';
-            
-            if (!jenisHewan) {
-                alert('Pilih jenis hewan terlebih dahulu');
-                panelKandang.classList.add('d-none');
-                return;
-            }
-
-            let tipeKandangYangCocok = ['Kecil', 'Sedang', 'Besar'];
-            
-            if (jenisHewan === 'Anjing') {
+        console.log("Filter kandang - Jenis:", jenisHewan, "Ukuran:", ukuranHewan);
+        
+        if (!jenisHewan) {
+            alert('Pilih jenis hewan terlebih dahulu');
+            panelKandang.classList.add('d-none');
+            return;
+        }
+        
+        // LOGICA FILTER (tetap sama seperti sebelumnya)
+        let tipeKandangYangCocok = [];
+        
+        if (jenisHewan === 'Kucing') {
+            if (ukuranHewan === 'Kecil') {
+                tipeKandangYangCocok = ['Kecil', 'Sedang', 'Besar'];
+            } else if (ukuranHewan === 'Sedang') {
                 tipeKandangYangCocok = ['Sedang', 'Besar'];
-            } 
-            if (ukuranHewan === 'Besar') {
+            } else if (ukuranHewan === 'Besar') {
                 tipeKandangYangCocok = ['Besar'];
+            } else {
+                tipeKandangYangCocok = ['Kecil', 'Sedang', 'Besar'];
             }
+        } else if (jenisHewan === 'Anjing') {
+            if (ukuranHewan === 'Kecil') {
+                tipeKandangYangCocok = ['Sedang', 'Besar'];
+            } else if (ukuranHewan === 'Sedang') {
+                tipeKandangYangCocok = ['Sedang', 'Besar'];
+            } else if (ukuranHewan === 'Besar') {
+                tipeKandangYangCocok = ['Besar'];
+            } else {
+                tipeKandangYangCocok = ['Sedang', 'Besar'];
+            }
+        }
+
+        console.log("Tipe kandang yang cocok:", tipeKandangYangCocok);
+
+        // Tampilkan loading sementara
+        panelKandang.innerHTML = `
+            <div class="text-center py-2">
+                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                <span class="text-muted">Memuat kandang tersedia...</span>
+            </div>
+        `;
+        panelKandang.classList.remove('d-none');
+        
+        setTimeout(() => {
+            panelKandang.innerHTML = '';
+            let kandangDitemukan = false;
             
-            // Tampilkan loading sementara
-            panelKandang.innerHTML = `
-                <div class="text-center py-2">
-                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                    <span class="text-muted">Memuat kandang tersedia...</span>
-                </div>
-            `;
-            panelKandang.classList.remove('d-none');
-            
-            setTimeout(() => {
-                panelKandang.innerHTML = '';
-                let kandangDitemukan = false;
+            kandangTersedia.forEach(kandang => {
+                const kodeKandang = kandang.kode_kandang;
+                const tipeKandang = kandang.tipe;
+                const statusKandang = kandang.status;
+                const idKandang = kandang.id;
                 
-                kandangTersedia.forEach(kandang => {
-                    if (kandang.status === 'tersedia' && tipeKandangYangCocok.includes(kandang.tipe)) { 
-                        kandangDitemukan = true;
-                        
-                        const kandangItem = document.createElement('div');
-                        kandangItem.className = 'p-2 border-bottom';
-                        kandangItem.style.cursor = 'pointer';
-                        kandangItem.innerHTML = `
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="fw-semibold">${kandang.kode_kandang}</span>
-                                    <small class="text-muted ms-2">${kandang.tipe}</small>
-                                </div>
-                                <span class="badge bg-success">Tersedia</span>
+                // Filter berdasarkan tipe kandang yang cocok DAN status tersedia
+                if (statusKandang === 'tersedia' && tipeKandangYangCocok.includes(tipeKandang)) { 
+                    kandangDitemukan = true;
+                    
+                    const kandangItem = document.createElement('div');
+                    kandangItem.className = 'p-2 border-bottom';
+                    kandangItem.style.cursor = 'pointer';
+                    kandangItem.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-semibold">${kodeKandang}</span>
+                                <small class="text-muted ms-2">${tipeKandang}</small>
                             </div>
-                        `;
-                        
-                        kandangItem.addEventListener('click', function() {
-                            kandangLabel.textContent = `${kandang.kode_kandang} - ${kandang.tipe}`;
-                            idKandangInput.value = kandang.id; 
-                            panelKandang.classList.add('d-none');
-                            kandangInfo.innerHTML = `<span class="text-success"><i class="bi bi-check-circle"></i> Kandang ${kandang.kode_kandang} dipilih</span>`;
-                            validateKandang();
-                        });
-                        
-                        panelKandang.appendChild(kandangItem);
-                    }
-                });
-                
-                if (!kandangDitemukan) {
-                    panelKandang.innerHTML = `
-                        <div class="text-center text-muted py-3">
-                            <i class="bi bi-inbox display-6 opacity-50"></i>
-                            <p class="mt-2 mb-0">Tidak ada kandang tersedia</p>
-                            <small>Untuk ${jenisHewan} ${ukuranHewan ? 'ukuran ' + ukuranHewan : ''}</small>
+                            <span class="badge bg-success">Tersedia</span>
                         </div>
                     `;
+                    
+                    kandangItem.addEventListener('click', function() {
+                        kandangLabel.textContent = `${kodeKandang} - ${tipeKandang}`;
+                        idKandangInput.value = idKandang; 
+                        panelKandang.classList.add('d-none');
+                        kandangInfo.innerHTML = `<span class="text-success"><i class="bi bi-check-circle"></i> Kandang ${kodeKandang} dipilih</span>`;
+                        validateKandang();
+                    });
+                    
+                    panelKandang.appendChild(kandangItem);
                 }
-            }, 300);
-        }
-
-        btnPilihKandang.addEventListener('click', filterKandang);
-
-        function validateKandang() {
-            if (idKandangInput.value) {
-                btnPilihKandang.classList.remove('btn-outline-secondary');
-                btnPilihKandang.classList.add('btn-outline-success');
-            } else {
-                btnPilihKandang.classList.remove('btn-outline-success');
-                btnPilihKandang.classList.add('btn-outline-secondary');
+            });
+            
+            if (!kandangDitemukan) {
+                panelKandang.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-inbox display-6 opacity-50"></i>
+                        <p class="mt-2 mb-0">Tidak ada kandang tersedia</p>
+                        <small>Untuk ${jenisHewan} ${ukuranHewan ? 'ukuran ' + ukuranHewan : ''}</small>
+                    </div>
+                `;
+                // Reset pilihan jika tidak ada yang ditemukan
+                if (idKandangInput.value) {
+                     resetKandangPilihan();
+                }
             }
-        }
+        }, 300);
+    }
 
-        function resetKandangPilihan() {
-            idKandangInput.value = '';
-            kandangLabel.textContent = 'Pilih kandang yang tersedia';
-            kandangInfo.innerHTML = 'Pilih kandang yang sesuai dengan jenis dan ukuran hewan';
-            panelKandang.classList.add('d-none');
-            validateKandang();
-        }
+    btnPilihKandang.addEventListener('click', function(e) {
+        e.preventDefault();
+        filterKandang();
+    });
 
-        if (jenisHewanSelect) {
-            jenisHewanSelect.addEventListener('change', resetKandangPilihan);
+    function validateKandang() {
+        if (idKandangInput.value) {
+            btnPilihKandang.classList.remove('btn-outline-secondary');
+            btnPilihKandang.classList.add('btn-outline-success');
+        } else {
+            btnPilihKandang.classList.remove('btn-outline-success');
+            btnPilihKandang.classList.add('btn-outline-secondary');
         }
-        if (ukuranHewanSelect) {
-            ukuranHewanSelect.addEventListener('change', resetKandangPilihan);
-        }
-        
+    }
+
+    function resetKandangPilihan() {
+        idKandangInput.value = '';
+        kandangLabel.textContent = 'Pilih kandang yang tersedia';
+        kandangInfo.innerHTML = 'Pilih kandang yang sesuai dengan jenis dan ukuran hewan';
+        panelKandang.classList.add('d-none');
         validateKandang();
     }
 
+    // PERBAIKAN: Hanya reset pilihan, TIDAK auto-trigger filter
+    if (jenisHewanSelect) {
+        jenisHewanSelect.addEventListener('change', resetKandangPilihan);
+    }
+    if (ukuranHewanSelect) {
+        ukuranHewanSelect.addEventListener('change', resetKandangPilihan);
+    }
+    
+    validateKandang();
+}
+
     // =============================================
-    // 4. FORM SUBMIT HANDLER & VALIDASI
+    // 4. FORM SUBMIT HANDLER & VALIDASI PENDAFTARAN
     // =============================================
-    const formPendaftaran = document.getElementById('formPendaftaran');
     if (formPendaftaran) {
         
-        function validateForm() {
-            const idKandangInput = document.getElementById('id_kandang');
-            
+        function validateForm(event) {
+            // 1. Validasi bawaan browser (required fields)
             if (!formPendaftaran.checkValidity()) {
-                 return false;
+                 return; // Biarkan browser menampilkan error bawaan
             }
 
-            if (!idKandangInput || !idKandangInput.value) {
-                alert('Harap pilih kandang terlebih dahulu!');
-                return false;
+            // 2. Validasi Kandang
+            if (!idKandangInput.value) {
+                event.preventDefault(); // Hentikan submit
+                alert('Pilih kandang terlebih dahulu untuk menyelesaikan pendaftaran.');
+                btnPilihKandang.focus();
+                return;
             }
 
-            return true;
+            // 3. Validasi Total Biaya
+            if (parseInt(totalInput.value) <= 0) {
+                 event.preventDefault(); // Hentikan submit
+                alert('Total biaya tidak valid. Pastikan Paket Utama dan Lama Inap sudah diisi dengan benar.');
+                paketSelect.focus();
+                return;
+            }
         }
         
-        formPendaftaran.addEventListener('submit', function(e) {
-            if (!validateForm()) {
-                e.preventDefault();
-            } else {
-                console.log("Form valid, submitting to Controller...");
-            }
+        formPendaftaran.addEventListener('submit', validateForm);
+    }
+    
+    // =============================================
+    // 5. FITUR CHECKOUT (PENCARIAN & FILTER)
+    // =============================================
+    
+    // Fungsi untuk memformat tanggal ke format d/m/Y
+    function formatDate(dateString) {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'});
+    }
+    
+    // Fungsi untuk merender ulang tabel
+    function renderHewanMenginap(data) {
+        if (!tabelHewanMenginapBody) return;
+
+        tabelHewanMenginapBody.innerHTML = ''; // Kosongkan tabel
+        
+        if (data.length === 0) {
+            tabelHewanMenginapBody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox display-4 text-muted opacity-50"></i>
+                        <p class="mt-3 mb-0">Tidak ada hewan yang sesuai kriteria pencarian</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        data.forEach(hewan => {
+            const hewanIcon = hewan.jenis_hewan === 'Kucing' ? 'bi-cat text-info' : 'bi-dog text-warning';
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="fw-semibold">${hewan.kode_transaksi}</td>
+                <td>${hewan.nama_pelanggan}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <i class="bi ${hewanIcon} me-2"></i>
+                        ${hewan.nama_hewan}
+                    </div>
+                </td>
+                <td><span class="badge bg-secondary">${hewan.kode_kandang}</span></td>
+                <td>${formatDate(hewan.tanggal_masuk)}</td>
+                <td>${hewan.durasi} hari</td>
+                <td class="fw-semibold text-primary">${formatRupiah(hewan.total_biaya)}</td>
+                <td>
+                    <button type="button" class="btn btn-success btn-sm" onclick="prosesCheckout('${hewan.id_transaksi}')">
+                        <i class="bi bi-check-lg me-1"></i>Check-out
+                    </button>
+                </td>
+            `;
+            tabelHewanMenginapBody.appendChild(row);
         });
     }
-
-
-    // =============================================
-    // 5. FUNGSI CHECKOUT & BUKTI PEMBAYARAN (Globalized)
-    // =============================================
-    window.prosesCheckout = function(idTransaksi) {
-        // ... (Logika Checkout menggunakan Fetch API ke index.php?action=read&id=...)
+    
+    // Fungsi Pencarian/Filter
+    function applyCheckoutFilter() {
+        const searchTerm = searchCheckout.value.toLowerCase();
+        const selectedKandang = filterKandang.value;
         
-        fetch(`index.php?page=transaksi&action=read&id=${idTransaksi}`)
-            .then(response => response.json())
-            .then(transaksiData => {
-                if (transaksiData.error || !transaksiData.id_transaksi) {
-                     alert('Gagal memuat data transaksi. Pesan: ' + (transaksiData.error || 'Data tidak ditemukan.'));
-                     return;
-                }
-                
-                // Isi modal checkout
-                const checkoutContent = document.getElementById('checkoutContent');
-                checkoutContent.innerHTML = `
-                     <form id="checkoutForm">
-                         <input type="hidden" name="id" value="${transaksiData.id_transaksi}">
-                         <input type="hidden" name="durasi_hari" value="${transaksiData.durasi}">
-                         <input type="hidden" name="total_biaya" value="${transaksiData.total_biaya}">
-                         <div class="row">
-                            <div class="col-md-6"><h6>Detail Transaksi</h6>...</div>
-                             <div class="col-md-6"><h6>Rincian Pembayaran</h6>...</div>
-                         </div>
-                     </form>
-                `;
-                
-                const modal = new bootstrap.Modal(document.getElementById('modalCheckout'));
-                modal.show();
-                
-                // Setup confirm button untuk mengirim data checkout via POST
-                document.getElementById('btnConfirmCheckout').onclick = function() {
-                    const form = document.getElementById('checkoutForm');
-                    if (form.checkValidity()) {
-                        
-                        // Kirim data ke Controller via Fetch API (simulasi POST)
-                        const formData = new FormData(form);
-                        
-                        fetch('index.php?action=checkoutTransaksi', {
-                            method: 'POST',
-                            body: new URLSearchParams(formData).toString(),
-                            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
-                        })
-                        .then(response => response.json())
-                        .then(result => {
-                            if (result.success) {
-                                alert(result.success + ". Memuat bukti pembayaran.");
-                                modal.hide();
-                                // Arahkan ke Controller untuk menampilkan struk
-                                window.location.href = `index.php?page=transaksi&action=cetakBukti&id=${transaksiData.id_transaksi}`;
+        const filteredData = hewanMenginap.filter(hewan => {
+            // Filter 1: Pencarian
+            const matchesSearch = hewan.nama_pelanggan.toLowerCase().includes(searchTerm) || 
+                                  hewan.nama_hewan.toLowerCase().includes(searchTerm);
+            
+            // Filter 2: Kandang
+            const matchesKandang = !selectedKandang || 
+                                   (selectedKandang === 'KK' && (hewan.kode_kandang.startsWith('KK'))) ||
+                                   (selectedKandang === 'KB' && (hewan.kode_kandang.startsWith('KB')));
+                                   
+            return matchesSearch && matchesKandang;
+        });
+        
+        renderHewanMenginap(filteredData);
+    }
 
-                            } else {
-                                alert('Gagal Check-out: ' + (result.error || 'Terjadi kesalahan server.'));
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('Terjadi kesalahan koneksi saat Check-out.');
-                        });
-                        
-                    } else {
-                        alert('Harap lengkapi semua field checkout!');
-                    }
-                };
-
-            })
-            .catch(error => {
-                alert('Gagal mengambil data dari server: ' + error);
-                console.error('Fetch Error:', error);
-            });
-    };
-
-    window.tampilkanBuktiBayar = function(transaksiData) {
-        // ... (Logika Tampilkan Bukti Bayar) ...
-    };
-    window.cetakBuktiBayar = function() {
-        // ... (Logika Cetak Bukti Bayar) ...
-    };
-
+    if (btnCariCheckout) {
+        btnCariCheckout.addEventListener('click', applyCheckoutFilter);
+    }
+    
+    // Juga terapkan filter saat input atau select berubah (Opsional: agar lebih interaktif)
+    if (searchCheckout) {
+        searchCheckout.addEventListener('input', applyCheckoutFilter);
+    }
+    if (filterKandang) {
+        filterKandang.addEventListener('change', applyCheckoutFilter);
+    }
+    
+    // Tambahkan fungsi global untuk proses checkout dari button di tabel
+    window.prosesCheckout = function(id_transaksi) {
+    console.log("Proses checkout untuk ID: " + id_transaksi);
+    
+    if (confirm(`Apakah Anda yakin ingin menyelesaikan transaksi (Check-out) untuk transaksi ID: ${id_transaksi}?`)) {
+        // Arahkan ke action controller untuk proses check-out
+        console.log("Redirect ke checkout...");
+        window.location.href = `index.php?action=checkoutTransaksi&id=${id_transaksi}`;
+    }
+}
+    
+    // Panggil saat DOMContentLoaded untuk memastikan data awal ditampilkan (jika tab pengembalian aktif)
+    // Cek apakah tabel hewan menginap ada di halaman.
+    if(tabelHewanMenginapBody) {
+         applyCheckoutFilter();
+    }
+    
 });

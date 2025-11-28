@@ -1,10 +1,7 @@
 <?php
 require_once __DIR__ . '/../core/Database.php';
 
-/**
- * Menghubungkan Semua Model 
- * CRUD untuk transaksi penitipan hewan
- */
+// transaksi
 class Transaksi 
 {
     private $db;
@@ -99,17 +96,23 @@ class Transaksi
      * Update status transaksi (checkout)
      * KOREKSI: Gunakan $this->db->execute()
      */
-    public function checkout($id)
-    {
-        try {
-            $sql = "UPDATE transaksi SET status = 'completed', tanggal_keluar = CURDATE() WHERE id_transaksi = ?";
-            // FIX: Gunakan $this->db->execute() untuk CUD
-            return $this->db->execute($sql, [$id]);
-        } catch (Exception $e) {
-            error_log("Error checkout transaksi: " . $e->getMessage());
-            return false;
-        }
+/**
+ * Update status transaksi (checkout)
+ */
+public function checkout($id)
+{
+    try {
+        error_log("Model Transaksi::checkout() untuk ID: " . $id);
+        $sql = "UPDATE transaksi SET status = 'completed', tanggal_keluar = CURDATE() WHERE id_transaksi = ?";
+        error_log("SQL Checkout: " . $sql);
+        $result = $this->db->execute($sql, [$id]);
+        error_log("Result checkout: " . ($result ? 'SUCCESS' : 'FAILED'));
+        return $result;
+    } catch (Exception $e) {
+        error_log("Error checkout transaksi di model: " . $e->getMessage());
+        return false;
     }
+}
 
     /**
      * Ambil data transaksi berdasarkan ID (READ)

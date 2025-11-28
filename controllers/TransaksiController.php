@@ -1,28 +1,20 @@
 <?php
-// Wajib: Include BaseController
 require_once __DIR__ . '/../core/BaseController.php'; 
-
-// Wajib: Include semua Model
 require_once __DIR__ . '/../models/Transaksi.php';
 require_once __DIR__ . '/../models/DetailTransaksi.php';
 require_once __DIR__ . '/../models/Pelanggan.php';
 require_once __DIR__ . '/../models/Hewan.php';
 require_once __DIR__ . '/../models/Kandang.php';
-require_once __DIR__ . '/../models/Layanan.php'; // Tambahkan Layanan
+require_once __DIR__ . '/../models/Layanan.php';
 
-/**
- * Kelas TransaksiController
- * Menerapkan Pewarisan dari BaseController (Kriteria OOP)
- */
-class TransaksiController extends BaseController { // <--- IMPLEMENTASI PEWARISAN
+class TransaksiController extends BaseController {
     
-    // Properti Model (Encapsulation)
     private $transaksiModel;
     private $detailTransaksiModel;
     private $pelangganModel;
     private $hewanModel;
     private $kandangModel;
-    private $layananModel; // Tambahkan Layanan
+    private $layananModel;
 
     public function __construct() {
         $this->transaksiModel = new Transaksi();
@@ -33,91 +25,149 @@ class TransaksiController extends BaseController { // <--- IMPLEMENTASI PEWARISA
         $this->layananModel = new Layanan();
     }
         
-        // Ambil semua data yang dibutuhkan oleh views/transaksi.php
-        public function index() {
+    public function index() {
+        error_log("=== TRANSAKSI CONTROLLER INDEX DIPANGGIL ===");
+        
         $tab = $_GET['tab'] ?? 'pendaftaran';
+        
+        // DEBUG: Cek data pelanggan
+        $pelangganList = $this->pelangganModel->getAll();
+        error_log("Jumlah pelanggan: " . count($pelangganList));
         
         $data = [
             'tab' => $tab,
-            
-            // Data untuk View: Menggunakan Model property yang sudah diinisialisasi
-            'pelangganList' => $this->pelangganModel->getAll(), 
+            'pelangganList' => $pelangganList, 
             'paketList' => $this->layananModel->getAll(),
             'kandangTersedia' => $this->kandangModel->getAll(),
             'hewanMenginap' => $this->transaksiModel->getActiveTransactions(),
         ];
 
-        // FIX: Menggunakan metode view() dari BaseController
         $this->view('transaksi', $data); 
     }
 
     /**
      * Menangani proses Check-in (CRUD → Create)
-     * Menerapkan Validasi input dan Error Handling (Kriteria Fungsionalitas)
      */
-    public function create() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            try {
-                // Validasi data required
-                if (empty($_POST['id_layanan']) || empty($_POST['id_kandang']) || empty($_POST['nama_hewan'])) {
-                    throw new Exception("Data required tidak lengkap");
-                }
-
-                // 1. Handle Pelanggan
-                $id_pelanggan = $this->handlePelanggan($_POST);
-                
-                // 2. Handle Hewan (Wajib: HewanModel::create() harus mengembalikan ID)
-                $id_hewan = $this->handleHewan($_POST, $id_pelanggan);
-                
-                // 3. Hitung biaya
-                $biayaData = $this->hitungBiaya($_POST);
-                
-                // 4. Prepare transaksi data
-                $transaksiData = [
-                    'id_pelanggan' => $id_pelanggan,
-                    'id_hewan' => $id_hewan,
-                    'id_kandang' => $_POST['id_kandang'],
-                    'id_layanan' => $_POST['id_layanan'],
-                    'biaya_paket' => $biayaData['biaya_paket'],
-                    'tanggal_masuk' => $_POST['tanggal_masuk'] ?? date('Y-m-d'),
-                    'durasi' => $_POST['durasi'] ?? 1,
-                    'total_biaya' => $biayaData['total_biaya']
-                ];
-
-                // 5. Create transaksi
-                $id_transaksi = $this->transaksiModel->create($transaksiData);
-                
-                if ($id_transaksi) {
-                    // 6. Create detail transaksi (layanan tambahan)
-                    $this->handleDetailTransaksi($_POST, $id_transaksi);
-                    
-                    // 7. Update status kandang dan hewan (Menggunakan Model property yang sudah diinisialisasi)
-                    $this->kandangModel->updateStatus($transaksiData['id_kandang'], 'terpakai'); // <--- PENGHILANGAN PERULANGAN
-                    $this->hewanModel->updateStatus($id_hewan, 'sedang_dititipan');
-                    
-                    // Redirect ke halaman sukses menggunakan metode warisan (Reusability)
-                    $this->redirect('index.php?page=transaksi&status=success&tab=pendaftaran&id=' . $id_transaksi);
-                } else {
-                    throw new Exception("Gagal membuat transaksi");
-                }
-
-            } catch (Exception $e) {
-                error_log("Error in create transaksi: " . $e->getMessage());
-                $this->redirect('index.php?page=transaksi&status=error&message=' . urlencode($e->getMessage()) . '&tab=pendaftaran');
-            }
-        } else {
-            $this->redirect('index.php?page=transaksi&status=error&message=Invalid request method&tab=pendaftaran');
-        }
+/**
+ * Menangani proses Check-in (CRUD → Create)
+ */
+public function create() {
+    error_log("=== CREATE TRANSAKSI DIPANGGIL ===");
+    
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return $this->redirect('index.php?page=transaksi&status=error&message=Method not allowed&tab=pendaftaran');
     }
 
+    try {
+        // Validasi data required
+        if (empty($_POST['id_layanan']) || empty($_POST['id_kandang']) || empty($_POST['nama_hewan'])) {
+            throw new Exception("Data required tidak lengkap");
+        }
+
+        // 1. Handle Pelanggan
+        $id_pelanggan = $this->handlePelanggan($_POST);
+        
+        // 2. Handle Hewan
+        $id_hewan = $this->handleHewan($_POST, $id_pelanggan);
+        
+        // 3. Hitung biaya
+        $biayaData = $this->hitungBiaya($_POST);
+        
+        // 4. Prepare transaksi data
+        $transaksiData = [
+            'id_pelanggan' => $id_pelanggan,
+            'id_hewan' => $id_hewan,
+            'id_kandang' => $_POST['id_kandang'],
+            'id_layanan' => $_POST['id_layanan'],
+            'biaya_paket' => $biayaData['biaya_paket'],
+            'tanggal_masuk' => $_POST['tanggal_masuk'] ?? date('Y-m-d'),
+            'durasi' => $_POST['durasi'] ?? 1,
+            'total_biaya' => $biayaData['total_biaya']
+        ];
+
+        error_log("Data transaksi: " . print_r($transaksiData, true));
+
+        // 5. Create transaksi
+        $id_transaksi = $this->transaksiModel->create($transaksiData);
+        if (!$id_transaksi) {
+            throw new Exception("Gagal membuat transaksi utama");
+        }
+
+        // 6. SELALU BUAT DETAIL TRANSAKSI (paket utama + layanan tambahan)
+        $this->handleDetailTransaksi($_POST, $id_transaksi, $biayaData);
+        
+        // 7. Update status kandang dan hewan
+        $this->kandangModel->updateStatus($transaksiData['id_kandang'], 'terpakai');
+        $this->hewanModel->updateStatus($id_hewan, 'sedang_dititipan');
+        
+
+        // Redirect ke halaman sukses dengan custom message
+        $this->redirect('index.php?page=transaksi&status=success&tab=pendaftaran&id=' . $id_transaksi . '&message=' . urlencode('Penitipan hewan berhasil didaftarkan'));
+    } catch (Exception $e) {
+        error_log("Error in create transaksi: " . $e->getMessage());
+        $this->redirect('index.php?page=transaksi&status=error&message=' . urlencode($e->getMessage()) . '&tab=pendaftaran');
+    }
+}
+
+/**
+ * Handle detail transaksi (PAKET UTAMA + layanan tambahan)
+ */
+private function handleDetailTransaksi($data, $id_transaksi, $biayaData) {
+    error_log("=== MEMBUAT DETAIL TRANSAKSI ===");
+    
+    // A. DETAIL PAKET UTAMA (selalu dibuat)
+    $paket = $this->layananModel->getById($data['id_layanan']);
+    if ($paket) {
+        $detailPaket = [
+            'id_transaksi' => $id_transaksi,
+            'kode_layanan' => 'PAKET', // atau kode khusus untuk paket
+            'nama_layanan' => $paket['nama_layanan'] . ' (' . ($data['durasi'] ?? 1) . ' hari)',
+            'harga' => $paket['harga'],
+            'quantity' => $data['durasi'] ?? 1,
+            'subtotal' => $biayaData['biaya_paket']
+        ];
+        
+        $this->detailTransaksiModel->create($detailPaket);
+        error_log("Detail paket dibuat: " . print_r($detailPaket, true));
+    }
+    
+    // B. DETAIL LAYANAN TAMBAHAN (jika ada)
+    if (!empty($data['layanan_tambahan'])) {
+        $layananTambahanList = [
+            'G001' => ['nama' => 'Grooming Dasar', 'harga' => 100000],
+            'G002' => ['nama' => 'Grooming Lengkap', 'harga' => 170000],
+            'L003' => ['nama' => 'Vitamin / Suplemen', 'harga' => 50000],
+            'L004' => ['nama' => 'Vaksin', 'harga' => 260000]
+        ];
+        
+        foreach ($data['layanan_tambahan'] as $kodeLayanan) {
+            if (isset($layananTambahanList[$kodeLayanan])) {
+                $layanan = $layananTambahanList[$kodeLayanan];
+                
+                $detailData = [
+                    'id_transaksi' => $id_transaksi,
+                    'kode_layanan' => $kodeLayanan,
+                    'nama_layanan' => $layanan['nama'],
+                    'harga' => $layanan['harga'],
+                    'quantity' => 1,
+                    'subtotal' => $layanan['harga']
+                ];
+                
+                $this->detailTransaksiModel->create($detailData);
+                error_log("Detail layanan tambahan dibuat: " . print_r($detailData, true));
+            }
+        }
+    }
+    
+    error_log("Total detail transaksi dibuat untuk ID: " . $id_transaksi);
+}
 
     /**
-    * Hitung biaya transaksi (menghilangkan perulangan instansiasi)
+    * Hitung biaya transaksi
     */
     private function hitungBiaya($data) {
-        
-        // Ambil harga paket dari database (Menggunakan property Model $this->layananModel)
-        $paket = $this->layananModel->getById($data['id_layanan']); // <--- PENGHILANGAN PERULANGAN
+        // Ambil harga paket dari database
+        $paket = $this->layananModel->getById($data['id_layanan']);
         
         if (!$paket) {
             throw new Exception("Paket layanan tidak ditemukan dengan ID: " . $data['id_layanan']);
@@ -125,8 +175,6 @@ class TransaksiController extends BaseController { // <--- IMPLEMENTASI PEWARISA
         
         $hargaPaket = floatval($paket['harga']);
         $durasi = intval($data['durasi']) ?: 1;
-        
-        // Hitung biaya paket
         $biayaPaket = $hargaPaket * $durasi;
         
         // Hitung biaya layanan tambahan
@@ -155,69 +203,52 @@ class TransaksiController extends BaseController { // <--- IMPLEMENTASI PEWARISA
         ];
     }
 
-    /**
-    * Handle detail transaksi (layanan tambahan)
-    */
-    private function handleDetailTransaksi($data, $id_transaksi) {
-        if (empty($data['layanan_tambahan'])) {
-            return;
-        }
-        
-        // Menggunakan property Model $this->detailTransaksiModel
-        $detailModel = $this->detailTransaksiModel; // <--- PENGHILANGAN PERULANGAN
-        
-        $layananTambahanList = [
-            'G001' => ['nama' => 'Grooming Dasar', 'harga' => 100000],
-            'G002' => ['nama' => 'Grooming Lengkap', 'harga' => 170000],
-            'L003' => ['nama' => 'Vitamin / Suplemen', 'harga' => 50000],
-            'L004' => ['nama' => 'Vaksin', 'harga' => 260000]
-        ];
-        
-        foreach ($data['layanan_tambahan'] as $kodeLayanan) {
-            if (isset($layananTambahanList[$kodeLayanan])) {
-                $layanan = $layananTambahanList[$kodeLayanan];
-                
-                $detailData = [
-                    'id_transaksi' => $id_transaksi,
-                    'kode_layanan' => $kodeLayanan,
-                    'nama_layanan' => $layanan['nama'],
-                    'harga' => $layanan['harga'],
-                    'quantity' => 1,
-                    'subtotal' => $layanan['harga']
-                ];
-                
-                $detailModel->create($detailData);
-            }
-        }
-    }
 
     private function handlePelanggan($data) {
-        $id_pelanggan = $data['id_pelanggan'] ?? null;
-        
-        if (!empty($id_pelanggan)) {
-            return $id_pelanggan;
-        }
-        
-        $pelangganData = [
-            'nama_pelanggan' => $data['search_pemilik'] ?? '',
-            'no_hp' => $data['no_hp'] ?? '',
-            'alamat' => $data['alamat'] ?? ''
-        ];
-
-        // Model harus mengembalikan ID baru jika berhasil
-        $newPelangganId = $this->pelangganModel->create($pelangganData); 
-        if ($newPelangganId) {
-            return $newPelangganId;
-        } else {
-            throw new Exception("Gagal membuat pelanggan baru");
-        }
+    $id_pelanggan = $data['id_pelanggan'] ?? null;
+    
+    // Jika id_pelanggan ada dan bukan 'new', gunakan pelanggan existing
+    if (!empty($id_pelanggan) && $id_pelanggan !== 'new') {
+        return $id_pelanggan;
     }
+    
+    // Buat pelanggan baru - PERBAIKI: Ambil nama dari field yang benar
+    $nama_pelanggan = '';
+    
+    if (!empty($data['nama_pelanggan_baru'])) {
+        // Jika menggunakan form "Tambah Pemilik Baru"
+        $nama_pelanggan = $data['nama_pelanggan_baru'];
+    } else if (!empty($data['search_pemilik'])) {
+        // Jika menggunakan autocomplete/search (fallback)
+        $nama_pelanggan = $data['search_pemilik'];
+    } else {
+        // Jika kedua-duanya kosong, throw error
+        throw new Exception("Nama pelanggan harus diisi");
+    }
+    
+    $pelangganData = [
+        'nama_pelanggan' => $nama_pelanggan,
+        'no_hp' => $data['no_hp'] ?? '',
+        'alamat' => $data['alamat'] ?? ''
+    ];
+
+    error_log("Data pelanggan baru: " . print_r($pelangganData, true));
+
+    // Model harus mengembalikan ID baru jika berhasil
+    $newPelangganId = $this->pelangganModel->create($pelangganData); 
+    if ($newPelangganId) {
+        return $newPelangganId;
+    } else {
+        throw new Exception("Gagal membuat pelanggan baru");
+    }
+}
 
     private function handleHewan($data, $id_pelanggan) {
+        // PERBAIKAN: Gunakan 'jenis_hewan' sesuai dengan form
         $hewanData = [
             'id_pelanggan' => $id_pelanggan,
             'nama_hewan' => $data['nama_hewan'] ?? '',
-            'jenis' => $data['jenis'] ?? '',
+            'jenis' => $data['jenis_hewan'] ?? '', // PERBAIKAN: dari 'jenis' jadi 'jenis_hewan'
             'ras' => $data['ras'] ?? '',
             'ukuran' => $data['ukuran'] ?? '',
             'warna' => $data['warna'] ?? '',
@@ -225,55 +256,77 @@ class TransaksiController extends BaseController { // <--- IMPLEMENTASI PEWARISA
             'status' => 'tersedia' 
         ];
 
-        // KOREKSI ENCAPSULATION: Assume HewanModel::create() mengembalikan lastInsertId.
-        if ($newHewanId = $this->hewanModel->create($hewanData)) { 
-            return $newHewanId;
+        // Create hewan dan ambil ID-nya
+        $result = $this->hewanModel->create($hewanData);
+        if ($result) {
+            return $this->hewanModel->getLastInsertId();
         } else {
             throw new Exception("Gagal membuat data hewan");
         }
     }
 
-    public function read() {
-        // ... (Logika read tetap sama) ...
-    }
-
-    public function update() {
-        // ... (Logika update tetap sama) ...
-    }
-
-    public function delete() {
-        // ... (Logika delete tetap sama) ...
-    }
-
-    public function search() {
-        // ... (Logika search tetap sama) ...
-    }
-
     /**
-     * Menangani proses Check-out (CRUD → Update Status)
-     */
-    public function checkout() {
-        // ... (Logika checkout tetap sama) ...
+ * Menangani proses Check-out (CRUD → Update Status)
+ */
+/**
+ * Menangani proses Check-out (CRUD → Update Status)
+ */
+public function checkout() {
+    error_log("=== CHECKOUT TRANSAKSI DIPANGGIL ===");
+    
+    // Debug data yang diterima
+    error_log("GET Data: " . print_r($_GET, true));
+    error_log("POST Data: " . print_r($_POST, true));
+    
+    $id_transaksi = $_GET['id'] ?? $_POST['id'] ?? null;
+    
+    error_log("ID Transaksi untuk checkout: " . $id_transaksi);
+    
+    if (!$id_transaksi) {
+        error_log("ERROR: ID transaksi kosong");
+        $this->redirect('index.php?page=transaksi&status=error&tab=pengembalian&message=ID+transaksi+tidak+valid');
+        return;
     }
 
-    /**
-     * Memuat tampilan cetak bukti
-     * Menggunakan metode view() yang diwariskan dari BaseController
-     */
-    public function cetakBukti() {
-        if (!isset($_GET['id'])) {
-            $this->redirect('index.php?page=transaksi&status=error&message=ID transaksi diperlukan');
-        }
-
-        $id = $_GET['id'];
-        $transaksiData = $this->transaksiModel->getById($id);
-
-        if (!$transaksiData) {
-            $this->view('404'); // Muat halaman 404 menggunakan metode warisan
-            return;
-        }
+    try {
+        // 1. Update status transaksi menjadi 'completed'
+        error_log("Memproses checkout untuk ID: " . $id_transaksi);
+        $result = $this->transaksiModel->checkout($id_transaksi);
         
-        // Memuat view menggunakan metode warisan (Reusability)
-        $this->view('cetak_bukti', ['transaksiData' => $transaksiData]); // <--- PENGGUNAAN BASECONTROLLER
+        if ($result) {
+            error_log("Checkout berhasil, update kandang dan hewan...");
+            
+            // 2. Ambil data transaksi untuk update kandang dan hewan
+            $transaksi = $this->transaksiModel->getById($id_transaksi);
+            
+            if ($transaksi) {
+                // 3. Update status kandang menjadi 'tersedia'
+                if (!empty($transaksi['id_kandang'])) {
+                    $this->kandangModel->updateStatus($transaksi['id_kandang'], 'tersedia');
+                    error_log("Kandang " . $transaksi['id_kandang'] . " diupdate menjadi tersedia");
+                }
+                
+                // 4. Update status hewan menjadi 'sudah_diambil'
+                if (!empty($transaksi['id_hewan'])) {
+                    $this->hewanModel->updateStatus($transaksi['id_hewan'], 'sudah_diambil');
+                    error_log("Hewan " . $transaksi['id_hewan'] . " diupdate menjadi sudah_diambil");
+                }
+            }
+            
+            error_log("Checkout berhasil, redirect...");
+            // Redirect ke halaman sukses
+            $this->redirect('index.php?page=transaksi&status=success&tab=pengembalian&message=' . urlencode('Checkout berhasil - Hewan sudah dikembalikan'));   
+        } else {
+            throw new Exception("Gagal melakukan checkout di database");
+        }
+
+    } catch (Exception $e) {
+        error_log("Error in checkout transaksi: " . $e->getMessage());
+        $this->redirect('index.php?page=transaksi&status=error&tab=pengembalian&message=' . urlencode($e->getMessage()));
     }
 }
+
+
+}
+
+?>

@@ -11,82 +11,145 @@ class Kandang
     }
 
     /**
-     * Ambil semua data kandang
+     * Ambil semua data kandang yang tersedia
      */
     public function getAll()
     {
-        $sql = "SELECT 
-                    k.id_kandang as id,
-                    k.kode_kandang as kode,
-                    k.tipe,
-                    k.catatan,
-                    k.status
-                FROM kandang k 
-                ORDER BY k.kode_kandang";
+        try {
+            $sql = "SELECT 
+                        k.id_kandang as id, 
+                        k.kode_kandang, 
+                        k.tipe, 
+                        k.status
+                    FROM kandang k 
+                    WHERE k.status = 'tersedia' 
+                    ORDER BY k.kode_kandang";
+            
+            $stmt = $this->db->query($sql);
+            $result = $stmt->fetchAll();
+            
+            error_log("Kandang tersedia: " . count($result) . " records");
+            
+            return $result;
+            
+        } catch (Exception $e) {
+            error_log("ERROR di Kandang::getAll(): " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Update status kandang
+     */
+    public function updateStatus($id_kandang, $status)
+    {
+        try {
+            $sql = "UPDATE kandang SET status = ? WHERE id_kandang = ?";
+            return $this->db->execute($sql, [$status, $id_kandang]);
+        } catch (Exception $e) {
+            error_log("Error update status kandang: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Ambil kandang tersedia berdasarkan jenis dan ukuran hewan
+     */
+    public function getAvailableKandang($jenis, $ukuran)
+    {
+        try {
+            // Logika pemilihan kandang berdasarkan jenis dan ukuran
+            $tipeKandang = [];
+            
+            if ($jenis === 'Kucing') {
+                if ($ukuran === 'Kecil' || $ukuran === 'Sedang' || empty($ukuran)) {
+                    $tipeKandang = ['Kecil', 'Sedang'];
+                } else if ($ukuran === 'Besar') {
+                    $tipeKandang = ['Sedang', 'Besar'];
+                }
+            } else if ($jenis === 'Anjing') {
+                if ($ukuran === 'Kecil' || empty($ukuran)) {
+                    $tipeKandang = ['Sedang'];
+                } else if ($ukuran === 'Sedang') {
+                    $tipeKandang = ['Sedang', 'Besar'];
+                } else if ($ukuran === 'Besar') {
+                    $tipeKandang = ['Besar'];
+                }
+            }
+
+            if (empty($tipeKandang)) {
+                return [];
+            }
+
+            $placeholders = str_repeat('?,', count($tipeKandang) - 1) . '?';
+            $sql = "SELECT 
+                        k.id_kandang as id, 
+                        k.kode_kandang, 
+                        k.tipe, 
+                        k.catatan,
+                        k.status
+                    FROM kandang k 
+                    WHERE k.status = 'tersedia' 
+                    AND k.tipe IN ($placeholders)
+                    ORDER BY k.kode_kandang";
+            
+            $stmt = $this->db->query($sql, $tipeKandang);
+            return $stmt->fetchAll();
+            
+        } catch (Exception $e) {
+            error_log("Error getAvailableKandang: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+ * Hitung jumlah kandang berdasarkan tipe
+ */
+public function countByType()
+{
+    try {
+        $sql = "SELECT tipe, COUNT(*) as jumlah 
+                FROM kandang 
+                WHERE status = 'tersedia' 
+                GROUP BY tipe";
         
         $stmt = $this->db->query($sql);
-        return $stmt->fetchAll();
-    }
-
-    /**
-     * Hitung total kandang berdasarkan tipe
-     */
-    public function countByType($type)
-    {
-        $sql = "SELECT COUNT(*) as total FROM kandang WHERE tipe = ?";
-        $stmt = $this->db->query($sql, [$type]);        
-        $result = $stmt->fetch();
-        return $result['total'] ?? 0;
-    }
-
-    /**
-     * Ambil kandang yang tersedia berdasarkan jenis dan ukuran hewan
-     */
-    public function getAvailableKandang($jenisHewan, $ukuranHewan)
-    {
-        // Tentukan tipe kandang berdasarkan jenis dan ukuran hewan
-        $tipeKandang = 'Kecil'; 
-        if ($jenisHewan === 'Anjing' || $ukuranHewan === 'Besar' || $ukuranHewan === 'Sedang') {
-            $tipeKandang = 'Besar';
-        }
-
-        $sql = "SELECT 
-                    k.id_kandang as id,
-                    k.kode_kandang as kode,
-                    k.tipe,
-                    k.catatan,
-                    k.status
-                FROM kandang k
-                WHERE k.tipe = :tipe 
-                AND k.status = 'tersedia'
-                ORDER BY k.kode_kandang";
+        $result = $stmt->fetchAll();
         
-        $stmt = $this->db->query($sql, ['tipe' => $tipeKandang]);
-        return $stmt->fetchAll();
+        // Format hasil menjadi array asosiatif [tipe => jumlah]
+        $counts = [];
+        foreach ($result as $row) {
+            $counts[$row['tipe']] = $row['jumlah'];
+        }
+        
+        return $counts;
+        
+    } catch (Exception $e) {
+        error_log("Error countByType kandang: " . $e->getMessage());
+        return [];
     }
+}
 
     /**
-     * Ambil data kandang berdasarkan ID
+     * Cek struktur tabel kandang (untuk debugging)
      */
-    public function getById($id)
+    public function checkTableStructure()
     {
-        $sql = "SELECT * FROM kandang WHERE id_kandang = ?";
-        $stmt = $this->db->query($sql, [$id]);
-        return $stmt->fetch();
+        try {
+            $sql = "DESCRIBE kandang";
+            $stmt = $this->db->query($sql);
+            $structure = $stmt->fetchAll();
+            
+            error_log("Struktur tabel kandang:");
+            foreach ($structure as $column) {
+                error_log(" - " . $column['Field'] . " (" . $column['Type'] . ")");
+            }
+            
+            return $structure;
+        } catch (Exception $e) {
+            error_log("Error check table structure: " . $e->getMessage());
+            return [];
+        }
     }
-
-
-public function updateStatus($id, $status) {
-    $allowed = ["tersedia", "terpakai", "maintenance"];
-
-    if (!in_array($status, $allowed)) {
-        $status = "tersedia";
-    }
-
-    $sql = "UPDATE kandang SET status = :status WHERE id_kandang = :id";
-    return $this->db->execute($sql, [
-            "id" => $id,
-            "status" => $status
-        ]);
 }
-}
+?>

@@ -5,7 +5,6 @@
 // controllers/ → berisi logika proses dan request handling
 // views/ → berisi tampilan dengan HTML
 
-
 // Autoload untuk load class otomatis dari /models dan /controllers
 spl_autoload_register(function ($className) {
     $paths = [
@@ -27,12 +26,9 @@ spl_autoload_register(function ($className) {
 // Mulai session untuk login
 session_start();
 
-// Cek apakah ada action (backend routing)
+// Cek apakah ada action (backend routing) - PERBAIKI: DEFINE $action SEBELUM DIGUNAKAN
 $action = $_GET['action'] ?? $_POST['action'] ?? null;
-if (empty($action) && isset($_POST['action'])) {
-    $action = $_POST['action'];
-}
-
+error_log("ACTION REQ: " . ($action ?? 'NULL'));
 
 if ($action) {
     // Routing untuk backend (controllers)
@@ -46,10 +42,7 @@ if ($action) {
             $controller->logout();
             break;
             
-        // PELANGGAN ACTIONS
-        // Di bagian switch($action), pastikan case searchPelanggan ada:
         case 'searchPelanggan':
-        // models/ → berisi class untuk logika data
             require_once __DIR__ . '/models/Pelanggan.php';
             $pelangganModel = new Pelanggan();
             
@@ -63,53 +56,28 @@ if ($action) {
             echo json_encode($results);
             exit;
 
-        // Tambahkan case ini di switch($action) di index.php
         case 'getKandangTersedia':
-        // models/ → berisi class untuk logika data
             require_once __DIR__ . '/models/Kandang.php';
             $kandangModel = new Kandang();
             
             $jenis = $_GET['jenis'] ?? '';
             $ukuran = $_GET['ukuran'] ?? '';
             
-            // Filter kandang berdasarkan jenis dan ukuran hewan
             $kandangTersedia = $kandangModel->getAvailableKandang($jenis, $ukuran);
             
             header('Content-Type: application/json');
             echo json_encode($kandangTersedia);
             exit;
-            // break;
-            
+
         // TRANSAKSI ACTIONS     
         case 'createTransaksi':
             $controller = new TransaksiController();
             $controller->create();
             break;
-        case 'readTransaksi':
+        case 'checkoutTransaksi': // PASTIKAN ADA INI
+            error_log("=== CHECKOUT ACTION DIPANGGIL ===");
             $controller = new TransaksiController();
-            $controller->read();
-            break;
-        case 'updateTransaksi':
-            $controller = new TransaksiController();
-            $controller->update();
-            break;
-        case 'deleteTransaksi':
-            $controller = new TransaksiController();
-            $controller->delete();
-            break;
-        case 'searchTransaksi':
-            $controller = new TransaksiController();
-            $controller->search();
-            break;
-
-        case 'checkoutTransaksi':
-            $controller = new TransaksiController();
-            $controller->checkout(); 
-            break;
-
-        case 'cetakBukti':
-            $controller = new TransaksiController();
-            $controller->cetakBukti($_GET['id']);
+            $controller->checkout();
             break;
 
         default:
@@ -120,17 +88,21 @@ if ($action) {
 }
 
 // Jika tidak ada action, lanjut ke frontend routing (page)
-// views/ → berisi tampilan dengan HTML
 $page = $_GET['page'] ?? 'dashboard';
-error_log("ACTION REQ: " . $action);
-
+error_log("PAGE REQ: " . $page);
 
 switch ($page) {
     case 'dashboard':
         include 'views/dashboard.php';
         break;
     case 'transaksi':
-        include 'views/transaksi.php';
+        error_log("=== LOADING TRANSAKSI CONTROLLER ===");
+        $controller = new TransaksiController();
+        $controller->index();
+        break;
+    case 'checkoutTransaksi':
+        $controller = new TransaksiController();
+        $controller->checkout();
         break;
     case 'layanan':
         include 'views/layanan.php';
@@ -153,6 +125,7 @@ switch ($page) {
         exit;
     case 'cetakbukti':
         include 'views/cetak_bukti.php';
+        break;
     default:
         include 'views/404.php';
         break;

@@ -1,37 +1,28 @@
 <?php
 require_once __DIR__ . '/../core/Database.php';
-
-class Layanan // Menggunakan Encapsulation private $db dan CRUD
+// layanan
+class Layanan 
 {
     private $db;
 
-    public function __construct()
-    {
-    $this->db = new Database();
-    }
+    public function __construct() { $this->db = new Database(); }
 
-    /**
-     * Ambil semua data layanan (READ)
-     */
+    /** Ambil semua data layanan (READ) */
     public function getAll()
     {
-    $sql = "SELECT * FROM layanan ORDER BY nama_layanan";
-    // FIX: query() sudah benar untuk SELECT
-    $stmt = $this->db->query($sql);
-    return $stmt->fetchAll();
+        $sql = "SELECT * FROM layanan ORDER BY nama_layanan";
+        $stmt = $this->db->query($sql); // FIX: Hapus $stmt->execute()
+        return $stmt->fetchAll();
     }
 
-    /**
-     * Ambil data layanan berdasarkan ID (READ)
-     */
+    /** Ambil data layanan berdasarkan ID (READ) */
     public function getById($id)
     {
-    $sql = "SELECT * FROM layanan WHERE id_layanan = ?";
-    // FIX: query() sudah benar untuk SELECT dengan parameter
-    $stmt = $this->db->query($sql, [$id]);
-    return $stmt->fetch();
+        $sql = "SELECT * FROM layanan WHERE id_layanan = ?";
+        $stmt = $this->db->query($sql, [$id]); // FIX: Hapus $stmt->execute()
+        return $stmt->fetch();
     }
-
+    
     /**
      * CREATE layanan baru
      */

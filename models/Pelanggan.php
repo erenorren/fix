@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../core/Database.php';
-
+// pelanggan
 class Pelanggan
 {
     private $db;
@@ -12,42 +12,49 @@ class Pelanggan
 
     /**
      * Ambil semua data pelanggan (READ)
+     * Menggunakan alias: id, nama, hp (Wajib sesuai yang dicari di View)
      */
     public function getAll()
     {
         $sql = "SELECT p.id_pelanggan as id, p.kode_pelanggan as kode, p.nama_pelanggan as nama, p.no_hp as hp, p.alamat FROM pelanggan p ORDER BY p.nama_pelanggan";
-        $stmt = $this->db->query($sql); // FIX: Menggunakan query()
+        $stmt = $this->db->query($sql); // FIX: Query sudah dieksekusi
         return $stmt->fetchAll();
     }
     
     /**
      * Tambah pelanggan baru (CREATE)
      */
-    public function create($data)
-    {
-        try {
-            $kode = $this->generateKodePelanggan();
-            $sql = "INSERT INTO pelanggan (kode_pelanggan, nama_pelanggan, no_hp, alamat) VALUES (:kode_pelanggan, :nama_pelanggan, :no_hp, :alamat)";
-
-            // FIX: Menggunakan execute() untuk INSERT
-            $result = $this->db->execute($sql, [
-                "kode_pelanggan" => $kode,
-                "nama_pelanggan" => $data["nama_pelanggan_baru"] ?? $data["search_pemilik"],
-                "no_hp" => $data["no_hp"],
-                "alamat" => $data["alamat"] ?? null,
-            ]);
-            
-            if ($result) {
-                return $this->db->lastInsertId();
-            }
-            return false;
-
-        } catch (Exception $e) {
-            error_log("Error create pelanggan: " . $e->getMessage());
-            return false;
+    public function create($data) {
+    try {
+        $kode = $this->generateKodePelanggan();
+        
+        // VALIDASI: Pastikan nama_pelanggan tidak kosong
+        $nama_pelanggan = trim($data['nama_pelanggan'] ?? '');
+        if (empty($nama_pelanggan)) {
+            throw new Exception("Nama pelanggan tidak boleh kosong");
         }
+        
+        $sql = "INSERT INTO pelanggan (kode_pelanggan, nama_pelanggan, no_hp, alamat) 
+                VALUES (:kode_pelanggan, :nama_pelanggan, :no_hp, :alamat)";
+
+        $result = $this->db->execute($sql, [
+            "kode_pelanggan" => $kode,
+            "nama_pelanggan" => $nama_pelanggan,
+            "no_hp" => $data['no_hp'] ?? '',
+            "alamat" => $data['alamat'] ?? '',
+        ]);
+        
+        if ($result) {
+            return $this->db->lastInsertId();
+        }
+        return false;
+
+    } catch (Exception $e) {
+        error_log("Error create pelanggan: " . $e->getMessage());
+        return false;
     }
-    
+}
+
     /**
      * Update data pelanggan (UPDATE)
      */
@@ -67,7 +74,7 @@ class Pelanggan
             return false;
         }
     }
-
+    
     /**
      * Hapus pelanggan (DELETE)
      */
@@ -76,7 +83,7 @@ class Pelanggan
         try {
             // Cek hewan (READ)
             $sqlCheck = "SELECT COUNT(*) as total FROM hewan WHERE id_pelanggan = :id";
-            $stmtCheck = $this->db->query($sqlCheck, ["id" => $id]); // FIX: Menggunakan query()
+            $stmtCheck = $this->db->query($sqlCheck, ["id" => $id]); 
             $result = $stmtCheck->fetch();
 
             if ($result['total'] > 0) { return false; }
@@ -90,76 +97,49 @@ class Pelanggan
             return false;
         }
     }
-    
+
     /**
      * Generate kode pelanggan otomatis (Helper)
      */
     private function generateKodePelanggan()
     {
         $sql = "SELECT MAX(CAST(SUBSTRING(kode_pelanggan, 4) AS UNSIGNED)) as max_number FROM pelanggan WHERE kode_pelanggan LIKE 'PLG%'";
-        $stmt = $this->db->query($sql); // FIX: Menggunakan query()
+        $stmt = $this->db->query($sql);
         $result = $stmt->fetch();
         $nextNumber = ($result['max_number'] ?? 0) + 1;
         return 'PLG' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
     }
-
+    
     /**
-     * Cari pelanggan berdasarkan nama/no HP
-     */
-    public function search($keyword)
-    {
-        $sql = "SELECT 
-                    p.id_pelanggan as id,
-                    p.kode_pelanggan as kode,
-                    p.nama_pelanggan as nama,
-                    p.no_hp as hp,
-                    p.alamat
-                FROM pelanggan p
-                WHERE p.nama_pelanggan LIKE :keyword
-                OR p.no_hp LIKE :keyword
-                OR p.kode_pelanggan LIKE :keyword
-                ORDER BY p.nama_pelanggan";
-
-        $stmt = $this->db->query($sql);
-        $stmt->execute(["keyword" => "%{$keyword}%"]);
-        return $stmt->fetchAll();
-    }
-
-    /**
-     * Hitung total pelanggan
+     * Hitung total pelanggan (READ)
      */
     public function getTotalCount()
     {
         $sql = "SELECT COUNT(*) as total FROM pelanggan";
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->query($sql); // FIX: Hapus $stmt->execute() yang berlebihan
         $result = $stmt->fetch();
         return $result['total'] ?? 0;
     }
 
     /**
-     * Ambil data untuk dropdown
+     * Ambil data untuk dropdown (READ)
      */
     public function getForDropdown()
     {
-        $sql = "SELECT 
-                    p.id_pelanggan as id,
-                    p.kode_pelanggan as kode,
-                    p.nama_pelanggan as nama
+        $sql = "SELECT p.id_pelanggan as id, p.kode_pelanggan as kode, p.nama_pelanggan as nama
                 FROM pelanggan p
                 ORDER BY p.nama_pelanggan";
 
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->query($sql); // FIX: Hapus $stmt->execute() yang berlebihan
         return $stmt->fetchAll();
     }
 
     /**
-     * Cek apakah no HP sudah terdaftar
+     * Cek apakah no HP sudah terdaftar (READ)
      */
     public function isPhoneExists($no_hp, $exclude_id = null)
     {
-        $sql = "SELECT COUNT(*) as total 
-                FROM pelanggan 
-                WHERE no_hp = :no_hp";
+        $sql = "SELECT COUNT(*) as total FROM pelanggan WHERE no_hp = :no_hp";
         
         $params = ["no_hp" => $no_hp];
 
@@ -168,12 +148,12 @@ class Pelanggan
             $params["exclude_id"] = $exclude_id;
         }
 
-        $stmt = $this->db->query($sql, $params);
+        $stmt = $this->db->query($sql, $params); // FIX: Gunakan query($sql, $params)
         $result = $stmt->fetch();
         return ($result['total'] ?? 0) > 0;
-}
-public function getLastInsertId() {
-    return $this->db->lastInsertId();
-}
-
+    }
+    
+    public function getLastInsertId() {
+        return $this->db->lastInsertId();
+    }
 }
