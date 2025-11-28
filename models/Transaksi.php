@@ -133,6 +133,23 @@ public function checkout($id)
         return $stmt->fetch();
     }
 
+    public function getTotalHewanAktif() {
+    $sql = "SELECT COUNT(*) as total FROM transaksi WHERE status = 'active'";
+    $stmt = $this->db->query($sql);
+    $result = $stmt->fetch();
+    return $result['total'] ?? 0;
+}
+
+public function getTotalHewanAktifByJenis($jenis) {
+    $sql = "SELECT COUNT(*) as total 
+            FROM transaksi t 
+            JOIN hewan h ON t.id_hewan = h.id_hewan 
+            WHERE t.status = 'active' AND h.jenis = ?";
+    $stmt = $this->db->query($sql, [$jenis]);
+    $result = $stmt->fetch();
+    return $result['total'] ?? 0;
+}
+
     /**
      * Helper: Generate kode transaksi
      * KOREKSI: Gunakan $this->db->query()

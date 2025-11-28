@@ -26,9 +26,8 @@ spl_autoload_register(function ($className) {
 // Mulai session untuk login
 session_start();
 
-// Cek apakah ada action (backend routing) - PERBAIKI: DEFINE $action SEBELUM DIGUNAKAN
+// Cek apakah ada action (backend routing)
 $action = $_GET['action'] ?? $_POST['action'] ?? null;
-error_log("ACTION REQ: " . ($action ?? 'NULL'));
 
 if ($action) {
     // Routing untuk backend (controllers)
@@ -47,10 +46,17 @@ if ($action) {
             $pelangganModel = new Pelanggan();
             
             $keyword = $_GET['q'] ?? '';
-            error_log("Searching pelanggan with keyword: " . $keyword);
             
-            $results = $pelangganModel->searchForAutocomplete($keyword);
-            error_log("Found " . count($results) . " results");
+            // Gunakan method getAll() yang sudah ada dan filter manual
+            $allPelanggan = $pelangganModel->getAll();
+            $results = [];
+            
+            foreach ($allPelanggan as $pelanggan) {
+                if (stripos($pelanggan['nama'], $keyword) !== false || 
+                    stripos($pelanggan['hp'], $keyword) !== false) {
+                    $results[] = $pelanggan;
+                }
+            }
             
             header('Content-Type: application/json');
             echo json_encode($results);
@@ -74,8 +80,7 @@ if ($action) {
             $controller = new TransaksiController();
             $controller->create();
             break;
-        case 'checkoutTransaksi': // PASTIKAN ADA INI
-            error_log("=== CHECKOUT ACTION DIPANGGIL ===");
+        case 'checkoutTransaksi':
             $controller = new TransaksiController();
             $controller->checkout();
             break;
@@ -89,20 +94,14 @@ if ($action) {
 
 // Jika tidak ada action, lanjut ke frontend routing (page)
 $page = $_GET['page'] ?? 'dashboard';
-error_log("PAGE REQ: " . $page);
 
 switch ($page) {
     case 'dashboard':
         include 'views/dashboard.php';
         break;
     case 'transaksi':
-        error_log("=== LOADING TRANSAKSI CONTROLLER ===");
         $controller = new TransaksiController();
         $controller->index();
-        break;
-    case 'checkoutTransaksi':
-        $controller = new TransaksiController();
-        $controller->checkout();
         break;
     case 'layanan':
         include 'views/layanan.php';
@@ -123,9 +122,6 @@ switch ($page) {
         session_destroy();
         header('Location: index.php?page=login');
         exit;
-    case 'cetakbukti':
-        include 'views/cetak_bukti.php';
-        break;
     default:
         include 'views/404.php';
         break;

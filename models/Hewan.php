@@ -28,7 +28,7 @@ class Hewan
                     p.nama_pelanggan as pemilik
                 FROM hewan h
                 LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan
-                ORDER BY h.nama_hewan";
+                ORDER BY h.id_hewan DESC"; // URUTKAN
         
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
