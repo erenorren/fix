@@ -53,11 +53,4 @@ class AuthController {
         exit;
     }
     
-    /**
-     * Metode untuk menampilkan view login (Dipanggil dari index.php)
-     */
-    public function showLogin() {
-         // Memuat view login
-         include __DIR__ . '/../views/login.php';
-    }
 }

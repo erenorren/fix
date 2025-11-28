@@ -45,32 +45,24 @@ class TransaksiController extends BaseController {
         $this->view('transaksi', $data); 
     }
 
-    /**
-     * Menangani proses Check-in (CRUD → Create)
-     */
+
 /**
  * Menangani proses Check-in (CRUD → Create)
  */
 public function create() {
-    error_log("=== CREATE TRANSAKSI DIPANGGIL ===");
-    
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        return $this->redirect('index.php?page=transaksi&status=error&message=Method not allowed&tab=pendaftaran');
-    }
-
     try {
-        // Validasi data required
+        // Validasi data 
         if (empty($_POST['id_layanan']) || empty($_POST['id_kandang']) || empty($_POST['nama_hewan'])) {
             throw new Exception("Data required tidak lengkap");
         }
 
-        // 1. Handle Pelanggan
+        // Handle Pelanggan
         $id_pelanggan = $this->handlePelanggan($_POST);
         
-        // 2. Handle Hewan
+        // Handle Hewan
         $id_hewan = $this->handleHewan($_POST, $id_pelanggan);
         
-        // 3. Hitung biaya
+        // Hitung biaya
         $biayaData = $this->hitungBiaya($_POST);
         
         // 4. Prepare transaksi data
@@ -85,23 +77,22 @@ public function create() {
             'total_biaya' => $biayaData['total_biaya']
         ];
 
-        error_log("Data transaksi: " . print_r($transaksiData, true));
 
-        // 5. Create transaksi
+        // Create transaksi
         $id_transaksi = $this->transaksiModel->create($transaksiData);
         if (!$id_transaksi) {
             throw new Exception("Gagal membuat transaksi utama");
         }
 
-        // 6. SELALU BUAT DETAIL TRANSAKSI (paket utama + layanan tambahan)
+        // BUAT DETAIL TRANSAKSI (paket utama + layanan tambahan)
         $this->handleDetailTransaksi($_POST, $id_transaksi, $biayaData);
         
-        // 7. Update status kandang dan hewan
+        // Update status kandang dan hewan
         $this->kandangModel->updateStatus($transaksiData['id_kandang'], 'terpakai');
         $this->hewanModel->updateStatus($id_hewan, 'sedang_dititipan');
         
 
-        // Redirect ke halaman sukses dengan custom message
+        // custom message
         $this->redirect('index.php?page=transaksi&status=success&tab=pendaftaran&id=' . $id_transaksi . '&message=' . urlencode('Penitipan hewan berhasil didaftarkan'));
     } catch (Exception $e) {
         error_log("Error in create transaksi: " . $e->getMessage());
@@ -265,37 +256,22 @@ private function handleDetailTransaksi($data, $id_transaksi, $biayaData) {
         }
     }
 
-    /**
- * Menangani proses Check-out (CRUD → Update Status)
- */
 /**
  * Menangani proses Check-out (CRUD → Update Status)
  */
 public function checkout() {
-    error_log("=== CHECKOUT TRANSAKSI DIPANGGIL ===");
-    
-    // Debug data yang diterima
-    error_log("GET Data: " . print_r($_GET, true));
-    error_log("POST Data: " . print_r($_POST, true));
-    
     $id_transaksi = $_GET['id'] ?? $_POST['id'] ?? null;
-    
-    error_log("ID Transaksi untuk checkout: " . $id_transaksi);
-    
+        
     if (!$id_transaksi) {
-        error_log("ERROR: ID transaksi kosong");
         $this->redirect('index.php?page=transaksi&status=error&tab=pengembalian&message=ID+transaksi+tidak+valid');
         return;
     }
 
     try {
         // 1. Update status transaksi menjadi 'completed'
-        error_log("Memproses checkout untuk ID: " . $id_transaksi);
         $result = $this->transaksiModel->checkout($id_transaksi);
         
-        if ($result) {
-            error_log("Checkout berhasil, update kandang dan hewan...");
-            
+        if ($result) {            
             // 2. Ambil data transaksi untuk update kandang dan hewan
             $transaksi = $this->transaksiModel->getById($id_transaksi);
             
@@ -303,17 +279,14 @@ public function checkout() {
                 // 3. Update status kandang menjadi 'tersedia'
                 if (!empty($transaksi['id_kandang'])) {
                     $this->kandangModel->updateStatus($transaksi['id_kandang'], 'tersedia');
-                    error_log("Kandang " . $transaksi['id_kandang'] . " diupdate menjadi tersedia");
                 }
                 
                 // 4. Update status hewan menjadi 'sudah_diambil'
                 if (!empty($transaksi['id_hewan'])) {
                     $this->hewanModel->updateStatus($transaksi['id_hewan'], 'sudah_diambil');
-                    error_log("Hewan " . $transaksi['id_hewan'] . " diupdate menjadi sudah_diambil");
                 }
             }
             
-            error_log("Checkout berhasil, redirect...");
             // Redirect ke halaman sukses
             $this->redirect('index.php?page=transaksi&status=success&tab=pengembalian&message=' . urlencode('Checkout berhasil - Hewan sudah dikembalikan'));   
         } else {

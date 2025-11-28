@@ -78,7 +78,7 @@ class Kandang
     public function getAvailableKandang($jenis, $ukuran)
     {
         try {
-            // Logika pemilihan kandang berdasarkan jenis dan ukuran
+            // pemilihan kandang berdasarkan jenis dan ukuran
             $tipeKandang = [];
             
             if ($jenis === 'Kucing') {
