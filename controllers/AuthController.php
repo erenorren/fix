@@ -10,7 +10,7 @@ class AuthController {
     }
 
     /**
-     * Menangani proses login via AJAX (dari form login)
+     * Menangani proses login
      */
     public function login() {
         if (session_status() == PHP_SESSION_NONE) {

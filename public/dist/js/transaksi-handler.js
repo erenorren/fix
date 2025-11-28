@@ -285,7 +285,7 @@ if (btnPilihKandang) {
         validateKandang();
     }
 
-    // PERBAIKAN: Hanya reset pilihan, TIDAK auto-trigger filter
+    // hanya reset pilihan, TIDAK auto-trigger filter
     if (jenisHewanSelect) {
         jenisHewanSelect.addEventListener('change', resetKandangPilihan);
     }
@@ -295,10 +295,8 @@ if (btnPilihKandang) {
     
     validateKandang();
 }
-
-    // =============================================
     // 4. FORM SUBMIT HANDLER & VALIDASI PENDAFTARAN
-    // =============================================
+
     if (formPendaftaran) {
         
         function validateForm(event) {

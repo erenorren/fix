@@ -75,51 +75,50 @@ class Kandang
     /**
      * Ambil kandang tersedia berdasarkan jenis dan ukuran hewan
      */
-    public function getAvailableKandang($jenis, $ukuran)
-    {
-        try {
-            // pemilihan kandang berdasarkan jenis dan ukuran
-            $tipeKandang = [];
-            
-            if ($jenis === 'Kucing') {
-                if ($ukuran === 'Kecil' || $ukuran === 'Sedang' || empty($ukuran)) {
-                    $tipeKandang = ['Kecil', 'Sedang'];
-                } else if ($ukuran === 'Besar') {
-                    $tipeKandang = ['Sedang', 'Besar'];
-                }
-            } else if ($jenis === 'Anjing') {
-                if ($ukuran === 'Kecil' || empty($ukuran)) {
-                    $tipeKandang = ['Sedang'];
-                } else if ($ukuran === 'Sedang') {
-                    $tipeKandang = ['Sedang', 'Besar'];
-                } else if ($ukuran === 'Besar') {
-                    $tipeKandang = ['Besar'];
-                }
+public function getAvailableKandang($jenis, $ukuran) {
+    try {
+        $tipeKandang = [];
+        
+        if ($jenis === 'Kucing') {
+            switch ($ukuran) {
+                case 'Kecil': $tipeKandang = ['Kecil']; break;
+                case 'Sedang': $tipeKandang = ['Sedang']; break;
+                case 'Besar': $tipeKandang = ['Besar']; break;
+                default: $tipeKandang = ['Kecil', 'Sedang', 'Besar']; break;
             }
-
-            if (empty($tipeKandang)) {
-                return [];
+        } 
+        else if ($jenis === 'Anjing') {
+            switch ($ukuran) {
+                case 'Kecil': $tipeKandang = ['Sedang']; break;
+                case 'Sedang': $tipeKandang = ['Sedang', 'Besar']; break;
+                case 'Besar': $tipeKandang = ['Besar']; break;
+                default: $tipeKandang = ['Sedang', 'Besar']; break;
             }
+        }
 
-            $placeholders = str_repeat('?,', count($tipeKandang) - 1) . '?';
-            $sql = "SELECT 
-                        k.id_kandang as id, 
-                        k.kode_kandang, 
-                        k.tipe, 
-                        k.status
-                    FROM kandang k 
-                    WHERE k.status = 'tersedia' 
-                    AND k.tipe IN ($placeholders)
-                    ORDER BY k.kode_kandang";
-            
-            $stmt = $this->db->query($sql, $tipeKandang);
-            return $stmt->fetchAll();
-            
-        } catch (Exception $e) {
-            error_log("Error getAvailableKandang: " . $e->getMessage());
+        if (empty($tipeKandang)) {
             return [];
         }
+
+        $placeholders = str_repeat('?,', count($tipeKandang) - 1) . '?';
+        $sql = "SELECT 
+                    k.id_kandang as id, 
+                    k.kode_kandang, 
+                    k.tipe, 
+                    k.status
+                FROM kandang k 
+                WHERE k.status = 'tersedia' 
+                AND k.tipe IN ($placeholders)
+                ORDER BY k.kode_kandang";
+        
+        $stmt = $this->db->query($sql, $tipeKandang);
+        return $stmt->fetchAll();
+        
+    } catch (Exception $e) {
+        error_log("Error getAvailableKandang: " . $e->getMessage());
+        return [];
     }
+}
 
     /**
      * Hitung jumlah kandang berdasarkan tipe
