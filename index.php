@@ -1,10 +1,4 @@
 <?php
-
-// Struktur folder MVC : index.php - Entry Point Gabungan (Frontend + Backend)
-// models/ → berisi class untuk logika data
-// controllers/ → berisi logika proses dan request handling
-// views/ → berisi tampilan dengan HTML
-
 // Autoload untuk load class otomatis dari /models dan /controllers
 spl_autoload_register(function ($className) {
     $paths = [
@@ -14,7 +8,6 @@ spl_autoload_register(function ($className) {
     ];
     foreach ($paths as $path) {
         if (file_exists($path)) {
-            // Cek jika class sudah ada untuk menghindari duplicate
             if (!class_exists($className)) {
                 require_once $path;
             }
@@ -117,6 +110,10 @@ switch ($page) {
         break;
     case 'login':
         include 'views/login.php';
+        break;
+    // Di section $page, tambahkan:
+    case 'kandang':
+        include 'views/kandang.php';
         break;
     case 'logout':
         session_destroy();

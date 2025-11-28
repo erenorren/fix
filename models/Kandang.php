@@ -11,7 +11,7 @@ class Kandang
     }
 
     /**
-     * Ambil semua data kandang yang tersedia
+     * Ambil semua data kandang yang tersedia (untuk transaksi)
      */
     public function getAll()
     {
@@ -26,14 +26,34 @@ class Kandang
                     ORDER BY k.kode_kandang";
             
             $stmt = $this->db->query($sql);
-            $result = $stmt->fetchAll();
-            
-            error_log("Kandang tersedia: " . count($result) . " records");
-            
-            return $result;
+            return $stmt->fetchAll();
             
         } catch (Exception $e) {
             error_log("ERROR di Kandang::getAll(): " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Ambil semua data kandang (untuk halaman data kandang)
+     */
+    public function getAllKandang()
+    {
+        try {
+            $sql = "SELECT 
+                        k.id_kandang as id, 
+                        k.kode_kandang, 
+                        k.tipe, 
+                        k.status,
+                        k.catatan
+                    FROM kandang k 
+                    ORDER BY k.kode_kandang";
+            
+            $stmt = $this->db->query($sql);
+            return $stmt->fetchAll();
+            
+        } catch (Exception $e) {
+            error_log("ERROR di Kandang::getAllKandang(): " . $e->getMessage());
             return [];
         }
     }
@@ -86,7 +106,6 @@ class Kandang
                         k.id_kandang as id, 
                         k.kode_kandang, 
                         k.tipe, 
-                        k.catatan,
                         k.status
                     FROM kandang k 
                     WHERE k.status = 'tersedia' 
@@ -103,52 +122,30 @@ class Kandang
     }
 
     /**
- * Hitung jumlah kandang berdasarkan tipe
- */
-public function countByType()
-{
-    try {
-        $sql = "SELECT tipe, COUNT(*) as jumlah 
-                FROM kandang 
-                WHERE status = 'tersedia' 
-                GROUP BY tipe";
-        
-        $stmt = $this->db->query($sql);
-        $result = $stmt->fetchAll();
-        
-        // Format hasil menjadi array asosiatif [tipe => jumlah]
-        $counts = [];
-        foreach ($result as $row) {
-            $counts[$row['tipe']] = $row['jumlah'];
-        }
-        
-        return $counts;
-        
-    } catch (Exception $e) {
-        error_log("Error countByType kandang: " . $e->getMessage());
-        return [];
-    }
-}
-
-    /**
-     * Cek struktur tabel kandang (untuk debugging)
+     * Hitung jumlah kandang berdasarkan tipe
      */
-    public function checkTableStructure()
+    public function countByType()
     {
         try {
-            $sql = "DESCRIBE kandang";
-            $stmt = $this->db->query($sql);
-            $structure = $stmt->fetchAll();
+            $sql = "SELECT tipe, COUNT(*) as jumlah 
+                    FROM kandang 
+                    WHERE status = 'tersedia' 
+                    GROUP BY tipe";
             
-            error_log("Struktur tabel kandang:");
-            foreach ($structure as $column) {
-                error_log(" - " . $column['Field'] . " (" . $column['Type'] . ")");
+            $stmt = $this->db->query($sql);
+            $result = $stmt->fetchAll();
+            
+            // Format hasil menjadi array asosiatif [tipe => jumlah]
+            $counts = [];
+            foreach ($result as $row) {
+                $counts[$row['tipe']] = $row['jumlah'];
             }
             
-            return $structure;
+            return $counts;
+            
         } catch (Exception $e) {
-            error_log("Error check table structure: " . $e->getMessage());
-            return [];
+            error_log("Error countByType kandang: " . $e->getMessage());
+            return ['Kecil' => 0, 'Sedang' => 0, 'Besar' => 0];
         }
     }
 }
