@@ -19,7 +19,7 @@ spl_autoload_register(function ($className) {
 // Mulai session untuk login
 session_start();
 
-// Cek apakah ada action (backend routing)
+// Cek 
 $action = $_GET['action'] ?? $_POST['action'] ?? null;
 
 if ($action) {
