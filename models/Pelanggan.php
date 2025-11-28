@@ -56,49 +56,7 @@ class Pelanggan
     }
 }
 
-    /**
-     * Update data pelanggan (UPDATE)
-     */
-    public function update($id, $data)
-    {
-        try {
-            $sql = "UPDATE pelanggan SET nama_pelanggan = :nama_pelanggan, no_hp = :no_hp, alamat = :alamat WHERE id_pelanggan = :id";
-            // FIX: Menggunakan execute() untuk UPDATE
-            return $this->db->execute($sql, [
-                "id" => $id,
-                "nama_pelanggan" => $data["nama_pelanggan"],
-                "no_hp" => $data["no_hp"],
-                "alamat" => $data["alamat"] ?? null,
-            ]);
-        } catch (Exception $e) {
-            error_log("Error update pelanggan: " . $e->getMessage());
-            return false;
-        }
-    }
     
-    /**
-     * Hapus pelanggan (DELETE)
-     */
-    public function delete($id)
-    {
-        try {
-            // Cek hewan (READ)
-            $sqlCheck = "SELECT COUNT(*) as total FROM hewan WHERE id_pelanggan = :id";
-            $stmtCheck = $this->db->query($sqlCheck, ["id" => $id]); 
-            $result = $stmtCheck->fetch();
-
-            if ($result['total'] > 0) { return false; }
-
-            $sql = "DELETE FROM pelanggan WHERE id_pelanggan = :id";
-            // FIX: Menggunakan execute() untuk DELETE
-            return $this->db->execute($sql, ["id" => $id]);
-
-        } catch (Exception $e) {
-            error_log("Error delete pelanggan: " . $e->getMessage());
-            return false;
-        }
-    }
-
     /**
      * Generate kode pelanggan otomatis (Helper)
      */
