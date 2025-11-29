@@ -8,9 +8,9 @@ class Database {
     private $database;
     private $connection;
     private $port;
-    private $charset = 'utf8mb4';
     
     public function __construct() {
+        // die('Access DB');
         // 1. Include konfigurasi database
         require_once __DIR__ . '/../config/database.php';
         
@@ -24,12 +24,8 @@ class Database {
         $this->database = $config['dbname'];
         $this->port = $config['port'];
         
-        $this->connect();
-    }
-    
-    private function connect() {
         try {
-            $dsn = "mysql:host={$this->host};port={$this->port};dbname={$this->database};charset={$this->charset}";
+            $dsn = "{$config['driver']}:host={$this->host};port={$this->port};dbname={$this->database};sslmode={$config['sslmode']}";
             
             $options = [
                 PDO::ATTR_ERRMODE           => PDO::ERRMODE_EXCEPTION,

@@ -17,7 +17,7 @@
         crossorigin="anonymous"></script>
 
 <!-- AdminLTE v4 JS -->
-<script src="public/dist/js/adminlte.js"></script>
+<script src="<?= $base_url ?>/public/js/adminlte.js"></script>
 
 <!-- Sidebar dropdown "Data" (Hewan / Pelanggan / Layanan) -->
 <script>

@@ -1,7 +1,6 @@
 <?php
 $pageTitle = 'Dashboard';
 $activeMenu = 'dashboard';
-include __DIR__ . '/template/header.php';
 
 // Load data
 require_once __DIR__ . '/../models/Hewan.php';
@@ -9,6 +8,7 @@ require_once __DIR__ . '/../models/Transaksi.php';
 require_once __DIR__ . '/../models/Kandang.php';
 
 $hewanModel = new Hewan();
+// die('Access Dashboard');
 $transaksiModel = new Transaksi();
 $kandangModel = new Kandang();
 
@@ -17,6 +17,9 @@ $totalHewanDititipkan = $transaksiModel->getTotalHewanAktif();
 $totalKucingDititipkan = $transaksiModel->getTotalHewanAktifByJenis('Kucing');
 $totalAnjingDititipkan = $transaksiModel->getTotalHewanAktifByJenis('Anjing');
 $kandangTersedia = $kandangModel->countByType();
+
+// Tampilkan halaman
+include __DIR__ . '/template/header.php';
 ?>
 
 <h2 class="mb-4">Dashboard</h2>

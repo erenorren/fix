@@ -1,4 +1,4 @@
-// public/dist/js/transaksi-handler.js
+// /js/transaksi-handler.js
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log("=== SCRIPT TRANSAKSI DIMULAI (External) ===");

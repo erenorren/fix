@@ -349,6 +349,6 @@ include __DIR__ . '/template/header.php';
         hewanMenginap: <?= json_encode($hewanMenginap ?? []) ?>
     };
 </script>
-<script src="public/dist/js/transaksi-handler.js"></script> 
+<script src="<?= $base_url ?>/public/js/transaksi-handler.js"></script> 
 
 <?php include __DIR__ . '/template/footer.php'; ?>

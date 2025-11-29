@@ -35,7 +35,7 @@ if ($action) {
             break;
             
         case 'searchPelanggan':
-            require_once __DIR__ . '/models/Pelanggan.php';
+            require_once __DIR__ . '/../models/Pelanggan.php';
             $pelangganModel = new Pelanggan();
             
             $keyword = $_GET['q'] ?? '';
@@ -56,7 +56,7 @@ if ($action) {
             exit;
 
         case 'getKandangTersedia':
-            require_once __DIR__ . '/models/Kandang.php';
+            require_once __DIR__ . '/../models/Kandang.php';
             $kandangModel = new Kandang();
             
             $jenis = $_GET['jenis'] ?? '';
@@ -90,36 +90,36 @@ $page = $_GET['page'] ?? 'dashboard';
 
 switch ($page) {
     case 'dashboard':
-        include 'views/dashboard.php';
+        include __DIR__ . '/../views/dashboard.php';
         break;
     case 'transaksi':
         $controller = new TransaksiController();
         $controller->index();
         break;
     case 'layanan':
-        include 'views/layanan.php';
+        include __DIR__ . '/../views/layanan.php';
         break;
     case 'hewan':
-        include 'views/hewan.php';
+        include __DIR__ . '/../views/hewan.php';
         break;
     case 'pemilik':
-        include 'views/pelanggan.php';
+        include __DIR__ . '/../views/pelanggan.php';
         break;
     case 'laporan':
-        include 'views/laporan.php';
+        include __DIR__ . '/../views/laporan.php';
         break;
     case 'login':
-        include 'views/login.php';
+        include __DIR__ . '/../views/login.php';
         break;
     // Di section $page, tambahkan:
     case 'kandang':
-        include 'views/kandang.php';
+        include __DIR__ . '/../views/kandang.php';
         break;
     case 'logout':
         session_destroy();
         header('Location: index.php?page=login');
         exit;
     default:
-        include 'views/404.php';
+        include __DIR__ . '/../views/404.php';
         break;
 }

@@ -6,6 +6,14 @@ if (session_status() === PHP_SESSION_NONE) {
 if (!isset($pageTitle)) {
     $pageTitle = 'Sistem Penitipan Hewan';
 }
+
+$host = $_SERVER['HTTP_HOST'];
+
+if (strpos($host, 'localhost') !== false) {
+    $base_url = 'http://' . $host;
+} else {
+    $base_url = 'https://' . $host;
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -16,11 +24,11 @@ if (!isset($pageTitle)) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- AdminLTE v4 CSS -->
-    <!-- <link rel="stylesheet" href="public/dist/css/adminlte.css">
-    <link rel="stylesheet" href="public/dist/css/custom.css"> -->
+    <!-- <link rel="stylesheet" href="<?= $base_url ?>/css/adminlte.css">
+    <link rel="stylesheet" href="<?= $base_url ?>/css/custom.css"> -->
 
-    <link rel="stylesheet" href="/public/dist/css/adminlte.css">
-    <link rel="stylesheet" href="/public/dist/css/custom.css">
+    <link rel="stylesheet" href="<?= $base_url ?>/css/adminlte.css">
+    <link rel="stylesheet" href="<?= $base_url ?>/css/custom.css">
     <!-- Bootstrap Icons (ikon di sidebar/nav) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
@@ -60,7 +68,7 @@ if (!isset($pageTitle)) {
         <main class="app-main">
             <div class="app-content p-3">
                 <script>
-                    document.addEventListener('DOMContentLoaded', function() {
+                    document.addEventListener('DOMContentLoaded', function () {
                         const paketSelect = document.getElementById('paketSelect'); // select Layanan Utama
                         const dropdownBtn = document.getElementById('dropdownLayananTambahan'); // tombol dropdown
                         const labelSpan = document.getElementById('ltLabel'); // teks di tombol

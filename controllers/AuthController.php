@@ -19,7 +19,8 @@ class AuthController {
 
         $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
-
+        // var_dump($username);
+        
         if (empty($username) || empty($password)) {
             echo json_encode(['error' => 'Username dan password harus diisi']);
             return;

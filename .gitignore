@@ -8,3 +8,4 @@
 # Tambahkan Dockerfile dan default.conf jika Anda tidak ingin meng-commit-nya
 # Dockerfile 
 # default.conf
+.vercel

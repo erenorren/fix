@@ -1,6 +1,7 @@
 <?php
 // pastikan variabel halaman ada
 $currentPage = $page ?? ($activeMenu ?? 'dashboard');
+// di include dari header (dapat akses $base_url)
 ?>
 
 <aside class="app-sidebar modern-sidebar bg-primary-blue">
@@ -8,7 +9,7 @@ $currentPage = $page ?? ($activeMenu ?? 'dashboard');
   <!-- Brand -->
   <div class="sidebar-brand d-flex align-items-center">
     <div class="brand-logo-circle me-2">
-      <img src="img/Logo.png" class="brand-logo-img" alt="Logo">
+      <img src="<?= $base_url ?>/img/logo.png" class="brand-logo-img" alt="Logo">
     </div>
     <div class="d-flex flex-column">
       <span class="brand-name text-white fw-bold">SIP Hewan</span>

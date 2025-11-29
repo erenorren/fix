@@ -1,19 +1,22 @@
 <?php
-/**
- * Database Connection Configuration (Hanya Menyimpan Data Konfigurasi Lokal)
- * Hapus semua logika getenv() / Railway.
- */
+require __DIR__ . '/../vendor/autoload.php';
 
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . "/../");
+$dotenv->load(); // load semua di file .env ke $_ENV, $_SERVER, dan setenv()
+// var_dump(getenv('TEST') ?: 'tidak ada');
+// die();
 /**
  * Helper function - Mengembalikan array konfigurasi database lokal
  * @return array
  */
 function getDatabaseConfig() {
     return [
-        'host' => 'localhost',
-        'port' => '3306',
-        'dbname' => 'db_penitipan_hewan', // Pastikan nama DB ini benar
-        'username' => 'root',
-        'password' => 'Sh3Belajar!SQL', 
+        'driver' => getenv('DB_DRIVER') ?: 'mysql',
+        'host' => getenv('DB_HOST') ?: 'localhost',
+        'port' => getenv('DB_PORT') ?: '3306',
+        'sslmode' => getenv('DB_SSLMODE') ?: 'disable',
+        'dbname' => getenv('DB_NAME') ?: 'penitipan_hewan',
+        'username' => getenv('DB_USER') ?: 'root',
+        'password' => getenv('DB_PASS') ?: '', 
     ];
 }
