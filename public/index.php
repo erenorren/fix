@@ -1,11 +1,12 @@
 <?php
-// Autoload untuk load class otomatis dari /models dan /controllers
+// Autoload untuk load class otomatis dari /models, /controllers, /core (di luar public)
 spl_autoload_register(function ($className) {
     $paths = [
-        __DIR__ . '/models/' . $className . '.php',
-        __DIR__ . '/controllers/' . $className . '.php',
-        __DIR__ . '/core/' . $className . '.php',
+        __DIR__ . '/../models/' . $className . '.php',
+        __DIR__ . '/../controllers/' . $className . '.php',
+        __DIR__ . '/../core/' . $className . '.php',
     ];
+
     foreach ($paths as $path) {
         if (file_exists($path)) {
             if (!class_exists($className)) {
