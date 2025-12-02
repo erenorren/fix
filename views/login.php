@@ -90,7 +90,6 @@ if (session_status() == PHP_SESSION_NONE) {
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta1/dist/js/adminlte.min.js"></script>
 
 <script>
-    // Di login.php, tambahkan script untuk handle login AJAX
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
     
@@ -98,8 +97,16 @@ document.addEventListener('DOMContentLoaded', function() {
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
+            // Ambil form data
             const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
             
+            // Tampilkan loading
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Memproses...';
+            
+            // Kirim request
             fetch('index.php?action=login', {
                 method: 'POST',
                 body: formData
@@ -107,21 +114,28 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Redirect ke dashboard
+                    // Login berhasil, redirect
                     window.location.href = data.redirect;
-                } else if (data.error) {
-                    // Tampilkan error
-                    alert(data.error);
+                } else {
+                    // Login gagal, tampilkan alert sederhana
+                    alert(data.message || 'Username atau password salah');
+                    
+                    // Reset form focus
+                    document.getElementById('username').focus();
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Terjadi kesalahan saat login');
+                alert('Terjadi kesalahan koneksi. Silakan coba lagi.');
+            })
+            .finally(() => {
+                // Reset button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
             });
         });
     }
 });
 </script>
-
 </body>
 </html>

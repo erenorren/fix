@@ -19,13 +19,13 @@ class AuthController {
         $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
         
+        // Validasi sederhana
         if (empty($username) || empty($password)) {
-            // Return JSON error untuk AJAX
             echo json_encode([
                 'success' => false,
                 'message' => 'Username dan password harus diisi'
             ]);
-            return;
+            exit;
         }
 
         $user = $this->userModel->login($username, $password);
@@ -34,24 +34,25 @@ class AuthController {
             // Set session
             $_SESSION['user_id'] = $user['id']; 
             $_SESSION['username'] = $user['username'];
-            $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
-            $_SESSION['role'] = $user['role'];
-            $_SESSION['login_time'] = time();
+            $_SESSION['nama_lengkap'] = $user['nama_lengkap'] ?? '';
+            $_SESSION['role'] = $user['role'] ?? 'user';
             
             echo json_encode([
                 'success' => true, 
                 'message' => 'Login berhasil',
                 'redirect' => 'index.php?page=dashboard'
-            ]); 
+            ]);
+            exit;
             
         } else {
             echo json_encode([
                 'success' => false,
                 'message' => 'Username atau password salah'
             ]);
+            exit;
         }
-        exit; // Tambahkan exit setelah echo JSON
     }
+
 
     /**
      * Menangani proses logout

@@ -15,35 +15,29 @@ class User
      */
     public function login($username, $password)
     {
-        // PERHATIAN: Nama kolom sesuai database Anda
-        // Dari screenshot: iduser, username, _nama_lenckap, password, rade (mungkin role)
+        // Query sesuai database (lihat kolom dari screenshot)
         $sql = "SELECT * FROM `user` WHERE username = :username LIMIT 1";
         
         $stmt = $this->db->query($sql, ['username' => $username]);
         $user = $stmt->fetch();
         
-        // Debug: lihat apa yang didapat dari database
-        // error_log("User from DB: " . print_r($user, true));
-        // error_log("Input password: " . $password);
-        // error_log("DB password: " . ($user['password'] ?? 'NOT FOUND'));
+        if (!$user) {
+            return false; // User tidak ditemukan
+        }
         
-        if ($user) {
-            // Verifikasi password
-            if (password_verify($password, $user['password'])) {
-                // Sesuaikan dengan struktur database Anda
-                $userData = [
-                    'id' => $user['iduser'] ?? $user['id_user'] ?? $user['id'], // coba semua kemungkinan
-                    'username' => $user['username'],
-                    'nama_lengkap' => $user['nama_lengkap'],
-                    'role' => $user['rade'] ?? $user['role'] ?? 'user' // dari screenshot "rade"
-                ];
-                
-                return $userData;
-            } else {
-                // Password tidak cocok
-                error_log("Password verification FAILED for user: $username");
-                return false;
-            }
+        // Debug: cek hash password
+        // error_log("DB Password hash: " . $user['password']);
+        // error_log("Input password: '$password'");
+        
+        // Verifikasi password
+        if (password_verify($password, $user['password'])) {
+            // Return data user (sesuaikan dengan kolom database)
+            return [
+                'id' => $user['iduser'] ?? $user['id_user'] ?? $user['id'] ?? 0,
+                'username' => $user['username'],
+                'nama_lengkap' => $user['_nama_lenckap'] ?? $user['nama_lengkap'] ?? '',
+                'role' => $user['rade'] ?? $user['role'] ?? 'user'
+            ];
         }
         
         return false;
