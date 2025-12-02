@@ -53,7 +53,6 @@ class AuthController {
         }
     }
 
-
     /**
      * Menangani proses logout
      */

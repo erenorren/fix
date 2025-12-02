@@ -42,17 +42,5 @@ class User
         
         return false;
     }
-
-    /**
-     * GET BY ID
-     */
-    public function getById($id)
-    {
-        $sql = "SELECT iduser as id, username, nama_lengkap, 
-                       rade as role FROM `user` WHERE iduser = :id";
-        
-        $stmt = $this->db->query($sql, ['id' => $id]);
-        return $stmt->fetch();
-    }
 }
 ?>
