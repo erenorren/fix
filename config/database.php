@@ -11,12 +11,13 @@ $dotenv->load(); // load semua di file .env ke $_ENV, $_SERVER, dan setenv()
  */
 function getDatabaseConfig() {
     return [
-        'driver' => getenv('DB_DRIVER') ?: 'mysql',
-        'host' => getenv('DB_HOST') ?: 'localhost',
-        'port' => getenv('DB_PORT') ?: '3306',
-        'sslmode' => getenv('DB_SSLMODE') ?: 'disable',
-        'dbname' => getenv('DB_NAME') ?: 'penitipan_hewan',
-        'username' => getenv('DB_USER') ?: 'root',
-        'password' => getenv('DB_PASS') ?: '', 
+        'driver' => getenv('DB_DRIVER') ?: 'pgsql',
+        'host' => getenv('DB_HOST') ?: 'db.techuxadxdkrjwromwrs.supabase.co',
+        'port' => getenv('DB_PORT') ?: '5432',
+        'dbname' => getenv('DB_NAME') ?: 'postgres',
+        'username' => getenv('DB_USER') ?: 'postgres',
+        'password' => getenv('DB_PASS') ?: 'uas_ppbo_fix', 
+        'charset'  => 'utf8',
+        'sslmode' => getenv('DB_SSLMODE') ?: 'require',
     ];
 }

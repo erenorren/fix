@@ -16,13 +16,25 @@ abstract class BaseModel {
         $this->db = new Database(); 
     }
 
-    // [Contoh metode CRUD yang diwariskan]
-
+    /**
+     * Ambil satu record berdasarkan primary key
+     */
     public function find($id) {
         $sql = "SELECT * FROM {$this->tableName} WHERE {$this->primaryKey} = :id";
         return $this->db->query($sql, ['id' => $id])->fetch();
     }
     
-    // Asumsi: Di model anak seperti Hewan.php, Anda harus menambahkan metode 'create'
-    // yang menggunakan $this->db->execute() dan mengembalikan $this->db->lastInsertId()
+    /**
+     * [Contoh] Metode create di model anak:
+     * PostgreSQL membutuhkan RETURNING id untuk mendapatkan last inserted ID
+     * 
+     * Di model anak, tulis seperti ini:
+     * 
+     * $columns = implode(', ', array_keys($data));
+     * $placeholders = ':' . implode(', :', array_keys($data));
+     * $sql = "INSERT INTO {$this->tableName} ({$columns}) VALUES ({$placeholders}) RETURNING id";
+     * $stmt = $this->db->query($sql, $data);
+     * $result = $stmt->fetch();
+     * $idBaru = $result['id'] ?? null;
+     */
 }

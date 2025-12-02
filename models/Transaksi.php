@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../core/Database.php';
+require_once _DIR_ . '/../core/Database.php';
 
 // transaksi
 class Transaksi 
@@ -12,7 +12,7 @@ class Transaksi
 
     /**
      * Ambil semua data transaksi (READ - getAll)
-     * KOREKSI: Gunakan $this->db->query()
+     * PostgreSQL: query tanpa perubahan khusus
      */
     public function getAll()
     {
@@ -25,13 +25,13 @@ class Transaksi
                 LEFT JOIN kandang k ON t.id_kandang = k.id_kandang
                 ORDER BY t.created_at DESC";
         
-        $stmt = $this->db->query($sql); // FIX: Gunakan query tanpa parameter
+        $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
     }
 
     /**
      * Ambil transaksi aktif (READ - getActiveTransactions)
-     * KOREKSI: Gunakan $this->db->query()
+     * PostgreSQL compatible
      */
     public function getActiveTransactions()
     {
@@ -45,17 +45,16 @@ class Transaksi
                 WHERE t.status = 'active'
                 ORDER BY t.tanggal_masuk DESC";
         
-        $stmt = $this->db->query($sql); // FIX: Gunakan query tanpa parameter
+        $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
     }
 
     /**
      * Buat transaksi baru (CREATE)
-     * KOREKSI: Gunakan $this->db->execute()
+     * PostgreSQL compatible
      */
     public function create($data) {
         try {
-            // Generate kode transaksi
             $kodeTransaksi = $this->generateKodeTransaksi();
             
             $sql = "INSERT INTO transaksi 
@@ -77,11 +76,10 @@ class Transaksi
                 "total_biaya" => $data["total_biaya"]
             ];
             
-            // FIX: Gunakan $this->db->execute() untuk CUD
             $result = $this->db->execute($sql, $params);
             
             if ($result) {
-                return $this->db->lastInsertId();
+                return $this->db->lastInsertId(); // PostgreSQL: pastikan wrapper PDO->lastInsertId() sesuai sequence
             } else {
                 return false;
             }
@@ -94,29 +92,23 @@ class Transaksi
 
     /**
      * Update status transaksi (checkout)
-     * KOREKSI: Gunakan $this->db->execute()
+     * PostgreSQL: CURDATE() diganti CURRENT_DATE
      */
-/**
- * Update status transaksi (checkout)
- */
-public function checkout($id)
-{
-    try {
-        error_log("Model Transaksi::checkout() untuk ID: " . $id);
-        $sql = "UPDATE transaksi SET status = 'completed', tanggal_keluar = CURDATE() WHERE id_transaksi = ?";
-        error_log("SQL Checkout: " . $sql);
-        $result = $this->db->execute($sql, [$id]);
-        error_log("Result checkout: " . ($result ? 'SUCCESS' : 'FAILED'));
-        return $result;
-    } catch (Exception $e) {
-        error_log("Error checkout transaksi di model: " . $e->getMessage());
-        return false;
+    public function checkout($id)
+    {
+        try {
+            $sql = "UPDATE transaksi SET status = 'completed', tanggal_keluar = CURRENT_DATE WHERE id_transaksi = ?";
+            $result = $this->db->execute($sql, [$id]);
+            return $result;
+        } catch (Exception $e) {
+            error_log("Error checkout transaksi di model: " . $e->getMessage());
+            return false;
+        }
     }
-}
 
     /**
      * Ambil data transaksi berdasarkan ID (READ)
-     * KOREKSI: Gunakan $this->db->query()
+     * PostgreSQL compatible
      */
     public function getById($id)
     {
@@ -128,39 +120,37 @@ public function checkout($id)
                 LEFT JOIN kandang k ON t.id_kandang = k.id_kandang
                 WHERE t.id_transaksi = ?";
         
-        // FIX: Gunakan $this->db->query() untuk SELECT
         $stmt = $this->db->query($sql, [$id]);
         return $stmt->fetch();
     }
 
     public function getTotalHewanAktif() {
-    $sql = "SELECT COUNT(*) as total FROM transaksi WHERE status = 'active'";
-    $stmt = $this->db->query($sql);
-    $result = $stmt->fetch();
-    return $result['total'] ?? 0;
-}
+        $sql = "SELECT COUNT(*) as total FROM transaksi WHERE status = 'active'";
+        $stmt = $this->db->query($sql);
+        $result = $stmt->fetch();
+        return $result['total'] ?? 0;
+    }
 
-public function getTotalHewanAktifByJenis($jenis) {
-    $sql = "SELECT COUNT(*) as total 
-            FROM transaksi t 
-            JOIN hewan h ON t.id_hewan = h.id_hewan 
-            WHERE t.status = 'active' AND h.jenis = ?";
-    $stmt = $this->db->query($sql, [$jenis]);
-    $result = $stmt->fetch();
-    return $result['total'] ?? 0;
-}
+    public function getTotalHewanAktifByJenis($jenis) {
+        $sql = "SELECT COUNT(*) as total 
+                FROM transaksi t 
+                JOIN hewan h ON t.id_hewan = h.id_hewan 
+                WHERE t.status = 'active' AND h.jenis = ?";
+        $stmt = $this->db->query($sql, [$jenis]);
+        $result = $stmt->fetch();
+        return $result['total'] ?? 0;
+    }
 
     /**
      * Helper: Generate kode transaksi
-     * KOREKSI: Gunakan $this->db->query()
+     * PostgreSQL compatible
      */
     private function generateKodeTransaksi()
     {
-        $sql = "SELECT MAX(CAST(SUBSTRING(kode_transaksi, 4) AS UNSIGNED)) as max_number 
+        $sql = "SELECT MAX(CAST(SUBSTRING(kode_transaksi, 4) AS INTEGER)) as max_number 
                 FROM transaksi 
                 WHERE kode_transaksi LIKE 'TRX%'";
         
-        // FIX: Gunakan $this->db->query() untuk SELECT
         $stmt = $this->db->query($sql);
         $result = $stmt->fetch();
         
@@ -177,12 +167,10 @@ public function getTotalHewanAktifByJenis($jenis) {
                 LEFT JOIN user u ON t.id_user = u.id_user
                 WHERE t.nomor_transaksi = :nomor";
         
-        // FIX: Gunakan $this->db->query()
         $stmt = $this->db->query($sql, ['nomor' => $nomorTransaksi]);
         $transaksi = $stmt->fetch();
         
         if ($transaksi) {
-            // Asumsi getDetailLayanan sudah diperbaiki
             $transaksi['detail_layanan'] = $this->getDetailLayanan($transaksi['id_transaksi']);
         }
         
@@ -195,17 +183,10 @@ public function getTotalHewanAktifByJenis($jenis) {
                 LEFT JOIN layanan l ON dt.id_layanan = l.id_layanan
                 WHERE dt.id_transaksi = :id";
         
-        // FIX: Gunakan $this->db->query()
         $stmt = $this->db->query($sql, ['id' => $idTransaksi]);
         return $stmt->fetchAll();
     }
     
-    /**
-     * SEARCH - Cari transaksi berdasarkan keyword
-     * 
-     * @param string $keyword
-     * @return array
-     */
     public function search($keyword) {
         $sql = "SELECT t.*, 
                        p.nama_pelanggan,
@@ -223,25 +204,14 @@ public function getTotalHewanAktifByJenis($jenis) {
         return $stmt->fetchAll();
     }
     
-    /**
-     * UPDATE CHECKOUT - Proses check-out & pembayaran
-     * 
-     * @param int $id
-     * @param array $data
-     * @return bool
-     */
     public function updateCheckout($id, $data) {
         try {
             $this->db->beginTransaction();
 
-            // Ambil transaksi lama (untuk detail & durasi jika perlu)
             $transaksi = $this->getById($id);
 
-            // Jika total_biaya tidak disediakan, hitung ulang dari detail_transaksi dan durasi
             if (!isset($data['total_biaya']) || empty($data['total_biaya'])) {
                 $detailLayananStored = $transaksi['detail_layanan'] ?? [];
-                
-                // ubah format detail agar cocok dengan calculateTotalFromInputs
                 $detailForCalc = [];
                 foreach ($detailLayananStored as $d) {
                     $detailForCalc[] = [
@@ -261,8 +231,7 @@ public function getTotalHewanAktifByJenis($jenis) {
                 $data['diskon'] = $calc['diskon'];
             }
 
-
-            // Update transaksi (simpan metode & tandai lunas)
+            // PostgreSQL compatible: update transaksi
             $sql = "UPDATE transaksi 
                     SET tanggal_keluar_aktual = :tanggal_keluar,
                         jam_keluar_aktual = :jam_keluar,
@@ -281,11 +250,11 @@ public function getTotalHewanAktifByJenis($jenis) {
                 'durasi_hari' => $data['durasi_hari'],
                 'diskon' => $data['diskon'] ?? 0,
                 'total_biaya' => $data['total_biaya'],
+                'metode_pembayaran' => $data['metode_pembayaran'] ?? ''
             ]);
-            
-            // Update status hewan jadi sudah_diambil
+
+            // PostgreSQL compatible: update status hewan
             $sqlHewan = "UPDATE hewan SET status = 'sudah_diambil' WHERE id_hewan = :id";
-            // FIX: Gunakan execute wrapper
             $this->db->execute($sqlHewan, ['id' => $transaksi['id_hewan']]);
             
             $this->db->commit();
@@ -298,11 +267,6 @@ public function getTotalHewanAktifByJenis($jenis) {
         }
     }
     
-    /**
-     * GET SEDANG DITITIPKAN - Ambil semua transaksi yang masih berlangsung
-     * 
-     * @return array
-     */
     public function getSedangDititipkan() {
         $sql = "SELECT t.*, p.nama_pelanggan, h.nama_hewan
                 FROM transaksi t
@@ -312,22 +276,14 @@ public function getTotalHewanAktifByJenis($jenis) {
                 ORDER BY t.tanggal_masuk DESC";
         
         $stmt = $this->db->query($sql);
-        $stmt->execute();
         return $stmt->fetchAll();
     }
     
-    
-    /**
-     * HITUNG TOTAL PENDAPATAN
-     * 
-     * @param string $tanggalMulai
-     * @param string $tanggalAkhir
-     * @return float
-     */
     public function hitungPendapatan($tanggalMulai, $tanggalAkhir) {
+        // PostgreSQL compatible: casting tanggal_masuk ke date
         $sql = "SELECT SUM(total_biaya) as total 
                 FROM transaksi 
-                WHERE DATE(tanggal_masuk) BETWEEN :mulai AND :akhir
+                WHERE tanggal_masuk::DATE BETWEEN :mulai AND :akhir
                 AND status_pembayaran = 'lunas'";
         
         $stmt = $this->db->query($sql);
@@ -340,16 +296,9 @@ public function getTotalHewanAktifByJenis($jenis) {
         return (float)($result['total'] ?? 0);
     }
 
-    /**
-    * Hitung subtotal & total berdasarkan durasi dan detail layanan
-    * $durasiHari = int
-    * $detailLayanan = array of ['id_layanan', 'harga', 'qty'] OR ['id_layanan','harga_satuan','jumlah']
-    * $paketPerHari = float (jika ada paket harian)
-    */
     public function calculateTotalFromInputs(int $durasiHari, array $detailLayanan, float $paketPerHari = 0.0, float $diskon = 0.0) {
         $subtotalLayanan = 0.0;
         foreach ($detailLayanan as $d) {
-            // dukung kedua format: ['harga','qty'] atau ['harga_satuan','jumlah']
             $harga = isset($d['harga']) ? (float)$d['harga'] : (isset($d['harga_satuan']) ? (float)$d['harga_satuan'] : 0.0);
             $qty   = isset($d['qty']) ? (int)$d['qty'] : (isset($d['jumlah']) ? (int)$d['jumlah'] : 1);
             $subtotalLayanan += $harga * $qty;
@@ -357,7 +306,7 @@ public function getTotalHewanAktifByJenis($jenis) {
 
         $biayaPaket = $paketPerHari * max(1, $durasiHari);
         $subtotal = $biayaPaket + $subtotalLayanan;
-        $total = $subtotal - $diskon; // sesuaikan jika ada pajak, biaya tambahan, dsb.
+        $total = $subtotal - $diskon;
 
         return [
             'biaya_paket' => $biayaPaket,
