@@ -12,7 +12,7 @@ $dotenv->load(); // load semua di file .env ke $_ENV, $_SERVER, dan setenv()
 function getDatabaseConfig() {
     return [
         'driver' => getenv('DB_DRIVER') ?: 'pgsql',
-        'host' => getenv('DB_HOST') ?: 'http://db.blmhsxcvjeafglpreuhk.supabase.co',
+        'host' => getenv('DB_HOST') ?: 'db.blmhsxcvjeafglpreuhk.supabase.co',
         'port' => getenv('DB_PORT') ?: '5432',
         'dbname' => getenv('DB_NAME') ?: 'postgres',
         'username' => getenv('DB_USER') ?: 'postgres',
