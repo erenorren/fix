@@ -1,4 +1,26 @@
 <?php
+// Set header untuk Vercel
+if (isset($_SERVER['HTTP_ORIGIN'])) {
+    header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
+    header("Access-Control-Allow-Credentials: true");
+    header("Access-Control-Max-Age: 86400");
+}
+
+// Handle preflight
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])) {
+        header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+    }
+    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
+        header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
+    }
+    exit(0);
+}
+
+// Konfigurasi session untuk Vercel (serverless)
+ini_set('session.cookie_samesite', 'None');
+ini_set('session.cookie_secure', isset($_SERVER['HTTPS']));
+
 // Autoload untuk load class otomatis dari /models, /controllers, /core (di luar public)
 spl_autoload_register(function ($className) {
     $paths = [

@@ -25,37 +25,31 @@ if (file_exists($envPath)) {
  * @return array
  */
 function getDatabaseConfig() {
-    // new
-    $isLocal = ($_SERVER['SERVER_NAME'] == 'localhost' || 
-                $_SERVER['SERVER_NAME'] == '127.0.0.1');
+    // Deteksi environment Vercel
+    $isVercel = getenv('VERCEL') === '1' || isset($_ENV['VERCEL']);
     
-    if ($isLocal) {
-        // CONFIG LOCAL (MySQL)
+    if ($isVercel) {
+        // PostgreSQL Supabase untuk Vercel
         return [
-            'driver' => 'mysql',  // Ganti jadi MySQL
-            'host' => 'localhost',
-            'port' => '3306',
-            'dbname' => 'db_penitipan_hewan',  // Buat database lokal
-            'username' => 'root',
-            'password' => 'Sh3Belajar!SQL',  // Password MySQL lokal
-            // Tidak perlu sslmode untuk MySQL lokal
-        ];
-    } 
-    // new
-    else {
-    return [
-        // kode asli kamu — AMAN
+            // kode asli kamu — AMAN
         'driver' => getenv('DB_DRIVER') ?: 'pgsql',
         'host' => getenv('DB_HOST') ?: 'aws-1-ap-southeast-1.pooler.supabase.com',
         'port' => getenv('DB_PORT') ?: '5432',
         'dbname' => getenv('DB_NAME') ?: 'postgres',
         'username' => getenv('DB_USER') ?: 'postgres.blmhsxcvjeafglpreuhk',
         'password' => getenv('DB_PASS') ?: '4XjAkby7NSnBg9NX',
-        'sslmode' => getenv('DB_SSLMODE') ?: 'require',
-
-        // ➕ Tambahan OPTIONAL (tidak mengubah perilaku sistem kamu)
-        // 'options' => [ PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION ]
-    ]; 
-}
+        'sslmode' => getenv('DB_SSLMODE') ?: 'require',    
+        ];
+    } else {
+        // MySQL untuk local (Laragon)
+        return [
+            'driver' => 'mysql',
+            'host' => 'localhost',
+            'port' => 3306,
+            'dbname' => 'db_penitipan_hewan',
+            'username' => 'root',
+            'password' => 'Sh3Belajar!SQL',
+        ];
+    }
 }
 ?>
