@@ -1,5 +1,4 @@
 <?php
-// core/Database.php
 
 class Database {
     private $host;
@@ -10,7 +9,6 @@ class Database {
     private $port;
     
     public function __construct() {
-        // die('Access DB');
         // 1. Include konfigurasi database
         require_once __DIR__ . '/../config/database.php';
         
@@ -25,19 +23,34 @@ class Database {
         $this->port = $config['port'];
         
         try {
-            $dsn = "{$config['driver']}:host={$this->host};port={$this->port};dbname={$this->database};sslmode={$config['sslmode']}";
+            // Buat DSN
+            $dsn = "{$config['driver']}:host={$this->host};port={$this->port};dbname={$this->database}";
             
+            // Tambahkan charset untuk MySQL
+            if ($config['driver'] === 'mysql') {
+                $dsn .= ";charset=utf8mb4";
+            }
+            
+            // Tambahkan sslmode hanya jika ada dan untuk PostgreSQL
+            if (isset($config['sslmode']) && $config['driver'] === 'pgsql') {
+                $dsn .= ";sslmode={$config['sslmode']}";
+            }
+            
+            // OPTIONS untuk PDO
             $options = [
                 PDO::ATTR_ERRMODE           => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
             ];
             
+            // ↓↓↓ INI YANG ANDA HAPUS! ↓↓↓
+            // BUAT KONEKSI PDO
             $this->connection = new PDO($dsn, $this->username, $this->password, $options);
             
         } catch (PDOException $e) {
             die("Connection failed: " . $e->getMessage() . 
-                "<br>Host: {$this->host}, DB: {$this->database}, Port: {$this->port}");
+                "<br>Host: {$this->host}, DB: {$this->database}, Port: {$this->port}" .
+                "<br>Driver: {$config['driver']}, DSN: {$dsn}");
         }
     }
     
@@ -83,3 +96,5 @@ class Database {
         return $this->connection->rollBack();
     }
 }
+
+?>

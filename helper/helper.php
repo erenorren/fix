@@ -54,3 +54,32 @@ function clean($value) {
 function number_only($value) {
     return floatval(preg_replace('/[^0-9.]/', '', $value));
 }
+
+function isLoggedIn() {
+    return isset($_SESSION['user_id']) && isset($_SESSION['username']);
+}
+
+function getUserRole() {
+    return $_SESSION['role'] ?? null;
+}
+
+function getUserId() {
+    return $_SESSION['user_id'] ?? null;
+}
+
+function getUserName() {
+    return $_SESSION['username'] ?? 'Guest';
+}
+
+function requireRole($requiredRole) {
+    if (!isLoggedIn()) {
+        header('Location: index.php?page=login');
+        exit;
+    }
+    
+    if (getUserRole() !== $requiredRole) {
+        // Access denied
+        die('Access Denied: Insufficient permissions');
+    }
+}
+?>

@@ -33,6 +33,7 @@ if (strpos($host, 'localhost') !== false) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 
+
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
     <div class="app-wrapper">
 
@@ -49,11 +50,13 @@ if (strpos($host, 'localhost') !== false) {
                 <div class="flex-grow-1"></div>
 
                 <!-- Badge user di pojok kanan -->
+                <!-- Badge user di pojok kanan -->
                 <div class="d-flex align-items-center">
                     <div class="px-3 py-1 rounded-pill bg-primary text-white d-flex align-items-center">
                         <i class="bi bi-person-fill me-2"></i>
                         <span class="small">
-                            <?= htmlspecialchars($_SESSION['user']['username'] ?? 'admin'); ?>
+                            <?= htmlspecialchars($_SESSION['username'] ?? 'admin'); ?>
+                            <!-- Ganti $_SESSION['user']['username'] menjadi $_SESSION['username'] -->
                         </span>
                     </div>
                 </div>

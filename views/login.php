@@ -90,41 +90,37 @@ if (session_status() == PHP_SESSION_NONE) {
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta1/dist/js/adminlte.min.js"></script>
 
 <script>
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
-        e.preventDefault(); 
-        
-        const formData = new FormData(this);
-        
-        fetch(this.action, { 
-            method: 'POST',
-            body: new URLSearchParams(formData).toString(), 
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
-        })
-        .then(response => response.json())
-        .then(data => {
-            const alertContainer = document.getElementById('alert-container');
-            alertContainer.innerHTML = ''; 
+    // Di login.php, tambahkan script untuk handle login AJAX
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
             
-            if (data.success) {
-                // Login berhasil, redirect
-                window.location.href = data.redirect || 'index.php?page=dashboard';
-            } else {
-                // Tampilkan error dari Controller
-                alertContainer.innerHTML = `
-                    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-                        <i class="bi bi-exclamation-circle-fill me-2"></i>${data.error}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('alert-container').innerHTML = `
-                <div class="alert alert-danger">Terjadi kesalahan koneksi.</div>
-            `;
+            const formData = new FormData(this);
+            
+            fetch('index.php?action=login', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Redirect ke dashboard
+                    window.location.href = data.redirect;
+                } else if (data.error) {
+                    // Tampilkan error
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat login');
+            });
         });
-    });
+    }
+});
 </script>
 
 </body>

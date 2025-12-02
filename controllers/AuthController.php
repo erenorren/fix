@@ -1,5 +1,4 @@
 <?php
-// controllers/AuthController.php
 require_once __DIR__ . '/../models/User.php'; 
 
 class AuthController {
@@ -19,10 +18,13 @@ class AuthController {
 
         $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
-        // var_dump($username);
         
         if (empty($username) || empty($password)) {
-            echo json_encode(['error' => 'Username dan password harus diisi']);
+            // Return JSON error untuk AJAX
+            echo json_encode([
+                'success' => false,
+                'message' => 'Username dan password harus diisi'
+            ]);
             return;
         }
 
@@ -34,12 +36,21 @@ class AuthController {
             $_SESSION['username'] = $user['username'];
             $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
             $_SESSION['role'] = $user['role'];
+            $_SESSION['login_time'] = time();
             
-            echo json_encode(['success' => 'Login berhasil', 'redirect' => 'index.php?page=dashboard']); 
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Login berhasil',
+                'redirect' => 'index.php?page=dashboard'
+            ]); 
             
         } else {
-            echo json_encode(['error' => 'Username atau password salah']);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Username atau password salah'
+            ]);
         }
+        exit; // Tambahkan exit setelah echo JSON
     }
 
     /**
@@ -53,5 +64,5 @@ class AuthController {
         header('Location: index.php?page=login');
         exit;
     }
-    
 }
+?>

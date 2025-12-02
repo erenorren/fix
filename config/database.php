@@ -25,6 +25,24 @@ if (file_exists($envPath)) {
  * @return array
  */
 function getDatabaseConfig() {
+    // new
+    $isLocal = ($_SERVER['SERVER_NAME'] == 'localhost' || 
+                $_SERVER['SERVER_NAME'] == '127.0.0.1');
+    
+    if ($isLocal) {
+        // CONFIG LOCAL (MySQL)
+        return [
+            'driver' => 'mysql',  // Ganti jadi MySQL
+            'host' => 'localhost',
+            'port' => '3306',
+            'dbname' => 'db_penitipan_hewan',  // Buat database lokal
+            'username' => 'root',
+            'password' => 'Sh3Belajar!SQL',  // Password MySQL lokal
+            // Tidak perlu sslmode untuk MySQL lokal
+        ];
+    } 
+    // new
+    else {
     return [
         // kode asli kamu — AMAN
         'driver' => getenv('DB_DRIVER') ?: 'pgsql',
@@ -37,5 +55,7 @@ function getDatabaseConfig() {
 
         // ➕ Tambahan OPTIONAL (tidak mengubah perilaku sistem kamu)
         // 'options' => [ PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION ]
-    ];
+    ]; 
 }
+}
+?>
