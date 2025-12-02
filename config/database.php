@@ -17,7 +17,6 @@ function getDatabaseConfig() {
         'dbname' => getenv('DB_NAME') ?: 'postgres',
         'username' => getenv('DB_USER') ?: 'postgres',
         'password' => getenv('DB_PASS') ?: 'uas_ppbo_fix', 
-        'charset'  => 'utf8',
         'sslmode' => getenv('DB_SSLMODE') ?: 'require',
     ];
 }
