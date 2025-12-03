@@ -1,5 +1,5 @@
 <?php
-// controllers/AuthController.php - HARUS TANPA SPASI SEBELUM <?php
+// controllers/AuthController.php
 
 require_once __DIR__ . '/../models/User.php';
 
@@ -11,15 +11,22 @@ class AuthController {
     }
     
     public function login() {
+        // Set header JSON
         header('Content-Type: application/json');
+        header('Access-Control-Allow-Credentials: true');
+        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN'] ?? BASE_URL);
         
-        // Get POST data
-        $username = $_POST['username'] ?? '';
-        $password = $_POST['password'] ?? '';
+        // Get input
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!$input || empty($input)) {
+            $input = $_POST;
+        }
         
-        // Simple validation
+        $username = trim($input['username'] ?? '');
+        $password = $input['password'] ?? '';
+        
+        // Validation
         if (empty($username) || empty($password)) {
-            http_response_code(400);
             echo json_encode([
                 'success' => false,
                 'message' => 'Username dan password harus diisi'
@@ -27,44 +34,71 @@ class AuthController {
             exit;
         }
         
-        // Try login dari database
-        $user = $this->userModel->login($username, $password);
-        
-        if ($user) {
-            // Set session data
-            $_SESSION['user_id'] = $user['id'] ?? 1;
-            $_SESSION['username'] = $user['username'] ?? $username;
-            $_SESSION['nama_lengkap'] = $user['nama_lengkap'] ?? 'Administrator';
-            $_SESSION['role'] = $user['role'] ?? 'admin';
+        // SIMPLE LOGIN FOR TESTING
+        if ($username === 'admin' && $password === 'password123') {
+            // Set session
+            $_SESSION['user_id'] = 1;
+            $_SESSION['username'] = 'admin';
+            $_SESSION['nama_lengkap'] = 'Administrator';
+            $_SESSION['role'] = 'admin';
+            
+            // Debug
+            error_log("Simple login success for admin");
             
             echo json_encode([
                 'success' => true,
                 'message' => 'Login berhasil',
                 'redirect' => 'index.php?page=dashboard'
             ]);
-        } else {
-            // Fallback untuk testing
-            if ($username === 'admin' && $password === 'password123') {
-                $_SESSION['user_id'] = 1;
-                $_SESSION['username'] = 'admin';
-                $_SESSION['nama_lengkap'] = 'Administrator';
-                $_SESSION['role'] = 'admin';
-                
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Login berhasil',
-                    'redirect' => 'index.php?page=dashboard'
-                ]);
-            } else {
-                http_response_code(401);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Username atau password salah'
-                ]);
+            exit;
+        }
+        
+        // Try database login
+        $user = $this->userModel->login($username, $password);
+        
+        if ($user) {
+            // Set session
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
+            $_SESSION['role'] = $user['role'];
+            
+            // Regenerate session ID
+            session_regenerate_id(true);
+            
+            // Set cookie untuk Vercel
+            if (getenv('VERCEL') || isset($_SERVER['VERCEL'])) {
+                setcookie(
+                    session_name(),
+                    session_id(),
+                    [
+                        'expires' => time() + 86400,
+                        'path' => '/',
+                        'domain' => $_SERVER['HTTP_HOST'],
+                        'secure' => true,
+                        'httponly' => true,
+                        'samesite' => 'None'
+                    ]
+                );
             }
+            
+            error_log("Database login success for: " . $username);
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Login berhasil',
+                'session_id' => session_id(),
+                'redirect' => 'index.php?page=dashboard'
+            ]);
+        } else {
+            error_log("Login failed for: " . $username);
+            
+            echo json_encode([
+                'success' => false,
+                'message' => 'Username atau password salah'
+            ]);
         }
     }
-    
     public function logout() {
         session_destroy();
         echo json_encode([
@@ -74,3 +108,4 @@ class AuthController {
         ]);
     }
 }
+?>

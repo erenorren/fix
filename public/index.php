@@ -1,148 +1,124 @@
 <?php
-// public/index.php - HARUS TANPA SPASI SEBELUM <?php
+// public/index.php - HARUS tanpa spasi sebelum <?php
 
 // ==================================================
-// SESSION HARUS DIATAS SEGALANYA
+// 1. SESSION CONFIGURATION - PALING ATAS
 // ==================================================
-$isVercel = isset($_SERVER['VERCEL']) || (isset($_ENV['VERCEL']) && $_ENV['VERCEL'] === '1');
+$isVercel = (isset($_SERVER['VERCEL']) || getenv('VERCEL') === '1');
 
-// Set session configuration SEBELUM session_start()
 if ($isVercel) {
+    // Konfigurasi khusus Vercel
     ini_set('session.cookie_secure', '1');
     ini_set('session.cookie_httponly', '1');
-    ini_set('session.cookie_samesite', 'Lax');
+    ini_set('session.cookie_samesite', 'None'); // Coba None dulu
+    
+    session_set_cookie_params([
+        'lifetime' => 86400,
+        'path' => '/',
+        'domain' => $_SERVER['HTTP_HOST'],
+        'secure' => true,
+        'httponly' => true,
+        'samesite' => 'None' // Untuk cross-domain
+    ]);
 }
 
 // Start session
-if (session_status() == PHP_SESSION_NONE) {
+if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ==================================================
-// DEBUG MODE
-// ==================================================
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// Debug
+error_log("=== SESSION STARTED ===");
+error_log("Session ID: " . session_id());
+error_log("Vercel Env: " . ($isVercel ? 'YES' : 'NO'));
 
 // ==================================================
-// AUTOLOAD
+// 2. TURN OFF OUTPUT BUFFERING UNTUK DEBUG
+// ==================================================
+ob_start();
+
+// ==================================================
+// 3. ERROR REPORTING
+// ==================================================
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Nonaktifkan di production
+ini_set('log_errors', 1);
+
+// ==================================================
+// 4. AUTOLOAD
 // ==================================================
 require_once __DIR__ . '/../vendor/autoload.php';
 
 // ==================================================
-// BASE URL CONFIG
+// 5. SIMPLE BASE URL
 // ==================================================
-function getBaseUrl() {
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
-    $host = $_SERVER['HTTP_HOST'];
-    
-    // Jika di Vercel, path langsung dari root
-    if (isset($_SERVER['VERCEL']) || (isset($_ENV['VERCEL']) && $_ENV['VERCEL'] === '1')) {
-        return $protocol . $host;
-    } else {
-        // Localhost
-        return $protocol . $host . '/public';
-    }
-}
-
-define('BASE_URL', getBaseUrl());
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+$base_url = $protocol . $_SERVER['HTTP_HOST'];
+define('BASE_URL', $base_url);
 
 // ==================================================
-// SIMPLE AUTH CHECK
+// 6. SIMPLE AUTH CHECK
 // ==================================================
-$currentPage = $_GET['page'] ?? 'dashboard';
+$page = $_GET['page'] ?? 'dashboard';
 $action = $_GET['action'] ?? null;
 
-// Halaman yang boleh diakses tanpa login
-$publicPages = ['login', 'logout'];
-
-// Cek apakah user sudah login
+// Cek session user
 $isLoggedIn = isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 
-// Logika autentikasi
-if (!$isLoggedIn) {
-    // Jika belum login
-    if (!in_array($currentPage, $publicPages)) {
-        // Redirect ke login jika mencoba akses halaman terproteksi
-        header('Location: index.php?page=login');
-        exit;
-    }
-} else {
-    // Jika sudah login
-    if ($currentPage === 'login') {
-        // Redirect ke dashboard jika sudah login tapi mencoba akses login page
-        header('Location: index.php?page=dashboard');
-        exit;
-    }
+error_log("Page: $page, Logged in: " . ($isLoggedIn ? 'YES' : 'NO'));
+
+// Public pages (bisa diakses tanpa login)
+$publicPages = ['login'];
+
+// Routing untuk action (API calls)
+if ($action === 'login') {
+    require_once __DIR__ . '/../controllers/AuthController.php';
+    $auth = new AuthController();
+    $auth->login();
+    exit;
+}
+
+// Auth check
+if (!$isLoggedIn && $page !== 'login') {
+    // Jika belum login dan bukan halaman login
+    header('Location: index.php?page=login');
+    exit;
+}
+
+if ($isLoggedIn && $page === 'login') {
+    // Jika sudah login tapi akses halaman login
+    header('Location: index.php?page=dashboard');
+    exit;
 }
 
 // ==================================================
-// ROUTING UNTUK ACTION (API CALLS)
+// 7. SIMPLE ROUTING
 // ==================================================
-if ($action) {
-    switch ($action) {
-        case 'login':
-            require_once __DIR__ . '/../controllers/AuthController.php';
-            $auth = new AuthController();
-            $auth->login();
-            exit;
-            
-        case 'logout':
-            session_destroy();
-            echo json_encode(['success' => true, 'redirect' => 'index.php?page=login']);
-            exit;
-            
-        default:
-            http_response_code(404);
-            echo json_encode(['error' => 'Action not found']);
-            exit;
-    }
-}
-
-// ==================================================
-// ROUTING UNTUK PAGES
-// ==================================================
-switch ($currentPage) {
+switch ($page) {
     case 'login':
-        // Tampilkan halaman login
         require_once __DIR__ . '/../views/login.php';
         break;
         
     case 'dashboard':
-        // Tampilkan dashboard
         $pageTitle = 'Dashboard';
         require_once __DIR__ . '/../views/template/header.php';
         require_once __DIR__ . '/../views/dashboard.php';
         require_once __DIR__ . '/../views/template/footer.php';
         break;
         
-    case 'hewan':
-        // Tampilkan halaman hewan
-        $pageTitle = 'Data Hewan';
-        require_once __DIR__ . '/../views/template/header.php';
-        require_once __DIR__ . '/../views/hewan.php';
-        require_once __DIR__ . '/../views/template/footer.php';
-        break;
-        
-    case 'kandang':
-        // Tampilkan halaman kandang
-        $pageTitle = 'Data Kandang';
-        require_once __DIR__ . '/../views/template/header.php';
-        require_once __DIR__ . '/../views/kandang.php';
-        require_once __DIR__ . '/../views/template/footer.php';
-        break;
-        
     case 'logout':
-        // Logout dan redirect ke login
         session_destroy();
+        setcookie(session_name(), '', time() - 3600, '/');
         header('Location: index.php?page=login');
         exit;
         
     default:
-        // 404 Page
-        $pageTitle = 'Page Not Found';
+        $pageTitle = 'Dashboard';
         require_once __DIR__ . '/../views/template/header.php';
+        require_once __DIR__ . '/../views/dashboard.php';
         require_once __DIR__ . '/../views/404.php';
         require_once __DIR__ . '/../views/template/footer.php';
         break;
-}
+    }
+ob_end_flush();
+?>

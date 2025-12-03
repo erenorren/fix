@@ -11,5 +11,8 @@
       "src": "/(.*)",
       "dest": "/public/index.php"
     }
-  ]
+  ],
+  "env": {
+    "PHP_INI_SCAN_DIR": "/var/task/user/php-conf"
+  }
 }
