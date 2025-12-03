@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../core/Database.php';
+require_once _DIR_ . '/../core/Database.php';
 
 // transaksi
 class Transaksi 
@@ -47,54 +47,6 @@ class Transaksi
         
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
-    }
-
-    /**
-     * Ambil transaksi berdasarkan ID Pelanggan (READ - getByPelanggan)
-     * PostgreSQL compatible
-     * Digunakan untuk menampilkan riwayat transaksi pelanggan tertentu
-     * 
-     * @param int $id_pelanggan ID pelanggan yang ingin dicari transaksinya
-     * @return array Array berisi semua transaksi pelanggan, diurutkan dari terbaru
-     */
-    public function getByPelanggan($id_pelanggan)
-    {
-        try {
-            // PostgreSQL: Query dengan JOIN ke tabel terkait untuk data lengkap
-            $sql = "SELECT 
-                        t.id_transaksi,
-                        t.kode_transaksi,
-                        t.id_pelanggan,
-                        t.id_hewan,
-                        t.id_kandang,
-                        h.nama_hewan,
-                        h.jenis as jenis_hewan,
-                        h.ukuran,
-                        k.kode_kandang,
-                        t.tanggal_masuk,
-                        t.tanggal_keluar,
-                        t.tanggal_keluar_aktual,
-                        t.durasi,
-                        t.durasi_hari,
-                        t.total_biaya,
-                        t.status,
-                        t.status_pembayaran,
-                        t.created_at
-                    FROM transaksi t
-                    LEFT JOIN hewan h ON t.id_hewan = h.id_hewan
-                    LEFT JOIN kandang k ON t.id_kandang = k.id_kandang
-                    WHERE t.id_pelanggan = :id
-                    ORDER BY t.id_transaksi DESC";
-            
-            // Execute query dengan parameter binding untuk keamanan
-            $stmt = $this->db->query($sql, ['id' => $id_pelanggan]);
-            return $stmt->fetchAll();
-            
-        } catch (Exception $e) {
-            // Log error untuk debugging
-            error_log("Error getByPelanggan: " . $e->getMessage());
-            return []; // Return empty array jika terjadi error
-        }
     }
 
     /**
