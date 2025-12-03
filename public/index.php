@@ -2,31 +2,21 @@
 // ==================================================
 // VERCEL CONFIGURATION
 // ==================================================
-$isVercel = isset($_SERVER['VERCEL']) || getenv('VERCEL') === '1';
+$isVercel = isset($_ENV['VERCEL']) || getenv('VERCEL') === '1';
 
 if ($isVercel) {
-    // Set Vercel environment
-    putenv('VERCEL=1');
-    $_ENV['VERCEL'] = '1';
+    // Debug
+    error_log("=== PUBLIC/INDEX.PHP (Vercel Mode) ===");
+    error_log("Session ID: " . (session_id() ?: 'NOT STARTED'));
+    error_log("Session user_id: " . ($_SESSION['user_id'] ?? 'NOT SET'));
     
-    // CORS headers
-    header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
-    header('Access-Control-Allow-Credentials: true');
-    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
-    
-    // Handle preflight OPTIONS requests
-    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-        http_response_code(200);
-        exit;
-    }
-    
-    // Fix SCRIPT_NAME jika masih /api/index.php
-    if (($_SERVER['SCRIPT_NAME'] ?? '') === '/api/index.php') {
-        $_SERVER['SCRIPT_NAME'] = '/index.php';
+    // Ensure CORS headers
+    if (!headers_sent()) {
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? '*';
+        header('Access-Control-Allow-Origin: ' . $origin);
+        header('Access-Control-Allow-Credentials: true');
     }
 }
-
 // ==================================================
 // SESSION START
 // ==================================================
@@ -35,7 +25,6 @@ if (session_status() == PHP_SESSION_NONE) {
         session_set_cookie_params([
             'lifetime' => 86400,
             'path' => '/',
-            'domain' => $_SERVER['HTTP_HOST'] ?? '',
             'secure' => true,
             'httponly' => true,
             'samesite' => 'None'
@@ -44,27 +33,11 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-// Debug untuk Vercel (bisa dihapus nanti)
-if ($isVercel) {
-    error_log("=== VERCEL REQUEST ===");
-    error_log("URI: " . ($_SERVER['REQUEST_URI'] ?? ''));
-    error_log("Method: " . ($_SERVER['REQUEST_METHOD'] ?? ''));
-    error_log("Session ID: " . session_id());
-}
 
 // ==================================================
 // AUTOLOAD
 // ==================================================
-$autoloadPath = __DIR__ . '/../vendor/autoload.php';
-if (!file_exists($autoloadPath)) {
-    if ($isVercel) {
-        http_response_code(500);
-        echo json_encode(['error' => 'Server configuration error']);
-        exit;
-    }
-    die("Autoload file not found!");
-}
-require_once $autoloadPath;
+require_once __DIR__ . '/../vendor/autoload.php';
 
 // ==================================================
 // ENVIRONMENT

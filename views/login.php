@@ -95,8 +95,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const alertContainer = document.getElementById('alert-container');
     
     if (loginForm) {
+        console.log('Login form loaded');
+        
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            console.log('Form submitted');
             
             const submitBtn = this.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
@@ -108,14 +111,27 @@ document.addEventListener('DOMContentLoaded', function() {
             // Clear alerts
             if (alertContainer) alertContainer.innerHTML = '';
             
+            // Test 1: Cek session cookies
+            console.log('Cookies:', document.cookie);
+            
             // Prepare data
             const formData = {
                 username: this.querySelector('[name="username"]').value.trim(),
                 password: this.querySelector('[name="password"]').value
             };
             
+            console.log('Sending:', formData.username);
+            
             try {
-                // Send as JSON (better for Vercel)
+                // Test endpoint dulu
+                console.log('Testing endpoint...');
+                const testResponse = await fetch('.', { 
+                    credentials: 'include',
+                    method: 'HEAD'
+                });
+                console.log('Test response:', testResponse.status);
+                
+                // Send login request
                 const response = await fetch('index.php?action=login', {
                     method: 'POST',
                     headers: {
@@ -123,27 +139,49 @@ document.addEventListener('DOMContentLoaded', function() {
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify(formData),
-                    credentials: 'include' // IMPORTANT for Vercel sessions
+                    credentials: 'include' // CRITICAL FOR VERCEL
                 });
                 
-                const data = await response.json();
+                console.log('Login response status:', response.status);
+                console.log('Login response headers:', [...response.headers.entries()]);
+                
+                const responseText = await response.text();
+                console.log('Raw response:', responseText);
+                
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    console.error('JSON parse error:', e);
+                    throw new Error('Invalid response from server');
+                }
+                
+                console.log('Parsed data:', data);
                 
                 if (data.success) {
-                    // Redirect with delay
-                    setTimeout(() => {
+                    console.log('Login success! Redirecting to:', data.redirect);
+                    // Check session after login
+                    setTimeout(async () => {
+                        console.log('Checking session after login...');
+                        const check = await fetch('.', { credentials: 'include' });
+                        console.log('Session check:', check.status);
+                        
+                        // Redirect
                         window.location.href = data.redirect;
-                    }, 300);
+                    }, 1000);
                 } else {
-                    showError(data.message);
+                    console.log('Login failed:', data.message);
+                    showError(data.message || 'Login gagal');
                 }
                 
             } catch (error) {
-                console.error('Login error:', error);
+                console.error('Login error details:', error);
                 
-                // Different error messages
-                let errorMsg = 'Terjadi kesalahan koneksi. ';
+                let errorMsg = 'Terjadi kesalahan. ';
                 if (error.message.includes('Failed to fetch')) {
-                    errorMsg += 'Tidak dapat terhubung ke server. ';
+                    errorMsg += 'Tidak bisa terhubung ke server. ';
+                } else if (error.message.includes('JSON')) {
+                    errorMsg += 'Server mengembalikan response tidak valid. ';
                 }
                 errorMsg += 'Silakan coba lagi.';
                 
@@ -156,7 +194,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         function showError(message) {
-            if (!alertContainer) return;
+            if (!alertContainer) {
+                // Create alert container
+                const container = document.createElement('div');
+                container.id = 'alert-container';
+                loginForm.parentNode.insertBefore(container, loginForm);
+                alertContainer = container;
+            }
             
             const alertHTML = `
                 <div class="alert alert-danger alert-dismissible fade show mb-3">
@@ -167,6 +211,12 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             alertContainer.innerHTML = alertHTML;
         }
+        
+        // Auto-test on load
+        console.log('Auto-testing connection...');
+        fetch('index.php?page=login', { credentials: 'include' })
+            .then(res => console.log('Connection test:', res.status))
+            .catch(err => console.warn('Connection test failed:', err));
     }
 });
 </script>
