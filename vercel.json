@@ -8,12 +8,12 @@
   ],
   "routes": [
     {
-      "src": "/(css|js|img|vendor)/(.*)",
-      "dest": "/public/$1/$2"
+      "src": "/test-login",
+      "dest": "/test-login.php"
     },
     {
-      "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|svg|ico))$",
-      "dest": "/public/$1"
+      "src": "/(css|js|img|vendor)/(.*)",
+      "dest": "/public/$1/$2"
     },
     {
       "src": "/(.*)",

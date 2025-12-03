@@ -3,81 +3,86 @@ require_once __DIR__ . '/../models/User.php';
 
 class AuthController {
     private $userModel;
-    private $isVercel;
     
     public function __construct() {
         $this->userModel = new User();
-        $this->isVercel = isset($_ENV['VERCEL']) || getenv('VERCEL') === '1';
     }
     
     public function login() {
-        // Set JSON header IMMEDIATELY
+        // ✅ SET HEADERS PERTAMA
         header('Content-Type: application/json; charset=utf-8');
+        header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
+        header('Access-Control-Allow-Credentials: true');
         
-        if ($this->isVercel) {
-            header('Access-Control-Allow-Credentials: true');
-        }
-        
-        // Get input - support both JSON and form-data
-        $input = json_decode(file_get_contents('php://input'), true);
-        if (!$input || json_last_error() !== JSON_ERROR_NONE) {
-            $input = $_POST;
-        }
-        
-        $username = trim($input['username'] ?? '');
-        $password = $input['password'] ?? '';
-        
-        // Validation
-        if (empty($username) || empty($password)) {
-            http_response_code(400);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Username dan password harus diisi'
-            ]);
-            exit;
-        }
-        
+        // ✅ Tangkap semua error untuk debugging
         try {
+            // Get input
+            $username = trim($_POST['username'] ?? '');
+            $password = $_POST['password'] ?? '';
+            
+            // Jika tidak ada POST data, coba dari php://input (untuk testing)
+            if (empty($username) || empty($password)) {
+                $input = json_decode(file_get_contents('php://input'), true);
+                if ($input) {
+                    $username = trim($input['username'] ?? '');
+                    $password = $input['password'] ?? '';
+                }
+            }
+            
+            // Validation
+            if (empty($username) || empty($password)) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Username dan password harus diisi',
+                    'debug' => ['username' => $username, 'password_empty' => empty($password)]
+                ]);
+                exit;
+            }
+            
+            // Attempt login
             $user = $this->userModel->login($username, $password);
             
             if ($user) {
-                // ✅ FIX SESSION - Gunakan cara yang lebih reliable
+                // Set session
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['nama_lengkap'] = $user['nama_lengkap'] ?? 'Admin';
                 $_SESSION['role'] = $user['role'] ?? 'admin';
                 $_SESSION['logged_in'] = true;
                 
-                // ✅ Debug info (opsional)
-                if ($this->isVercel) {
-                    error_log("Login successful for user: " . $username);
-                    error_log("Session ID after login: " . session_id());
-                }
-                
-                // ✅ Pastikan session ditulis
-                session_write_close();
+                // Untuk debugging
+                error_log("Login success for user: " . $username);
                 
                 echo json_encode([
                     'success' => true,
                     'message' => 'Login berhasil',
-                    'redirect' => 'index.php?page=dashboard'
+                    'redirect' => 'index.php?page=dashboard',
+                    'user' => [
+                        'id' => $user['id'],
+                        'username' => $user['username']
+                    ]
                 ]);
             } else {
                 http_response_code(401);
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Username atau password salah'
+                    'message' => 'Username atau password salah',
+                    'debug' => 'User not found or password incorrect'
                 ]);
             }
             
         } catch (Exception $e) {
-            error_log("Login error: " . $e->getMessage());
+            error_log("Login controller error: " . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
-                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan sistem',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
+        exit;
     }
     
     public function logout() {
@@ -86,6 +91,7 @@ class AuthController {
             'success' => true,
             'redirect' => 'index.php?page=login'
         ]);
+        exit;
     }
 }
 ?>

@@ -112,24 +112,35 @@ document.addEventListener('DOMContentLoaded', function() {
             // Clear alerts
             if (alertContainer) alertContainer.innerHTML = '';
             
-            // Prepare data
+            // Prepare data - menggunakan FormData sederhana
             const formData = new FormData(this);
-            const data = Object.fromEntries(formData);
             
             console.log('Sending login request...');
             
             try {
-                // ✅ FIX: Gunakan URL yang benar
-                const response = await fetch('index.php?action=login', {
+                // ✅ FIX 1: Gunakan URL absolute untuk Vercel
+                const currentUrl = window.location.href;
+                const baseUrl = currentUrl.split('?')[0]; // Hapus query string
+                const loginUrl = baseUrl + '?action=login';
+                
+                console.log('Login URL:', loginUrl);
+                
+                // ✅ FIX 2: Gunakan fetch dengan headers yang sederhana
+                const response = await fetch(loginUrl, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json',
                     },
-                    body: new URLSearchParams(data),
-                    credentials: 'include' // IMPORTANT for cookies
+                    body: formData, // FormData auto sets Content-Type
+                    credentials: 'include' // Untuk cookies/session
                 });
                 
                 console.log('Response status:', response.status);
+                
+                // Cek jika response tidak OK
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 
                 const result = await response.json();
                 console.log('Response data:', result);
@@ -165,14 +176,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
             } catch (error) {
-                console.error('Login error:', error);
+                console.error('Login error details:', error);
                 
-                // ✅ Show network error
+                // ✅ Show detailed error for debugging
+                let errorMsg = 'Gagal terhubung ke server. ';
+                errorMsg += 'Error: ' + error.message;
+                
                 if (alertContainer) {
                     alertContainer.innerHTML = `
                         <div class="alert alert-danger alert-dismissible fade show mb-3">
                             <i class="bi bi-exclamation-triangle me-2"></i>
-                            Gagal terhubung ke server. Silakan coba lagi.
+                            ${errorMsg}
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     `;
@@ -186,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // ✅ Test connection on load
         console.log('Testing connection...');
-        fetch('index.php?page=login')
+        fetch(window.location.href)
             .then(res => console.log('Connection test:', res.status))
             .catch(err => console.warn('Connection test failed:', err));
     }
