@@ -9,9 +9,17 @@ if ($isVercel) {
     putenv('VERCEL=1');
     $_ENV['VERCEL'] = '1';
     
-    // Fix headers untuk Vercel
+    // CORS headers
     header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
     header('Access-Control-Allow-Credentials: true');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+    
+    // Handle preflight OPTIONS requests
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(200);
+        exit;
+    }
     
     // Fix SCRIPT_NAME jika masih /api/index.php
     if (($_SERVER['SCRIPT_NAME'] ?? '') === '/api/index.php') {
@@ -27,6 +35,7 @@ if (session_status() == PHP_SESSION_NONE) {
         session_set_cookie_params([
             'lifetime' => 86400,
             'path' => '/',
+            'domain' => $_SERVER['HTTP_HOST'] ?? '',
             'secure' => true,
             'httponly' => true,
             'samesite' => 'None'
@@ -35,10 +44,27 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Debug untuk Vercel (bisa dihapus nanti)
+if ($isVercel) {
+    error_log("=== VERCEL REQUEST ===");
+    error_log("URI: " . ($_SERVER['REQUEST_URI'] ?? ''));
+    error_log("Method: " . ($_SERVER['REQUEST_METHOD'] ?? ''));
+    error_log("Session ID: " . session_id());
+}
+
 // ==================================================
 // AUTOLOAD
 // ==================================================
-require_once __DIR__ . '/../vendor/autoload.php';
+$autoloadPath = __DIR__ . '/../vendor/autoload.php';
+if (!file_exists($autoloadPath)) {
+    if ($isVercel) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Server configuration error']);
+        exit;
+    }
+    die("Autoload file not found!");
+}
+require_once $autoloadPath;
 
 // ==================================================
 // ENVIRONMENT
@@ -52,22 +78,27 @@ if (!$isVercel && file_exists(__DIR__ . '/../.env')) {
 // AUTH MIDDLEWARE
 // ====================================================
 function checkAuth() {
-    $publicPages = ['login', 'logout'];
+    $publicPages = ['login', 'logout', '404'];
     $publicActions = ['login', 'searchPelanggan', 'getKandangTersedia'];
     
     $page = $_GET['page'] ?? 'dashboard';
-    $action = $_GET['action'] ?? null;
+    $action = $_GET['action'] ?? $_POST['action'] ?? null;
     
+    // Skip auth untuk public pages/actions
     if (in_array($page, $publicPages) || in_array($action, $publicActions)) {
         return;
     }
     
-    if (!isset($_SESSION['user_id'])) {
-        if ($action) {
+    // Check if user is logged in
+    if (!isset($_SESSION['user_id']) || !isset($_SESSION['username'])) {
+        // Untuk AJAX/API requests
+        if ($action || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')) {
             http_response_code(401);
-            echo json_encode(['error' => 'Unauthorized']);
+            echo json_encode(['error' => 'Unauthorized', 'redirect' => 'index.php?page=login']);
             exit;
         }
+        // Untuk browser requests
         header('Location: index.php?page=login');
         exit;
     }
@@ -78,7 +109,7 @@ checkAuth();
 // ==================================================
 // ROUTING
 // ==================================================
-$action = $_GET['action'] ?? null;
+$action = $_GET['action'] ?? $_POST['action'] ?? null;
 
 // API/ACTION ROUTES
 if ($action) {
@@ -90,8 +121,7 @@ if ($action) {
             
         case 'logout':
             require_once __DIR__ . '/../controllers/AuthController.php';
-            $controller = new AuthController();
-            $controller->logout();
+            (new AuthController())->logout();
             break;
             
         case 'searchPelanggan':
@@ -115,14 +145,12 @@ if ($action) {
             
         case 'createTransaksi':
             require_once __DIR__ . '/../controllers/TransaksiController.php';
-            $controller = new TransaksiController();
-            $controller->create();
+            (new TransaksiController())->create();
             break;
             
         case 'checkoutTransaksi':
             require_once __DIR__ . '/../controllers/TransaksiController.php';
-            $controller = new TransaksiController();
-            $controller->checkout();
+            (new TransaksiController())->checkout();
             break;
             
         default:
@@ -135,8 +163,10 @@ if ($action) {
 
 // PAGE ROUTES
 $page = $_GET['page'] ?? 'dashboard';
+
 switch ($page) {
     case 'login':
+        // Jika sudah login, redirect ke dashboard
         if (isset($_SESSION['user_id'])) {
             header('Location: index.php?page=dashboard');
             exit;
@@ -150,8 +180,7 @@ switch ($page) {
         
     case 'transaksi':
         require_once __DIR__ . '/../controllers/TransaksiController.php';
-        $controller = new TransaksiController();
-        $controller->index();
+        (new TransaksiController())->index();
         break;
         
     case 'logout':

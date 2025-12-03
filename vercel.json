@@ -4,10 +4,6 @@
     {
       "src": "public/index.php",
       "use": "@vercel/php"
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -16,8 +12,8 @@
       "dest": "/public/$1/$2"
     },
     {
-      "src": "/favicon.ico",
-      "dest": "/public/favicon.ico"
+      "src": "/(.*\\.(ico|png|jpg|jpeg|gif|svg|css|js))$",
+      "dest": "/public/$1"
     },
     {
       "src": "/(.*)",
