@@ -60,15 +60,16 @@ include __DIR__ . '/template/header.php';
                                     <!-- DROPDOWN PELANGGAN -->
                                     <div class="mb-3">
                                         <label class="form-label">Pilih Pemilik <span class="text-danger">*</span></label>
+                                        <!-- Di views/transaksi.php, dropdown pelanggan: -->
                                         <select name="id_pelanggan" class="form-select" id="selectPelanggan" required>
                                             <option value="">-- Pilih Pemilik --</option>
                                             <?php if (!empty($pelangganList)): ?>
                                                 <?php foreach ($pelangganList as $p): ?>
-                                                    <option value="<?= $p['id'] ?>" 
-                                                        data-hp="<?= htmlspecialchars($p['hp'] ?? '') ?>" 
+                                                    <option value="<?= $p['id'] ?? '' ?>" 
+                                                        data-hp="<?= htmlspecialchars($p['hp'] ?? $p['no_hp'] ?? '') ?>" 
                                                         data-alamat="<?= htmlspecialchars($p['alamat'] ?? '') ?>">
-                                                        <?= htmlspecialchars($p['nama'] ?? '') ?> 
-                                                        (<?= htmlspecialchars($p['hp'] ?? '') ?>)
+                                                        <?= htmlspecialchars($p['nama'] ?? $p['nama_pelanggan'] ?? '') ?> 
+                                                        (<?= htmlspecialchars($p['hp'] ?? $p['no_hp'] ?? '') ?>)
                                                     </option>
                                                 <?php endforeach; ?>
                                             <?php endif; ?>

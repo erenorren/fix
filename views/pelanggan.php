@@ -41,7 +41,7 @@ $pelangganList = $pelangganModel->getAll();
                 <thead class="table-light">
                     <tr>
                         <th style="width: 50px;">No</th>
-                        <th style="width: 90px;">Kode</th>
+                        <th style="width: 90px;">ID</th>
                         <th>Nama Pelanggan</th>
                         <th style="width: 150px;">No. HP</th>
                         <th>Alamat</th>
@@ -62,9 +62,9 @@ $pelangganList = $pelangganModel->getAll();
                         <?php foreach ($pelangganList as $p): ?>
                             <tr>
                                 <td class="text-muted"><?= $counter++; ?></td>
-                                <td class="fw-semibold"><?= htmlspecialchars($p['kode']); ?></td>
-                                <td><?= htmlspecialchars($p['nama']); ?></td>
-                                <td><?= htmlspecialchars($p['hp']); ?></td>
+                                <td class="fw-semibold">P<?= str_pad($p['id'], 3, '0', STR_PAD_LEFT); ?></td> <!-- Tampilkan ID sebagai kode -->
+                                <td><?= htmlspecialchars($p['nama'] ?? ''); ?></td>
+                                <td><?= htmlspecialchars($p['hp'] ?? ''); ?></td>
                                 <td class="small"><?= htmlspecialchars($p['alamat'] ?? '-'); ?></td>
                             </tr>
                         <?php endforeach; ?>

@@ -11,9 +11,9 @@ class Pelanggan {
     
     public function getAll() {
     try {
-        // POSTGRESQL: pastikan kolom benar
         $sql = "SELECT 
                     id_pelanggan,
+                    COALESCE(kode_pelanggan, 'P' || LPAD(id_pelanggan::text, 3, '0')) as kode, -- Generate kode jika tidak ada
                     nama_pelanggan,
                     no_hp,
                     alamat
@@ -23,22 +23,19 @@ class Pelanggan {
         $stmt = $this->db->query($sql);
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Format ulang untuk konsistensi
+        // Format untuk konsistensi
         $formatted = [];
         foreach ($result as $row) {
             $formatted[] = [
                 'id' => $row['id_pelanggan'],
+                'kode_pelanggan' => $row['kode'], // Pakai kode yang di-generate
                 'nama' => $row['nama_pelanggan'],
                 'hp' => $row['no_hp'],
                 'alamat' => $row['alamat']
             ];
         }
         
-        error_log("Pelanggan fetched: " . count($formatted));
-        if (count($formatted) > 0) {
-            error_log("Contoh formatted: " . print_r($formatted[0], true));
-        }
-        
+        error_log("Pelanggan data sample: " . print_r($formatted[0] ?? 'empty', true));
         return $formatted;
         
     } catch (Exception $e) {
