@@ -2,43 +2,57 @@
 // public/index.php
 
 // ==================================================
-// VERCEL CONFIGURATION - HARUS SEBELUM session_start()
+// ✅ HAPUS SEMUA OUTPUT/WHITESPACE SEBELUM PHP TAG
+// ==================================================
+
+// ==================================================
+// TURN OFF ERROR DISPLAY IN PRODUCTION (UNTUK VERCELL)
 // ==================================================
 $isVercel = isset($_ENV['VERCEL']) || getenv('VERCEL') === '1';
 
 if ($isVercel) {
-    // SET COOKIE PARAMS SEBELUM session_start()
+    // ✅ HAPUS SEMUA ERROR OUTPUT DI PRODUCTION
+    ini_set('display_errors', '0');
+    ini_set('display_startup_errors', '0');
+    error_reporting(0);
+} else {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+}
+
+// ==================================================
+// ✅ SET COOKIE PARAMS SEBELUM SESSION START
+// ==================================================
+if ($isVercel && session_status() == PHP_SESSION_NONE) {
+    // ✅ HARUS sebelum session_start()
     session_set_cookie_params([
         'lifetime' => 86400,
         'path' => '/',
-        'domain' => '', // Biarkan kosong untuk Vercel
         'secure' => true,
         'httponly' => true,
         'samesite' => 'None'
     ]);
 }
 
-// Start session
+// ==================================================
+// ✅ START SESSION
+// ==================================================
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
 // ====================================================
-// FIXED AUTH MIDDLEWARE - PASTIKAN TIDAK ADA OUTPUT SEBELUM HEADER
+// ✅ AUTH MIDDLEWARE - SIMPLIFIED
 // ====================================================
 $page = $_GET['page'] ?? 'dashboard';
 $action = $_GET['action'] ?? $_POST['action'] ?? null;
 
-// ✅ Pages yang boleh diakses tanpa login
+// ✅ Public pages (no auth required)
 $publicPages = ['login', 'logout', '404'];
-$publicActions = ['login', 'logout', 'searchPelanggan', 'getKandangTersedia'];
 
-// Check if this is a public page/action
-$isPublic = in_array($page, $publicPages) || in_array($action, $publicActions);
-
-// Jika bukan public page dan user belum login, redirect ke login
-if (!$isPublic && empty($_SESSION['user_id'])) {
-    // ✅ Untuk AJAX request, return JSON
+// Check authentication
+if (!in_array($page, $publicPages) && empty($_SESSION['user_id'])) {
+    // For AJAX requests
     if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
         strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
         header('Content-Type: application/json');
@@ -47,28 +61,23 @@ if (!$isPublic && empty($_SESSION['user_id'])) {
         exit;
     }
     
-    // ✅ Untuk normal request, redirect
+    // For normal requests
     header('Location: index.php?page=login');
     exit;
 }
 
-// Jika sudah login tapi akses halaman login, redirect ke dashboard
+// If already logged in and trying to access login page
 if ($page === 'login' && !empty($_SESSION['user_id'])) {
     header('Location: index.php?page=dashboard');
     exit;
 }
 
 // ==================================================
-// ✅ HAPUS DEBUG OUTPUT KE ERROR_LOG (bisa bikin header issue)
-// ==================================================
-// JANGAN gunakan error_log() sebelum header() kalau tidak perlu
-
-// ==================================================
-// ROUTING
+// ✅ ROUTING - NO OUTPUT BEFORE THIS POINT
 // ==================================================
 $action = $_GET['action'] ?? $_POST['action'] ?? null;
 
-// API/ACTION ROUTES
+// Handle API/action routes
 if ($action) {
     switch ($action) {
         case 'login':
@@ -118,12 +127,9 @@ if ($action) {
     exit;
 }
 
-// PAGE ROUTES
-$page = $_GET['page'] ?? 'dashboard';
-
+// Handle page routes
 switch ($page) {
     case 'login':
-        // Jika sudah login, redirect ke dashboard
         if (isset($_SESSION['user_id'])) {
             header('Location: index.php?page=dashboard');
             exit;
