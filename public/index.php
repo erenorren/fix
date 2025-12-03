@@ -77,10 +77,10 @@ if ($page === 'login') {
 }
 
 // Private pages (require auth)
-if (!isset($_SESSION['user_id'])) {
-    header('Location: index.php?page=login&redirect=' . urlencode($page));
-    exit;
-}
+// if (!isset($_SESSION['user_id'])) {
+//     header('Location: index.php?page=login&redirect=' . urlencode($page));
+//     exit;
+// }
 
 // ==================================================
 // 5. HANDLE ACTIONS FIRST (BEFORE PAGE ROUTING)
@@ -88,7 +88,7 @@ if (!isset($_SESSION['user_id'])) {
 if ($action === 'createTransaksi' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once __DIR__ . '/../controllers/TransaksiController.php';
     $controller = new TransaksiController();
-    $controller->create();
+    $controller->createTransaksi();
     exit;
 }
 

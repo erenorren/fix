@@ -53,62 +53,66 @@ include __DIR__ . '/template/header.php';
                         <!-- FORM ACTION HARUS PERSIS SEPERTI INI -->
                         <form method="POST" action="index.php?action=createTransaksi" id="formPendaftaran">                        <div class="row g-4">
                             <!-- GANTI SELURUH BAGIAN "Informasi Pemilik" dengan ini: -->
-                            <div class="col-lg-6">
-                                <div class="card p-3 h-100 position-relative">
-                                    <h6 class="mb-3 text-primary">Informasi Pemilik</h6>
+                            <!-- GANTI BAGIAN INFORMASI PEMILIK di views/transaksi.php -->
 
-                                    <!-- DROPDOWN PELANGGAN -->
-                                    <!-- DROPDOWN PELANGGAN - VERSI DIPERBAIKI -->
-                                    <!-- DROPDOWN PELANGGAN - FIXED VERSION -->
-                                    <div class="mb-3">
-                                        <label class="form-label">Pilih Pemilik <span class="text-danger">*</span></label>
-                                        <select name="id_pelanggan" class="form-select" id="selectPelanggan" required>
-                                            <option value="">-- Pilih Pemilik --</option>
-                                            <?php if (!empty($pelangganList)): ?>
-                                                <?php foreach ($pelangganList as $p): ?>
-                                                    <?php 
-                                                    // PASTIKAN DATA DIAMBIL DENGAN BENAR
-                                                    $id = $p['id'] ?? $p['id_pelanggan'] ?? '';
-                                                    $nama = $p['nama'] ?? $p['nama_pelanggan'] ?? '';
-                                                    $hp = $p['hp'] ?? $p['no_hp'] ?? '';
-                                                    $alamat = $p['alamat'] ?? '';
-                                                    ?>
-                                                    <option value="<?= $id ?>" 
-                                                        data-hp="<?= htmlspecialchars($hp) ?>" 
-                                                        data-alamat="<?= htmlspecialchars($alamat) ?>">
-                                                        <?= htmlspecialchars($nama) ?> 
-                                                        (<?= htmlspecialchars($hp) ?>)
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            <?php endif; ?>
-                                            <option value="new">+ Tambah Pemilik Baru</option>
-                                        </select>
-                                        <small class="text-muted">Pilih dari daftar pelanggan terdaftar</small>
-                                    </div>
+<div class="col-lg-6">
+    <div class="card p-3 h-100 position-relative">
+        <h6 class="mb-3 text-primary">Informasi Pemilik</h6>
 
-                                    <!-- FIELDS UNTUK PELANGGAN BARU (AWALNYA DISEMBUNYIKAN) -->
-                                    <div id="newCustomerFields" style="display: none;">
-                                        <div class="mb-3">
-                                            <label class="form-label">Nama Pemilik Baru <span class="text-danger">*</span></label>
-                                            <input type="text" name="nama_pelanggan_baru" class="form-control" 
-                                                placeholder="Masukkan nama lengkap pemilik" required>
-                                        </div>
-                                    </div>
+        <!-- DROPDOWN PELANGGAN - DIUBAH -->
+        <div class="mb-3">
+            <label class="form-label">Pilih Pemilik <span class="text-danger">*</span></label>
+            <select name="id_pelanggan" class="form-select" id="selectPelanggan" required>
+                <option value="">-- Pilih Pemilik --</option>
+                <?php if (!empty($pelangganList)): ?>
+                    <?php foreach ($pelangganList as $p): ?>
+                        <?php 
+                        $id = $p['id'] ?? $p['id_pelanggan'] ?? '';
+                        $nama = $p['nama'] ?? $p['nama_pelanggan'] ?? '';
+                        $hp = $p['hp'] ?? $p['no_hp'] ?? '';
+                        $alamat = $p['alamat'] ?? '';
+                        ?>
+                        <option value="<?= $id ?>" 
+                            data-hp="<?= htmlspecialchars($hp) ?>" 
+                            data-alamat="<?= htmlspecialchars($alamat) ?>"
+                            data-nama="<?= htmlspecialchars($nama) ?>">
+                            <?= htmlspecialchars($nama) ?> 
+                            (<?= htmlspecialchars($hp) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+                <option value="new">+ Tambah Pemilik Baru</option>
+            </select>
+            <small class="text-muted">Pilih dari daftar pelanggan terdaftar</small>
+        </div>
 
-                                    <!-- FIELDS UNTUK NO HP DAN ALAMAT (SELALU TAMPIL) -->
-                                    <div class="mb-3">
-                                        <label class="form-label">Nomor HP <span class="text-danger">*</span></label>
-                                        <input type="text" name="no_hp" id="p_hp" class="form-control"
-                                            placeholder="Contoh: 08123456789" required>
-                                    </div>
+        <!-- FIELDS UNTUK PELANGGAN BARU - AWALNYA DISEMBUNYIKAN -->
+        <div id="newCustomerFields" style="display: none;">
+            <div class="mb-3">
+                <label class="form-label">Nama Pemilik Baru <span class="text-danger">*</span></label>
+                <input type="text" name="nama_pelanggan_baru" class="form-control" 
+                    placeholder="Masukkan nama lengkap pemilik">
+            </div>
+        </div>
 
-                                    <div class="mb-3">
-                                        <label class="form-label">Alamat <span class="text-danger">*</span></label>
-                                        <textarea name="alamat" id="p_alamat" class="form-control"
-                                            rows="2" placeholder="Alamat lengkap pemilik" required></textarea>
-                                    </div>
-                                </div>
-                            </div>
+        <!-- NO HP - DIUBAH: HILANGKAN required, VALIDASI MANUAL -->
+        <div class="mb-3">
+            <label class="form-label">Nomor HP <span class="text-danger">*</span></label>
+            <input type="text" name="no_hp" id="p_hp" class="form-control"
+                placeholder="Contoh: 08123456789">
+            <!-- required dihapus -->
+        </div>
+
+        <!-- ALAMAT - DIUBAH: HILANGKAN required, VALIDASI MANUAL -->
+        <div class="mb-3">
+            <label class="form-label">Alamat <span class="text-danger">*</span></label>
+            <textarea name="alamat" id="p_alamat" class="form-control"
+                rows="2" placeholder="Alamat lengkap pemilik"></textarea>
+            <!-- required dihapus -->
+        </div>
+    </div>
+</div>
+
 
                             <div class="col-lg-6">
                                 <div class="card p-3 h-100">
@@ -169,15 +173,25 @@ include __DIR__ . '/template/header.php';
                                             <select name="id_layanan" class="form-select" id="paketSelect" required>
     <option value="">-- Pilih Paket --</option>
     <?php foreach ($paketList as $pk): ?>
-        <option value="<?= $pk['id_layanan'] ?>" 
-            data-harga="<?= $pk['harga'] ?>" 
-            data-nama="<?= htmlspecialchars($pk['nama_layanan']) ?>">
-            <?= htmlspecialchars($pk['nama_layanan']) ?>
-            - Rp <?= number_format($pk['harga'], 0, ',', '.'); ?>/hari
+        <?php 
+        // PASTIKAN DATA ADA
+        $id = $pk['id_layanan'] ?? $pk['id'] ?? '';
+        $nama = $pk['nama_layanan'] ?? $pk['nama'] ?? '';
+        $harga = $pk['harga'] ?? 0;
+        
+        // FORMAT HARGA YANG BENAR
+        $hargaFormatted = number_format($harga, 0, ',', '.');
+        ?>
+        
+        <!-- PERBAIKAN: ganti $value dengan $id -->
+        <option value="<?= $id ?>" 
+                data-harga="<?= $harga ?>"
+                data-nama="<?= htmlspecialchars($nama) ?>">
+            <?= htmlspecialchars($nama) ?> - Rp <?= $hargaFormatted ?>/hari
         </option>
     <?php endforeach; ?>
-</select>
-                                            <div class="form-text">Pilih salah satu paket penitipan</div>
+</select>                                
+                                    <div class="form-text">Pilih salah satu paket penitipan</div>
                                         </div>
 
                                         <div class="col-lg-8">

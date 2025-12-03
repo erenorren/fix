@@ -9,65 +9,44 @@ class Pelanggan {
     }
     
     public function getAll() {
-    try {
-        error_log("Pelanggan::getAll() called");
-        
-        $sql = "SELECT 
-                    id_pelanggan,
-                    nama_pelanggan,
-                    no_hp,
-                    alamat
-                FROM pelanggan 
-                ORDER BY nama_pelanggan";
-        
-        $stmt = $this->db->query($sql);
-        $result = $stmt->fetchAll();
-        
-        // DEBUG: Cek hasil query
-        error_log("SQL Query: " . $sql);
-        error_log("Query result count: " . count($result));
-        
-        if (empty($result)) {
-            error_log("WARNING: Query pelanggan mengembalikan hasil KOSONG!");
-            error_log("Check if table 'pelanggan' exists and has data");
+        try {
+            error_log("Pelanggan::getAll() called");
             
-            // Coba query alternatif untuk debugging
-            $testSql = "SHOW TABLES LIKE 'pelanggan'";
-            $testStmt = $this->db->query($testSql);
-            $tableExists = $testStmt->fetch();
-            error_log("Table pelanggan exists: " . ($tableExists ? 'YES' : 'NO'));
+            // ✅ FIX: PostgreSQL compatible query
+            $sql = "SELECT 
+                        id_pelanggan,
+                        nama_pelanggan,
+                        no_hp,
+                        alamat
+                    FROM pelanggan 
+                    ORDER BY nama_pelanggan";
             
-            // Cek data di table
-            $countSql = "SELECT COUNT(*) as total FROM pelanggan";
-            $countStmt = $this->db->query($countSql);
-            $countResult = $countStmt->fetch();
-            error_log("Total records in pelanggan table: " . ($countResult['total'] ?? 0));
+            $stmt = $this->db->query($sql);
+            $result = $stmt->fetchAll();
+            
+            error_log("Pelanggan count: " . count($result));
+            
+            // Format data konsisten
+            $formatted = [];
+            foreach ($result as $row) {
+                $formatted[] = [
+                    'id' => $row['id_pelanggan'],
+                    'id_pelanggan' => $row['id_pelanggan'],
+                    'nama_pelanggan' => $row['nama_pelanggan'],
+                    'nama' => $row['nama_pelanggan'],
+                    'no_hp' => $row['no_hp'],
+                    'hp' => $row['no_hp'],
+                    'alamat' => $row['alamat']
+                ];
+            }
+            
+            return $formatted;
+            
+        } catch (Exception $e) {
+            error_log("ERROR Pelanggan::getAll(): " . $e->getMessage());
+            return [];
         }
-        
-        // Format untuk consistency
-        $formatted = [];
-        foreach ($result as $row) {
-            $formatted[] = [
-                'id' => $row['id_pelanggan'],
-                'id_pelanggan' => $row['id_pelanggan'],
-                'nama_pelanggan' => $row['nama_pelanggan'],
-                'nama' => $row['nama_pelanggan'], // alias
-                'no_hp' => $row['no_hp'],
-                'hp' => $row['no_hp'], // alias
-                'alamat' => $row['alamat']
-            ];
-        }
-        
-        error_log("Pelanggan::getAll() - Returning " . count($formatted) . " records");
-        
-        return $formatted;
-        
-    } catch (Exception $e) {
-        error_log("ERROR Pelanggan::getAll(): " . $e->getMessage());
-        error_log("Full error: " . $e->getTraceAsString());
-        return [];
     }
-}
     
     public function getById($id) {
         $sql = "SELECT * FROM pelanggan WHERE id_pelanggan = ?";
@@ -79,23 +58,28 @@ class Pelanggan {
         try {
             error_log("Pelanggan::create() - Data: " . print_r($data, true));
             
+            // ✅ FIX: PostgreSQL dengan RETURNING clause
             $sql = "INSERT INTO pelanggan (nama_pelanggan, no_hp, alamat) 
-                    VALUES (?, ?, ?)";
+                    VALUES (:nama, :hp, :alamat) 
+                    RETURNING id_pelanggan"; // ← INI PENTING!
             
             $params = [
-                $data['nama_pelanggan'] ?? '',
-                $data['no_hp'] ?? '',
-                $data['alamat'] ?? ''
+                ':nama' => $data['nama_pelanggan'] ?? '',
+                ':hp' => $data['no_hp'] ?? '',
+                ':alamat' => $data['alamat'] ?? ''
             ];
             
-            $result = $this->db->execute($sql, $params);
+            // ✅ FIX: Gunakan query() bukan execute() untuk dapatkan RETURNING value
+            $stmt = $this->db->query($sql, $params);
+            $result = $stmt->fetch();
             
-            if ($result) {
-                $newId = $this->db->lastInsertId();
+            if ($result && isset($result['id_pelanggan'])) {
+                $newId = $result['id_pelanggan'];
                 error_log("Pelanggan::create() - New ID: " . $newId);
                 return $newId;
             }
             
+            error_log("Pelanggan::create() - No ID returned");
             return false;
             
         } catch (Exception $e) {
@@ -113,9 +97,9 @@ class Pelanggan {
         
         $params = [
             ':id' => $id,
-            ':nama' => $data['nama_pelanggan'],
-            ':hp' => $data['no_hp'],
-            ':alamat' => $data['alamat']
+            ':nama' => $data['nama_pelanggan'] ?? '',
+            ':hp' => $data['no_hp'] ?? '',
+            ':alamat' => $data['alamat'] ?? ''
         ];
         
         return $this->db->execute($sql, $params);
