@@ -1,6 +1,6 @@
 <?php
 // ==================================================
-// VERCEL CONFIGURATION
+// VERCEL DETECTION
 // ==================================================
 $isVercel = isset($_ENV['VERCEL']) || getenv('VERCEL') === '1';
 
@@ -17,8 +17,9 @@ if ($isVercel) {
         header('Access-Control-Allow-Credentials: true');
     }
 }
+
 // ==================================================
-// SESSION START
+// SESSION CHECK (jika belum started oleh api/index.php)
 // ==================================================
 if (session_status() == PHP_SESSION_NONE) {
     if ($isVercel) {
@@ -32,7 +33,6 @@ if (session_status() == PHP_SESSION_NONE) {
     }
     session_start();
 }
-
 
 // ==================================================
 // AUTOLOAD
