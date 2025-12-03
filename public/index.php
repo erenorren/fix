@@ -1,60 +1,96 @@
 <?php
-// public/index.php - SIMPLIFIED VERSION
+// public/index.php
 
-// ✅ Start session first
+// ==================================================
+// 1. START SESSION - HARUS PERTAMA
+// ==================================================
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-// ✅ Disable errors on Vercel
-if (isset($_ENV['VERCEL'])) {
-    ini_set('display_errors', '0');
-    error_reporting(0);
+// ==================================================
+// 2. INCLUDE MODELS (UNTUK LOGIN REAL)
+// ==================================================
+require_once __DIR__ . '/../models/User.php';
+
+// ==================================================
+// 3. HANDLE LOGIN ACTION FIRST (BEFORE ANY OUTPUT)
+// ==================================================
+if (isset($_GET['action']) && $_GET['action'] === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    // SET HEADERS untuk JSON response
+    header('Content-Type: application/json');
+    
+    // LOGIN REAL DENGAN DATABASE
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
+    
+    if (empty($username) || empty($password)) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Username dan password harus diisi'
+        ]);
+        exit;
+    }
+    
+    // Gunakan model User untuk validasi
+    $userModel = new User();
+    $user = $userModel->login($username, $password);
+    
+    if ($user) {
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['nama_lengkap'] = $user['nama_lengkap'] ?? 'Admin';
+        $_SESSION['role'] = $user['role'] ?? 'admin';
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Login berhasil',
+            'redirect' => 'index.php?page=dashboard'
+        ]);
+    } else {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Username atau password salah'
+        ]);
+    }
+    exit;
 }
 
 // ==================================================
-// ✅ SIMPLE AUTH CHECK
+// 4. SIMPLE AUTH CHECK
 // ==================================================
-$page = $_GET['page'] ?? 'dashboard';
+$page = $_GET['page'] ?? 'login';
 
-// Skip auth for login page
-if ($page !== 'login' && empty($_SESSION['user_id'])) {
+// Public pages (no auth required)
+if ($page === 'login') {
+    // Jika sudah login, redirect ke dashboard
+    if (isset($_SESSION['user_id'])) {
+        header('Location: index.php?page=dashboard');
+        exit;
+    }
+    
+    // Tampilkan halaman login
+    require_once __DIR__ . '/../views/login.php';
+    exit;
+}
+
+// Private pages (require auth)
+if (!isset($_SESSION['user_id'])) {
     header('Location: index.php?page=login');
     exit;
 }
 
-// If already logged in, redirect from login
-if ($page === 'login' && !empty($_SESSION['user_id'])) {
-    header('Location: index.php?page=dashboard');
-    exit;
-}
-
 // ==================================================
-// ✅ HANDLE API ACTIONS FIRST
-// ==================================================
-$action = $_GET['action'] ?? $_POST['action'] ?? null;
-
-if ($action === 'login') {
-    require_once __DIR__ . '/../controllers/AuthController.php';
-    $auth = new AuthController();
-    $auth->login();
-    exit; // IMPORTANT: Stop further execution
-}
-
-// ==================================================
-// ✅ PAGE ROUTING
+// 5. ROUTE PAGES YANG SUDAH LOGIN
 // ==================================================
 switch ($page) {
-    case 'login':
-        require_once __DIR__ . '/../views/login.php';
-        break;
-        
     case 'dashboard':
         require_once __DIR__ . '/../views/dashboard.php';
         break;
         
     case 'transaksi':
-        require_once __DIR__ . '/../views/transaksi.php';
+        require_once __DIR__ . '/../controllers/TransaksiController.php';
+        (new TransaksiController())->index();
         break;
         
     case 'hewan':

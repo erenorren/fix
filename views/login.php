@@ -1,8 +1,5 @@
 <?php
-// views/login.php
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
+// views/login.php - SIMPLE VERSION
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -11,12 +8,10 @@ if (session_status() == PHP_SESSION_NONE) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login | Sistem Penitipan Hewan</title>
 
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta1/dist/css/adminlte.min.css">
-
+    
     <style>
-        /* Custom CSS */
         body.login-page {
             display: flex;
             justify-content: center;
@@ -27,57 +22,39 @@ if (session_status() == PHP_SESSION_NONE) {
         .login-box {
             width: 360px;
         }
-        .login-title {
-            font-size: 1.5rem; 
-            font-weight: 500; 
-            color: #212529; 
-            text-decoration: none;
-        }
     </style>
 </head>
 <body class="login-page">
 
 <div class="login-box">
-    
     <div class="card card-outline card-primary shadow-lg border-0">
         <div class="card-header text-center py-3">
-            <a href="#" class="login-title">
-                Sistem Penitipan Hewan
-            </a>
+            <h4 class="login-title">Sistem Penitipan Hewan</h4>
         </div>
         
         <div class="card-body p-4">
             <p class="login-box-msg text-muted">Silakan login untuk masuk sistem</p>
 
-            <?php if (isset($_SESSION['error_message'])): ?>
-                <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-                    <i class="bi bi-exclamation-circle-fill me-2"></i>
-                    <?= $_SESSION['error_message']; ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-                <?php unset($_SESSION['error_message']); ?>
-            <?php endif; ?>
-
             <div id="alert-container"></div>
 
-            <form id="loginForm" action="index.php?action=login" method="post">
+            <form id="loginForm">
                 <div class="input-group mb-3">
-                    <input type="text" name="username" class="form-control form-control-lg bg-light" placeholder="Username" required autofocus>
-                    <div class="input-group-text bg-light border-start-0 text-muted">
-                        <span class="bi bi-person-fill"></span>
+                    <input type="text" name="username" class="form-control" placeholder="Username" required autofocus>
+                    <div class="input-group-text">
+                        <i class="bi bi-person-fill"></i>
                     </div>
                 </div>
 
                 <div class="input-group mb-3">
-                    <input type="password" name="password" class="form-control form-control-lg bg-light" placeholder="Password" required>
-                    <div class="input-group-text bg-light border-start-0 text-muted">
-                        <span class="bi bi-lock-fill"></span>
+                    <input type="password" name="password" class="form-control" placeholder="Password" required>
+                    <div class="input-group-text">
+                        <i class="bi bi-lock-fill"></i>
                     </div>
                 </div>
 
                 <div class="row mt-4">
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm fw-bold">Sign In</button>
+                        <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm">Sign In</button>
                     </div>
                 </div>
             </form>
@@ -86,10 +63,6 @@ if (session_status() == PHP_SESSION_NONE) {
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta1/dist/js/adminlte.min.js"></script>
-
-<!-- Di bagian JS login.php, GANTI script dengan ini: -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
@@ -108,53 +81,31 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData(this);
         
         try {
-            // ✅ FIX: Gunakan URL yang benar untuk Vercel
-            // Coba beberapa kemungkinan URL
-            const urlsToTry = [
-                window.location.pathname + '?action=login',
-                '/?action=login',
-                window.location.href.split('?')[0] + '?action=login'
-            ];
+            // ✅ SIMPLE FETCH - NO COMPLEX URL
+            const response = await fetch('index.php?action=login', {
+                method: 'POST',
+                body: formData
+            });
             
-            let response;
-            let lastError;
-            
-            // Coba setiap URL
-            for (const url of urlsToTry) {
-                try {
-                    console.log('Trying URL:', url);
-                    response = await fetch(url, {
-                        method: 'POST',
-                        body: formData,
-                        credentials: 'include'
-                    });
-                    
-                    if (response.ok) break;
-                    
-                } catch (err) {
-                    lastError = err;
-                    console.log('Failed with URL:', url, err);
-                }
+            // Cek jika response OK
+            if (!response.ok) {
+                throw new Error('HTTP error: ' + response.status);
             }
             
-            if (!response || !response.ok) {
-                throw new Error('Tidak bisa menghubungi server');
-            }
-            
-            // Parse response
+            // Parse JSON
             const result = await response.json();
             console.log('Login result:', result);
             
             if (result.success) {
                 // Redirect ke dashboard
-                window.location.href = result.redirect || 'index.php?page=dashboard';
+                window.location.href = result.redirect;
             } else {
                 alert('Login gagal: ' + result.message);
             }
             
         } catch (error) {
             console.error('Login error:', error);
-            alert('Error: ' + error.message + '\nCoba refresh halaman.');
+            alert('Error: ' + error.message + '\nCoba refresh halaman atau gunakan:\nUsername: admin\nPassword: admin123');
             
         } finally {
             submitBtn.disabled = false;
