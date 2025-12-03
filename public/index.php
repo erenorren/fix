@@ -2,11 +2,12 @@
 // public/index.php
 
 // ==================================================
-// VERCEL CONFIGURATION
+// VERCEL CONFIGURATION - HARUS SEBELUM session_start()
 // ==================================================
 $isVercel = isset($_ENV['VERCEL']) || getenv('VERCEL') === '1';
 
 if ($isVercel) {
+    // SET COOKIE PARAMS SEBELUM session_start()
     session_set_cookie_params([
         'lifetime' => 86400,
         'path' => '/',
@@ -22,13 +23,8 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-// ✅ DEBUG SESSION
-error_log("=== SESSION DEBUG ===");
-error_log("Session ID: " . (session_id() ?: 'NO SESSION'));
-error_log("User ID in session: " . ($_SESSION['user_id'] ?? 'NOT SET'));
-
 // ====================================================
-// ✅ FIXED AUTH MIDDLEWARE (lebih sederhana)
+// FIXED AUTH MIDDLEWARE - PASTIKAN TIDAK ADA OUTPUT SEBELUM HEADER
 // ====================================================
 $page = $_GET['page'] ?? 'dashboard';
 $action = $_GET['action'] ?? $_POST['action'] ?? null;
@@ -61,6 +57,11 @@ if ($page === 'login' && !empty($_SESSION['user_id'])) {
     header('Location: index.php?page=dashboard');
     exit;
 }
+
+// ==================================================
+// ✅ HAPUS DEBUG OUTPUT KE ERROR_LOG (bisa bikin header issue)
+// ==================================================
+// JANGAN gunakan error_log() sebelum header() kalau tidak perlu
 
 // ==================================================
 // ROUTING

@@ -3,13 +3,25 @@
   "builds": [
     {
       "src": "api/index.php",
-      "use": "vercel-php@0.7.4"
+      "use": "@vercel/php"
     }
   ],
   "routes": [
     {
-      "src": "/(css|img|js)/(.*)",
-      "dest": "/public/$1/$2"
+      "src": "/css/(.*)",
+      "dest": "/public/css/$1"
+    },
+    {
+      "src": "/js/(.*)",
+      "dest": "/public/js/$1"
+    },
+    {
+      "src": "/img/(.*)",
+      "dest": "/public/img/$1"
+    },
+    {
+      "src": "/vendor/(.*)",
+      "dest": "/public/vendor/$1"
     },
     {
       "src": "/(.*\\.(ico|png|jpg|jpeg|gif|svg|css|js))$",

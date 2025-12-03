@@ -2,22 +2,14 @@
 // api/index.php - Vercel Entry Point
 
 // ==================================================
-// DEBUG LOG
-// ==================================================
-error_log("=== API/INDEX.PHP ACCESSED ===");
-error_log("REQUEST_URI: " . ($_SERVER['REQUEST_URI'] ?? 'null'));
-error_log("SCRIPT_NAME: " . ($_SERVER['SCRIPT_NAME'] ?? 'null'));
-error_log("QUERY_STRING: " . ($_SERVER['QUERY_STRING'] ?? 'null'));
-
-// ==================================================
-// SET VERCEL ENVIRONMENT
+// ✅ SET VERCEL ENVIRONMENT SEBELUM APA PUN
 // ==================================================
 putenv('VERCEL=1');
 $_ENV['VERCEL'] = '1';
 $_SERVER['VERCEL'] = '1';
 
 // ==================================================
-// CORS & HEADERS
+// ✅ CORS & HEADERS - HARUS PERTAMA
 // ==================================================
 $origin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? '*';
 header('Access-Control-Allow-Origin: ' . $origin);
@@ -32,11 +24,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // ==================================================
-// FIX SESSION COOKIE FOR VERCEL
+// ✅ FIX SESSION FOR VERCEL - SEBELUM session_start()
 // ==================================================
 $isVercel = getenv('VERCEL') === '1' || isset($_ENV['VERCEL']);
 
 if ($isVercel) {
+    // ✅ Gunakan ini untuk Vercel
     ini_set('session.save_handler', 'files');
     ini_set('session.save_path', sys_get_temp_dir());
     
@@ -49,45 +42,48 @@ if ($isVercel) {
     ]);
 }
 
-// Start session
+// ==================================================
+// ✅ START SESSION
+// ==================================================
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-// ✅ DEBUG: Log session info
-error_log("Session ID: " . session_id());
-error_log("Session user_id: " . ($_SESSION['user_id'] ?? 'NOT SET'));
+// ==================================================
+// FIX REQUEST URI & SCRIPT NAME
+// ==================================================
+// Simulate direct access to public/index.php
+$_SERVER['SCRIPT_NAME'] = '/index.php';
 
-// ==================================================
-// FIX FOR STATIC FILES (CSS/JS/IMG)
-// ==================================================
+// Fix untuk assets yang masih pakai path lama
 $requestUri = $_SERVER['REQUEST_URI'] ?? '';
-
-// ✅ Handle static files - langsung redirect ke public folder
-if (preg_match('/\.(css|js|png|jpg|jpeg|gif|ico|svg)$/', $requestUri)) {
-    $publicFile = __DIR__ . '/../public' . $requestUri;
-    if (file_exists($publicFile)) {
+if (strpos($requestUri, '/css/') === 0 || 
+    strpos($requestUri, '/js/') === 0 || 
+    strpos($requestUri, '/img/') === 0) {
+    
+    $publicPath = __DIR__ . '/../public' . $requestUri;
+    if (file_exists($publicPath)) {
         $extension = pathinfo($requestUri, PATHINFO_EXTENSION);
-        $contentTypes = [
-            'css' => 'text/css',
-            'js' => 'application/javascript',
-            'png' => 'image/png',
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'gif' => 'image/gif',
-            'svg' => 'image/svg+xml',
-            'ico' => 'image/x-icon'
-        ];
         
-        if (isset($contentTypes[$extension])) {
-            header('Content-Type: ' . $contentTypes[$extension]);
+        if ($extension === 'css') {
+            header('Content-Type: text/css');
+        } elseif ($extension === 'js') {
+            header('Content-Type: application/javascript');
+        } elseif ($extension === 'png') {
+            header('Content-Type: image/png');
+        } elseif ($extension === 'jpg' || $extension === 'jpeg') {
+            header('Content-Type: image/jpeg');
+        } elseif ($extension === 'svg') {
+            header('Content-Type: image/svg+xml');
         }
         
-        readfile($publicFile);
+        readfile($publicPath);
         exit;
     }
 }
 
-// Continue to main app
+// ==================================================
+// INCLUDE MAIN APPLICATION
+// ==================================================
 require_once __DIR__ . '/../public/index.php';
 ?>
