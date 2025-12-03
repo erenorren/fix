@@ -2,36 +2,36 @@
 // ==================================================
 // VERCEL CONFIGURATION
 // ==================================================
-$isVercel = getenv('VERCEL') === '1' || isset($_ENV['VERCEL']);
+$isVercel = isset($_SERVER['VERCEL']) || getenv('VERCEL') === '1';
 
 if ($isVercel) {
-    // CORS headers untuk Vercel
+    // Set Vercel environment
+    putenv('VERCEL=1');
+    $_ENV['VERCEL'] = '1';
+    
+    // Fix headers untuk Vercel
     header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
     header('Access-Control-Allow-Credentials: true');
-    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
     
-    // Handle preflight
-    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-        http_response_code(200);
-        exit;
+    // Fix SCRIPT_NAME jika masih /api/index.php
+    if (($_SERVER['SCRIPT_NAME'] ?? '') === '/api/index.php') {
+        $_SERVER['SCRIPT_NAME'] = '/index.php';
     }
-    
-    // Session config untuk Vercel
-    session_set_cookie_params([
-        'lifetime' => 86400,
-        'path' => '/',
-        'domain' => parse_url($_SERVER['HTTP_ORIGIN'] ?? '', PHP_URL_HOST),
-        'secure' => true,
-        'httponly' => true,
-        'samesite' => 'None'
-    ]);
 }
 
 // ==================================================
 // SESSION START
 // ==================================================
 if (session_status() == PHP_SESSION_NONE) {
+    if ($isVercel) {
+        session_set_cookie_params([
+            'lifetime' => 86400,
+            'path' => '/',
+            'secure' => true,
+            'httponly' => true,
+            'samesite' => 'None'
+        ]);
+    }
     session_start();
 }
 
