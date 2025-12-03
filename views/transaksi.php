@@ -61,20 +61,20 @@ include __DIR__ . '/template/header.php';
                                     <div class="mb-3">
                                         <label class="form-label">Pilih Pemilik <span class="text-danger">*</span></label>
                                         <!-- Di views/transaksi.php, dropdown pelanggan: -->
-                                        <select name="id_pelanggan" class="form-select" id="selectPelanggan" required>
-                                            <option value="">-- Pilih Pemilik --</option>
-                                            <?php if (!empty($pelangganList)): ?>
-                                                <?php foreach ($pelangganList as $p): ?>
-                                                    <option value="<?= $p['id'] ?? '' ?>" 
-                                                        data-hp="<?= htmlspecialchars($p['hp'] ?? $p['no_hp'] ?? '') ?>" 
-                                                        data-alamat="<?= htmlspecialchars($p['alamat'] ?? '') ?>">
-                                                        <?= htmlspecialchars($p['nama'] ?? $p['nama_pelanggan'] ?? '') ?> 
-                                                        (<?= htmlspecialchars($p['hp'] ?? $p['no_hp'] ?? '') ?>)
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            <?php endif; ?>
-                                            <option value="new">+ Tambah Pemilik Baru</option>
-                                        </select>
+                                    <select name="id_pelanggan" class="form-select" id="selectPelanggan" required>
+                                        <option value="">-- Pilih Pemilik --</option>
+                                        <?php if (!empty($pelangganList)): ?>
+                                            <?php foreach ($pelangganList as $p): ?>
+                                                <option value="<?= $p['id'] ?? '' ?>" 
+                                                    data-hp="<?= htmlspecialchars($p['hp'] ?? $p['no_hp'] ?? '') ?>" 
+                                                    data-alamat="<?= htmlspecialchars($p['alamat'] ?? '') ?>">
+                                                    <?= htmlspecialchars($p['nama'] ?? $p['nama_pelanggan'] ?? '') ?> 
+                                                    (<?= htmlspecialchars($p['hp'] ?? $p['no_hp'] ?? '') ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                        <option value="new">+ Tambah Pemilik Baru</option>
+                                    </select>
                                         <small class="text-muted">Pilih dari daftar pelanggan terdaftar</small>
                                     </div>
 
@@ -348,50 +348,18 @@ include __DIR__ . '/template/header.php';
     </div>
 </div>
 
-<!-- DEBUG SCRIPT - Tampilkan data pelanggan -->
+
+<!-- MENJADI: -->
 <script>
-console.log("=== DEBUG DATA PELANGGAN ===");
+// Data dari PHP ke JS
+window.PHP_DATA = {
+    kandangTersedia: <?= json_encode($kandangTersedia ?? []) ?>,
+    pelangganList: <?= json_encode($pelangganList ?? []) ?>
+};
 
-// Cek apakah data pelanggan ada
-const pelangganList = <?= json_encode($pelangganList) ?>;
-console.log("Data pelanggan dari PHP:", pelangganList);
-console.log("Jumlah pelanggan:", pelangganList.length);
-
-// Cek contoh data pertama
-if (pelangganList.length > 0) {
-    console.log("Contoh data pelanggan pertama:", pelangganList[0]);
-    console.log("Struktur:", {
-        id: pelangganList[0].id,
-        nama: pelangganList[0].nama,
-        hp: pelangganList[0].hp,
-        alamat: pelangganList[0].alamat
-    });
-}
-
-// Test get data dari dropdown
-document.addEventListener('DOMContentLoaded', function() {
-    const select = document.getElementById('selectPelanggan');
-    
-    // Manual test: coba pilih option ke-1 (jika ada)
-    if (select && select.options.length > 1) {
-        // Simulasikan pilihan
-        console.log("=== TEST MANUAL ===");
-        select.selectedIndex = 1; // Pilih option pertama (bukan 'Pilih Pemilik')
-        const testOption = select.options[1];
-        
-        console.log("Test option:", {
-            value: testOption.value,
-            text: testOption.text,
-            dataHp: testOption.getAttribute('data-hp'),
-            dataAlamat: testOption.getAttribute('data-alamat')
-        });
-        
-        // Trigger change event
-        const event = new Event('change');
-        select.dispatchEvent(event);
-    }
-});
+console.log("=== DEBUG FROM VIEW ===");
+console.log("Pelanggan List:", <?= json_encode($pelangganList) ?>);
+console.log("Kandang Tersedia:", <?= json_encode($kandangTersedia) ?>);
+console.log("Paket List:", <?= json_encode($paketList) ?>);
 </script>
-<script src="<?= $base_url ?>/public/js/transaksi-handler.js"></script> 
-
-<?php include __DIR__ . '/template/footer.php'; ?>
+<script src="<?= $base_url ?>/js/transaksi-fix.js"></script>

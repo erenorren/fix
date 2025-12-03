@@ -26,30 +26,33 @@ class TransaksiController extends BaseController {
     }
         
     public function index() {
-    error_log("=== TRANSAKSI CONTROLLER INDEX DIPANGGIL ===");
-    
-    $tab = $_GET['tab'] ?? 'pendaftaran';
-    
-    // Get pelanggan dengan debug
-    $pelangganList = $this->pelangganModel->getAll();
-    
-    // DEBUG: Log struktur data
-    error_log("Jumlah pelanggan: " . count($pelangganList));
-    if (count($pelangganList) > 0) {
-        error_log("Contoh data pelanggan pertama:");
-        error_log(print_r($pelangganList[0], true));
-    }
-    
-    $data = [
-        'tab' => $tab,
-        'pelangganList' => $pelangganList, 
-        'paketList' => $this->layananModel->getAll(),
-        'kandangTersedia' => $this->kandangModel->getAll(),
-        'hewanMenginap' => $this->transaksiModel->getActiveTransactions(),
-    ];
+        error_log("=== TRANSAKSI CONTROLLER INDEX ===");
+        
+        $tab = $_GET['tab'] ?? 'pendaftaran';
+        
+        // Get data
+        $pelangganList = $this->pelangganModel->getAll();
+        $paketList = $this->layananModel->getAll();
+        $kandangTersedia = $this->kandangModel->getAll();
+        
+        // DEBUG: Log ke console browser juga
+        echo "<script>";
+        echo "console.log('Controller Data:');";
+        echo "console.log('Pelanggan:', " . json_encode($pelangganList) . ");";
+        echo "console.log('Paket:', " . json_encode($paketList) . ");";
+        echo "console.log('Kandang:', " . json_encode($kandangTersedia) . ");";
+        echo "</script>";
+        
+        $data = [
+            'tab' => $tab,
+            'pelangganList' => $pelangganList, 
+            'paketList' => $paketList,
+            'kandangTersedia' => $kandangTersedia,
+            'hewanMenginap' => $this->transaksiModel->getActiveTransactions(),
+        ];
 
-    $this->view('transaksi', $data); 
-}
+        $this->view('transaksi', $data); 
+    }
 
 
 /**
