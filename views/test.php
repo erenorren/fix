@@ -8,5 +8,4 @@ $hashed_password = password_hash($password_plain, PASSWORD_DEFAULT);
 // Tampilkan hasilnya
 echo $hashed_password;
 
-// Contoh hasil yang akan ditampilkan: $2y$10$................................
 ?>

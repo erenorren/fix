@@ -1,58 +1,59 @@
 <?php
-// core/Database.php
-
 class Database {
-    private $host;
-    private $username;
-    private $password;
-    private $database;
     private $connection;
-    private $port;
     
     public function __construct() {
-        // die('Access DB');
-        // 1. Include konfigurasi database
         require_once __DIR__ . '/../config/database.php';
-        
-        // 2. Ambil konfigurasi
         $config = getDatabaseConfig();
         
-        // 3. Simpan properti
-        $this->host = $config['host'];
-        $this->username = $config['username'];
-        $this->password = $config['password'];
-        $this->database = $config['dbname'];
-        $this->port = $config['port'];
-        
         try {
-            $dsn = "{$config['driver']}:host={$this->host};port={$this->port};dbname={$this->database};sslmode={$config['sslmode']}";
+            // Build DSN berdasarkan driver
+            $dsn = $this->buildDSN($config);
             
             $options = [
-                PDO::ATTR_ERRMODE           => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
-                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4",
             ];
             
-            $this->connection = new PDO($dsn, $this->username, $this->password, $options);
+            $this->connection = new PDO(
+                $dsn, 
+                $config['username'], 
+                $config['password'], 
+                $options
+            );
             
         } catch (PDOException $e) {
-            die("Connection failed: " . $e->getMessage() . 
-                "<br>Host: {$this->host}, DB: {$this->database}, Port: {$this->port}");
+            die("Database connection failed: " . $e->getMessage());
         }
     }
     
-    /**
-     * WRAPPER untuk SELECT/READ (Menggunakan prepare dan execute secara internal)
-     */
+    private function buildDSN($config) {
+        $driver = $config['driver'];
+        
+        if ($driver === 'mysql') {
+            return "mysql:host={$config['host']};port={$config['port']};dbname={$config['dbname']};charset=utf8mb4";
+        }
+        
+        if ($driver === 'pgsql') {
+            $dsn = "pgsql:host={$config['host']};port={$config['port']};dbname={$config['dbname']}";
+            if (isset($config['sslmode'])) {
+                $dsn .= ";sslmode={$config['sslmode']}";
+            }
+            return $dsn;
+        }
+        
+        throw new Exception("Unsupported database driver: {$driver}");
+    }
+    
     public function query($sql, $params = []) {
         try {
-            // FIX: Menggunakan prepare dan execute di sini
             $stmt = $this->connection->prepare($sql);
             $stmt->execute($params);
             return $stmt;
         } catch (PDOException $e) {
-            die("Query failed: " . $e->getMessage() . " - SQL: " . $sql);
+            error_log("Query error: " . $e->getMessage() . " - SQL: " . $sql);
+            throw $e;
         }
     }
     
@@ -84,3 +85,5 @@ class Database {
         return $this->connection->rollBack();
     }
 }
+
+?>

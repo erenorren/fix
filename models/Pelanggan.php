@@ -1,118 +1,113 @@
 <?php
 require_once __DIR__ . '/../core/Database.php';
-// pelanggan
-class Pelanggan
-{
-    private $db;
 
-    public function __construct()
-    {
+class Pelanggan {
+    private $db;
+    
+    public function __construct() {
         $this->db = new Database();
     }
-
-    /**
-     * Ambil semua data pelanggan (READ)
-     * Menggunakan alias: id, nama, hp (Wajib sesuai yang dicari di View)
-     */
+    
     public function getAll() {
-    $sql = "SELECT p.id_pelanggan as id, p.kode_pelanggan as kode, p.nama_pelanggan as nama, p.no_hp as hp, p.alamat 
-            FROM pelanggan p 
-            ORDER BY p.id_pelanggan DESC"; // URUTKAN DARI TERBARU
-    $stmt = $this->db->query($sql);
-    return $stmt->fetchAll();
-}
+        try {
+            error_log("Pelanggan::getAll() called");
+            
+            // ✅ FIX: PostgreSQL compatible query
+            $sql = "SELECT 
+                        id_pelanggan,
+                        nama_pelanggan,
+                        no_hp,
+                        alamat
+                    FROM pelanggan 
+                    ORDER BY nama_pelanggan";
+            
+            $stmt = $this->db->query($sql);
+            $result = $stmt->fetchAll();
+            
+            error_log("Pelanggan count: " . count($result));
+            
+            // Format data konsisten
+            $formatted = [];
+            foreach ($result as $row) {
+                $formatted[] = [
+                    'id' => $row['id_pelanggan'],
+                    'id_pelanggan' => $row['id_pelanggan'],
+                    'nama_pelanggan' => $row['nama_pelanggan'],
+                    'nama' => $row['nama_pelanggan'],
+                    'no_hp' => $row['no_hp'],
+                    'hp' => $row['no_hp'],
+                    'alamat' => $row['alamat']
+                ];
+            }
+            
+            return $formatted;
+            
+        } catch (Exception $e) {
+            error_log("ERROR Pelanggan::getAll(): " . $e->getMessage());
+            return [];
+        }
+    }
     
-    /**
-     * Tambah pelanggan baru (CREATE)
-     */
+    public function getById($id) {
+        $sql = "SELECT * FROM pelanggan WHERE id_pelanggan = ?";
+        $stmt = $this->db->query($sql, [$id]);
+        return $stmt->fetch();
+    }
+    
     public function create($data) {
-    try {
-        $kode = $this->generateKodePelanggan();
-        
-        // VALIDASI: Pastikan nama_pelanggan tidak kosong
-        $nama_pelanggan = trim($data['nama_pelanggan'] ?? '');
-        if (empty($nama_pelanggan)) {
-            throw new Exception("Nama pelanggan tidak boleh kosong");
+        try {
+            error_log("Pelanggan::create() - Data: " . print_r($data, true));
+            
+            // ✅ FIX: PostgreSQL dengan RETURNING clause
+            $sql = "INSERT INTO pelanggan (nama_pelanggan, no_hp, alamat) 
+                    VALUES (:nama, :hp, :alamat) 
+                    RETURNING id_pelanggan"; // ← INI PENTING!
+            
+            $params = [
+                ':nama' => $data['nama_pelanggan'] ?? '',
+                ':hp' => $data['no_hp'] ?? '',
+                ':alamat' => $data['alamat'] ?? ''
+            ];
+            
+            // ✅ FIX: Gunakan query() bukan execute() untuk dapatkan RETURNING value
+            $stmt = $this->db->query($sql, $params);
+            $result = $stmt->fetch();
+            
+            if ($result && isset($result['id_pelanggan'])) {
+                $newId = $result['id_pelanggan'];
+                error_log("Pelanggan::create() - New ID: " . $newId);
+                return $newId;
+            }
+            
+            error_log("Pelanggan::create() - No ID returned");
+            return false;
+            
+        } catch (Exception $e) {
+            error_log("Error create pelanggan: " . $e->getMessage());
+            return false;
         }
+    }
+    
+    public function update($id, $data) {
+        $sql = "UPDATE pelanggan SET 
+                nama_pelanggan = :nama,
+                no_hp = :hp,
+                alamat = :alamat
+                WHERE id_pelanggan = :id";
         
-        $sql = "INSERT INTO pelanggan (kode_pelanggan, nama_pelanggan, no_hp, alamat) 
-                VALUES (:kode_pelanggan, :nama_pelanggan, :no_hp, :alamat)";
-
-        $result = $this->db->execute($sql, [
-            "kode_pelanggan" => $kode,
-            "nama_pelanggan" => $nama_pelanggan,
-            "no_hp" => $data['no_hp'] ?? '',
-            "alamat" => $data['alamat'] ?? '',
-        ]);
+        $params = [
+            ':id' => $id,
+            ':nama' => $data['nama_pelanggan'] ?? '',
+            ':hp' => $data['no_hp'] ?? '',
+            ':alamat' => $data['alamat'] ?? ''
+        ];
         
-        if ($result) {
-            return $this->db->lastInsertId();
-        }
-        return false;
-
-    } catch (Exception $e) {
-        error_log("Error create pelanggan: " . $e->getMessage());
-        return false;
+        return $this->db->execute($sql, $params);
+    }
+    
+    public function delete($id) {
+        $sql = "DELETE FROM pelanggan WHERE id_pelanggan = :id";
+        return $this->db->execute($sql, [':id' => $id]);
     }
 }
-
-    
-    /**
-     * Generate kode pelanggan otomatis (Helper)
-     */
-    private function generateKodePelanggan()
-    {
-        $sql = "SELECT MAX(CAST(SUBSTRING(kode_pelanggan, 4) AS UNSIGNED)) as max_number FROM pelanggan WHERE kode_pelanggan LIKE 'PLG%'";
-        $stmt = $this->db->query($sql);
-        $result = $stmt->fetch();
-        $nextNumber = ($result['max_number'] ?? 0) + 1;
-        return 'PLG' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
-    }
-    
-    /**
-     * Hitung total pelanggan (READ)
-     */
-    public function getTotalCount()
-    {
-        $sql = "SELECT COUNT(*) as total FROM pelanggan";
-        $stmt = $this->db->query($sql); // FIX: Hapus $stmt->execute() yang berlebihan
-        $result = $stmt->fetch();
-        return $result['total'] ?? 0;
-    }
-
-    /**
-     * Ambil data untuk dropdown (READ)
-     */
-    public function getForDropdown()
-    {
-        $sql = "SELECT p.id_pelanggan as id, p.kode_pelanggan as kode, p.nama_pelanggan as nama
-                FROM pelanggan p
-                ORDER BY p.nama_pelanggan";
-
-        $stmt = $this->db->query($sql); // FIX: Hapus $stmt->execute() yang berlebihan
-        return $stmt->fetchAll();
-    }
-
-    /**
-     * Cek apakah no HP sudah terdaftar (READ)
-     */
-    public function isPhoneExists($no_hp, $exclude_id = null)
-    {
-        $sql = "SELECT COUNT(*) as total FROM pelanggan WHERE no_hp = :no_hp";
-        
-        $params = ["no_hp" => $no_hp];
-
-        if ($exclude_id) {
-            $sql .= " AND id_pelanggan != :exclude_id";
-            $params["exclude_id"] = $exclude_id;
-        }
-
-        $stmt = $this->db->query($sql, $params); // FIX: Gunakan query($sql, $params)
-        $result = $stmt->fetch();
-        return ($result['total'] ?? 0) > 0;
-    }
-    
-    public function getLastInsertId() {
-        return $this->db->lastInsertId();
-    }
-}
+?>

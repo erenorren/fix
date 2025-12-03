@@ -1,57 +1,77 @@
 <?php
-// controllers/AuthController.php
-require_once __DIR__ . '/../models/User.php'; 
+require_once __DIR__ . '/../models/User.php';
 
 class AuthController {
-    private $userModel;
-
-    public function __construct() {
-        $this->userModel = new User();
-    }
-
-    /**
-     * Menangani proses login
-     */
+    
     public function login() {
-        if (session_status() == PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        $username = trim($_POST['username'] ?? '');
-        $password = $_POST['password'] ?? '';
-        // var_dump($username);
+        // ✅ CLEAR ANY PREVIOUS OUTPUT
+        if (ob_get_level()) ob_clean();
         
-        if (empty($username) || empty($password)) {
-            echo json_encode(['error' => 'Username dan password harus diisi']);
-            return;
-        }
-
-        $user = $this->userModel->login($username, $password);
+        // ✅ SET JSON HEADERS IMMEDIATELY
+        header('Content-Type: application/json');
         
-        if ($user) {
-            // Set session
-            $_SESSION['user_id'] = $user['id']; 
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
-            $_SESSION['role'] = $user['role'];
+        // ✅ SUPRESS ERRORS
+        ini_set('display_errors', 0);
+        
+        try {
+            // Get POST data
+            $username = $_POST['username'] ?? '';
+            $password = $_POST['password'] ?? '';
             
-            echo json_encode(['success' => 'Login berhasil', 'redirect' => 'index.php?page=dashboard']); 
+            // Debug log
+            error_log("Login attempt: " . $username);
             
-        } else {
-            echo json_encode(['error' => 'Username atau password salah']);
+            // Validate
+            if (empty($username) || empty($password)) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Username dan password diperlukan'
+                ]);
+                exit;
+            }
+            
+            // Create user model
+            $userModel = new User();
+            $user = $userModel->login($username, $password);
+            
+            if ($user) {
+                // Set session
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['role'] = $user['role'];
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Login berhasil',
+                    'redirect' => 'index.php?page=dashboard'
+                ]);
+            } else {
+                http_response_code(401);
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Username atau password salah'
+                ]);
+            }
+            
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
         }
-    }
-
-    /**
-     * Menangani proses logout
-     */
-    public function logout() {
-        if (session_status() == PHP_SESSION_NONE) {
-            session_start();
-        }
-        session_destroy();
-        header('Location: index.php?page=login');
-        exit;
+        
+        exit; // IMPORTANT!
     }
     
+    public function logout() {
+        session_destroy();
+        echo json_encode([
+            'success' => true,
+            'redirect' => 'index.php?page=login'
+        ]);
+        exit;
+    }
 }
+?>

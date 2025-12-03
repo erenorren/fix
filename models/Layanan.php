@@ -7,73 +7,85 @@ class Layanan
 
     public function __construct() { $this->db = new Database(); }
 
-    /** Ambil semua data layanan (READ) */
+    /** 
+     * Ambil semua data layanan (READ)
+     * PostgreSQL compatible
+     */
     public function getAll()
     {
         $sql = "SELECT * FROM layanan ORDER BY nama_layanan";
-        $stmt = $this->db->query($sql); // FIX: Hapus $stmt->execute()
+        $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
     }
 
-    /** Ambil data layanan berdasarkan ID (READ) */
+    /** 
+     * Ambil data layanan berdasarkan ID (READ)
+     * PostgreSQL compatible, menggunakan named parameter
+     */
     public function getById($id)
     {
-        $sql = "SELECT * FROM layanan WHERE id_layanan = ?";
-        $stmt = $this->db->query($sql, [$id]); // FIX: Hapus $stmt->execute()
+        $sql = "SELECT * FROM layanan WHERE id_layanan = :id";
+        $stmt = $this->db->query($sql, ["id" => $id]);
         return $stmt->fetch();
     }
     
     /**
-     * CREATE layanan baru
-     */
+     * CREATE layanan baru
+     * PostgreSQL compatible, menggunakan named parameter
+     */
     public function create($data)
     {
-    try {
-    $sql = "INSERT INTO layanan (nama_layanan, harga, deskripsi) VALUES (?, ?, ?)";
-    // FIX: Gunakan execute() untuk CUD (CREATE)
-    return $this->db->execute($sql, [
-    $data['nama_layanan'],
-    $data['harga'],
-    $data['deskripsi'] ?? null
-    ]);
-    } catch (Exception $e) {
-    error_log("Error create layanan: " . $e->getMessage());
-    return false;
-    }
+        try {
+            $sql = "INSERT INTO layanan (nama_layanan, harga, deskripsi) 
+                    VALUES (:nama_layanan, :harga, :deskripsi)";
+            return $this->db->execute($sql, [
+                "nama_layanan" => $data['nama_layanan'],
+                "harga" => $data['harga'],
+                "deskripsi" => $data['deskripsi'] ?? null
+            ]);
+        } catch (Exception $e) {
+            error_log("Error create layanan: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**
-     * UPDATE data layanan 
-     */
+     * UPDATE data layanan
+     * PostgreSQL compatible, menggunakan named parameter
+     */
     public function update($id, $data)
     {
-    try {
-    $sql = "UPDATE layanan SET nama_layanan = ?, harga = ?, deskripsi = ? WHERE id_layanan = ?";
-    // FIX: Ganti $this->db->query() dan $stmt->query() menjadi execute()
-    return $this->db->execute($sql, [
-    $data['nama_layanan'],
-    $data['harga'],
-    $data['deskripsi'] ?? null,
-    $id
-    ]);
-    } catch (Exception $e) {
-    error_log("Error update layanan: " . $e->getMessage());
-    return false;
-    }
+        try {
+            $sql = "UPDATE layanan 
+                    SET nama_layanan = :nama_layanan, 
+                        harga = :harga, 
+                        deskripsi = :deskripsi 
+                    WHERE id_layanan = :id";
+            return $this->db->execute($sql, [
+                "nama_layanan" => $data['nama_layanan'],
+                "harga" => $data['harga'],
+                "deskripsi" => $data['deskripsi'] ?? null,
+                "id" => $id
+            ]);
+        } catch (Exception $e) {
+            error_log("Error update layanan: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**
-     * DELETE layanan
-     */
+     * DELETE layanan
+     * PostgreSQL compatible, menggunakan named parameter
+     */
     public function delete($id)
     {
-    try {
-    $sql = "DELETE FROM layanan WHERE id_layanan = ?";
-    // FIX: Ganti $this->db->query() dan $stmt->query() menjadi execute()
-    return $this->db->execute($sql, [$id]);
-    } catch (Exception $e) {
-    error_log("Error delete layanan: " . $e->getMessage());
-    return false;
-    }
+        try {
+            $sql = "DELETE FROM layanan WHERE id_layanan = :id";
+            return $this->db->execute($sql, ["id" => $id]);
+        } catch (Exception $e) {
+            error_log("Error delete layanan: " . $e->getMessage());
+            return false;
+        }
     }
 }
+?>
