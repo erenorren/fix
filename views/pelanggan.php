@@ -65,7 +65,7 @@ if (method_exists($pelangganModel, 'getAllWithStats')) {
 }
 
 // ====== HEADER TEMPLATE ======
-include _DIR_ . '/template/header.php';
+include __DIR__ . '/template/header.php';
 ?>
 
 <h2 class="mb-3">Data Pelanggan</h2>
@@ -323,4 +323,4 @@ document.getElementById('searchInput').addEventListener('input', function (e) {
 });
 </script>
 
-<?php include _DIR_ . '/template/footer.php'; ?>
+<?php include __DIR__ . '/template/footer.php'; ?>
