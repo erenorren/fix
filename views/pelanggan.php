@@ -3,7 +3,7 @@ $pageTitle  = 'Data Pelanggan';
 $activeMenu = 'pemilik';
 
 // ====== LOAD MODEL PELANGGAN ======
-require_once _DIR_ . '/../models/Pelanggan.php';
+require_once __DIR__ . '/../models/Pelanggan.php';
 $pelangganModel = new Pelanggan();
 
 // (Opsional) load model Transaksi untuk riwayat pelanggan
