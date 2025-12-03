@@ -1,202 +1,186 @@
 <?php
-// Set header untuk Vercel
-if (isset($_SERVER['HTTP_ORIGIN'])) {
-    header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
-    header("Access-Control-Allow-Credentials: true");
-    header("Access-Control-Max-Age: 86400");
+// ==================================================
+// VERCEL CONFIGURATION
+// ==================================================
+$isVercel = getenv('VERCEL') === '1' || isset($_ENV['VERCEL']);
+
+if ($isVercel) {
+    // CORS headers untuk Vercel
+    header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
+    header('Access-Control-Allow-Credentials: true');
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+    
+    // Handle preflight
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(200);
+        exit;
+    }
+    
+    // Session config untuk Vercel
+    session_set_cookie_params([
+        'lifetime' => 86400,
+        'path' => '/',
+        'domain' => parse_url($_SERVER['HTTP_ORIGIN'] ?? '', PHP_URL_HOST),
+        'secure' => true,
+        'httponly' => true,
+        'samesite' => 'None'
+    ]);
 }
 
-// Handle preflight
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])) {
-        header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-    }
-    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
-        header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
-    }
-    exit(0);
+// ==================================================
+// SESSION START
+// ==================================================
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
 }
 
-// Konfigurasi session untuk Vercel (serverless)
-ini_set('session.cookie_samesite', 'None');
-ini_set('session.cookie_secure', isset($_SERVER['HTTPS']));
+// ==================================================
+// AUTOLOAD
+// ==================================================
+require_once __DIR__ . '/../vendor/autoload.php';
 
-// Autoload untuk load class otomatis dari /models, /controllers, /core (di luar public)
-spl_autoload_register(function ($className) {
-    $paths = [
-        __DIR__ . '/../models/' . $className . '.php',
-        __DIR__ . '/../controllers/' . $className . '.php',
-        __DIR__ . '/../core/' . $className . '.php',
-    ];
-
-    foreach ($paths as $path) {
-        if (file_exists($path)) {
-            if (!class_exists($className)) {
-                require_once $path;
-            }
-            return;
-        }
-    }
-});
-
-// Mulai session untuk login
-session_start();
+// ==================================================
+// ENVIRONMENT
+// ==================================================
+if (!$isVercel && file_exists(__DIR__ . '/../.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+    $dotenv->load();
+}
 
 // ====================================================
-// MIDDLEWARE: CEK APAKAH USER SUDAH LOGIN
+// AUTH MIDDLEWARE
 // ====================================================
-function requireLogin() {
-    // Halaman yang BOLEH diakses tanpa login
-    $publicPages = ['login', 'logout', '404'];
-    
-    $page = $_GET['page'] ?? 'dashboard';
-    $action = $_GET['action'] ?? $_POST['action'] ?? null;
-    
-    // Action API tertentu yang boleh tanpa login
+function checkAuth() {
+    $publicPages = ['login', 'logout'];
     $publicActions = ['login', 'searchPelanggan', 'getKandangTersedia'];
     
-    // Jika mencoba akses action publik, izinkan
-    if ($action && in_array($action, $publicActions)) {
+    $page = $_GET['page'] ?? 'dashboard';
+    $action = $_GET['action'] ?? null;
+    
+    if (in_array($page, $publicPages) || in_array($action, $publicActions)) {
         return;
     }
     
-    // Jika mencoba akses halaman publik, izinkan
-    if (in_array($page, $publicPages)) {
-        return;
-    }
-    
-    // Cek apakah user sudah login (sesuai dengan AuthController)
-    // AuthController set: $_SESSION['user_id'], $_SESSION['username']
-    if (!isset($_SESSION['user_id']) || !isset($_SESSION['username'])) {
-        // Redirect ke halaman login
+    if (!isset($_SESSION['user_id'])) {
+        if ($action) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized']);
+            exit;
+        }
         header('Location: index.php?page=login');
         exit;
     }
 }
 
-// Jalankan middleware
-requireLogin(); // ← INI ADALAH PEMANGGILAN FUNGSI, BUKAN DEKLARASI BARU
+checkAuth();
 
-// Cek action untuk API/backend
-$action = $_GET['action'] ?? $_POST['action'] ?? null;
+// ==================================================
+// ROUTING
+// ==================================================
+$action = $_GET['action'] ?? null;
 
+// API/ACTION ROUTES
 if ($action) {
-    // Routing untuk backend (controllers)
     switch ($action) {
         case 'login':
-            $controller = new AuthController();
-            $controller->login();
+            require_once __DIR__ . '/../controllers/AuthController.php';
+            (new AuthController())->login();
             break;
+            
         case 'logout':
+            require_once __DIR__ . '/../controllers/AuthController.php';
             $controller = new AuthController();
             $controller->logout();
             break;
             
         case 'searchPelanggan':
-            // API ini TIDAK perlu login (digunakan di form transaksi sebelum login)
             require_once __DIR__ . '/../models/Pelanggan.php';
-            $pelangganModel = new Pelanggan();
-            
+            $model = new Pelanggan();
             $keyword = $_GET['q'] ?? '';
-            
-            // Gunakan method getAll() yang sudah ada dan filter manual
-            $allPelanggan = $pelangganModel->getAll();
-            $results = [];
-            
-            foreach ($allPelanggan as $pelanggan) {
-                if (stripos($pelanggan['nama'], $keyword) !== false || 
-                    stripos($pelanggan['hp'], $keyword) !== false) {
-                    $results[] = $pelanggan;
-                }
-            }
-            
+            $results = $model->search($keyword);
             header('Content-Type: application/json');
             echo json_encode($results);
             exit;
-
-        case 'getKandangTersedia':
-            // API ini TIDAK perlu login (digunakan di form transaksi sebelum login)
-            require_once __DIR__ . '/../models/Kandang.php';
-            $kandangModel = new Kandang();
             
+        case 'getKandangTersedia':
+            require_once __DIR__ . '/../models/Kandang.php';
+            $model = new Kandang();
             $jenis = $_GET['jenis'] ?? '';
             $ukuran = $_GET['ukuran'] ?? '';
-            
-            $kandangTersedia = $kandangModel->getAvailableKandang($jenis, $ukuran);
-            
+            $results = $model->getAvailable($jenis, $ukuran);
             header('Content-Type: application/json');
-            echo json_encode($kandangTersedia);
+            echo json_encode($results);
             exit;
-
-        // TRANSAKSI ACTIONS - PERLU LOGIN
+            
         case 'createTransaksi':
-            // Cek login dulu untuk action yang butuh auth
-            if (!isset($_SESSION['user_id'])) {
-                http_response_code(401);
-                echo json_encode(['error' => 'Unauthorized']);
-                exit;
-            }
+            require_once __DIR__ . '/../controllers/TransaksiController.php';
             $controller = new TransaksiController();
             $controller->create();
             break;
+            
         case 'checkoutTransaksi':
-            // Cek login dulu untuk action yang butuh auth
-            if (!isset($_SESSION['user_id'])) {
-                http_response_code(401);
-                echo json_encode(['error' => 'Unauthorized']);
-                exit;
-            }
+            require_once __DIR__ . '/../controllers/TransaksiController.php';
             $controller = new TransaksiController();
             $controller->checkout();
             break;
-
+            
         default:
+            http_response_code(404);
             echo json_encode(['error' => 'Action not found']);
-            break;
+            exit;
     }
     exit;
 }
 
-// Jika tidak ada action, lanjut ke frontend routing (page)
+// PAGE ROUTES
 $page = $_GET['page'] ?? 'dashboard';
-
 switch ($page) {
-    case 'dashboard':
-        // Dashboard hanya bisa diakses setelah login
-        include __DIR__ . '/../views/dashboard.php';
-        break;
-    case 'transaksi':
-        $controller = new TransaksiController();
-        $controller->index();
-        break;
-    case 'layanan':
-        include __DIR__ . '/../views/layanan.php';
-        break;
-    case 'hewan':
-        include __DIR__ . '/../views/hewan.php';
-        break;
-    case 'pemilik':
-        include __DIR__ . '/../views/pelanggan.php';
-        break;
-    case 'laporan':
-        include __DIR__ . '/../views/laporan.php';
-        break;
     case 'login':
-        // Jika sudah login, redirect ke dashboard
         if (isset($_SESSION['user_id'])) {
             header('Location: index.php?page=dashboard');
             exit;
         }
-        include __DIR__ . '/../views/login.php';
+        require_once __DIR__ . '/../views/login.php';
         break;
-    case 'kandang':
-        include __DIR__ . '/../views/kandang.php';
+
+    case 'dashboard':
+        require_once __DIR__ . '/../views/dashboard.php';
         break;
+        
+    case 'transaksi':
+        require_once __DIR__ . '/../controllers/TransaksiController.php';
+        $controller = new TransaksiController();
+        $controller->index();
+        break;
+        
     case 'logout':
         session_destroy();
         header('Location: index.php?page=login');
         exit;
+        
+    case 'hewan':
+        require_once __DIR__ . '/../views/hewan.php';
+        break;
+        
+    case 'kandang':
+        require_once __DIR__ . '/../views/kandang.php';
+        break;
+        
+    case 'layanan':
+        require_once __DIR__ . '/../views/layanan.php';
+        break;
+        
+    case 'pemilik':
+        require_once __DIR__ . '/../views/pelanggan.php';
+        break;
+        
+    case 'laporan':
+        require_once __DIR__ . '/../views/laporan.php';
+        break;
+        
     default:
-        include __DIR__ . '/../views/404.php';
+        require_once __DIR__ . '/../views/404.php';
         break;
 }
+?>

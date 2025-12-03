@@ -93,85 +93,80 @@ if (session_status() == PHP_SESSION_NONE) {
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
     const alertContainer = document.getElementById('alert-container');
-    let isSubmitting = false;
     
     if (loginForm) {
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Prevent double submission
-            if (isSubmitting) return;
-            isSubmitting = true;
-            
-            // Clear previous alerts
-            if (alertContainer) {
-                alertContainer.innerHTML = '';
-            }
-            
-            const formData = new FormData(this);
             const submitBtn = this.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtn.innerHTML;
+            const originalText = submitBtn.innerHTML;
             
             // Show loading
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Memproses...';
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Memproses...';
+            
+            // Clear alerts
+            if (alertContainer) alertContainer.innerHTML = '';
+            
+            // Prepare data
+            const formData = {
+                username: this.querySelector('[name="username"]').value.trim(),
+                password: this.querySelector('[name="password"]').value
+            };
             
             try {
+                // Send as JSON (better for Vercel)
                 const response = await fetch('index.php?action=login', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(formData),
+                    credentials: 'include' // IMPORTANT for Vercel sessions
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Login successful, redirect
-                    window.location.href = data.redirect;
+                    // Redirect with delay
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 300);
                 } else {
-                    // Login failed - show error in form
-                    showAlert(data.message || 'Username atau password salah', 'danger');
-                    
-                    // Reset focus
-                    document.querySelector('input[name="username"]').focus();
-                    document.querySelector('input[name="username"]').select();
+                    showError(data.message);
                 }
                 
             } catch (error) {
                 console.error('Login error:', error);
-                showAlert('Terjadi kesalahan koneksi. Silakan coba lagi.', 'danger');
+                
+                // Different error messages
+                let errorMsg = 'Terjadi kesalahan koneksi. ';
+                if (error.message.includes('Failed to fetch')) {
+                    errorMsg += 'Tidak dapat terhubung ke server. ';
+                }
+                errorMsg += 'Silakan coba lagi.';
+                
+                showError(errorMsg);
                 
             } finally {
-                // Reset button state
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-                isSubmitting = false;
+                submitBtn.innerHTML = originalText;
             }
         });
         
-        // Function to show alert in form
-        function showAlert(message, type) {
+        function showError(message) {
             if (!alertContainer) return;
             
-            const alertClass = type === 'danger' ? 'alert-danger' : 'alert-success';
-            const icon = type === 'danger' ? 'bi-exclamation-circle-fill' : 'bi-check-circle-fill';
-            
             const alertHTML = `
-                <div class="alert ${alertClass} alert-dismissible fade show shadow-sm mb-3" role="alert">
-                    <i class="bi ${icon} me-2"></i>
+                <div class="alert alert-danger alert-dismissible fade show mb-3">
+                    <i class="bi bi-exclamation-circle me-2"></i>
                     ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `;
-            
             alertContainer.innerHTML = alertHTML;
         }
-        
-        // Handle Enter key
-        loginForm.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !isSubmitting) {
-                this.dispatchEvent(new Event('submit'));
-            }
-        });
     }
 });
 </script>

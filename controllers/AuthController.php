@@ -1,122 +1,85 @@
 <?php
-require_once __DIR__ . '/../models/User.php'; 
+require_once __DIR__ . '/../models/User.php';
 
 class AuthController {
     private $userModel;
-
+    private $isVercel;
+    
     public function __construct() {
         $this->userModel = new User();
+        $this->isVercel = getenv('VERCEL') === '1' || isset($_ENV['VERCEL']);
     }
-
-    /**
-     * Menangani proses login
-     */
+    
     public function login() {
-        // Start output buffering untuk debug
-        ob_start();
+        // Set headers
+        header('Content-Type: application/json; charset=utf-8');
         
-        if (session_status() == PHP_SESSION_NONE) {
-            session_start();
+        if ($this->isVercel) {
+            header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
+            header('Access-Control-Allow-Credentials: true');
         }
-
-        // Log request data
-        error_log("=== LOGIN REQUEST ===");
-        error_log("POST data: " . print_r($_POST, true));
-        error_log("Session ID: " . session_id());
         
-        $username = trim($_POST['username'] ?? '');
-        $password = $_POST['password'] ?? '';
+        // Get input
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!$input && !empty($_POST)) {
+            $input = $_POST;
+        }
         
-        // HEADER JSON harus di-set di awal
-        header('Content-Type: application/json');
+        $username = trim($input['username'] ?? '');
+        $password = $input['password'] ?? '';
         
-        // Validasi
+        // Validation
         if (empty($username) || empty($password)) {
-            $response = [
+            http_response_code(400);
+            echo json_encode([
                 'success' => false,
                 'message' => 'Username dan password harus diisi'
-            ];
-            echo json_encode($response);
-            error_log("Validation failed: " . json_encode($response));
+            ]);
             exit;
         }
-
+        
         try {
-            // Panggil model
-            error_log("Calling UserModel->login with: $username");
             $user = $this->userModel->login($username, $password);
             
-            if ($user && is_array($user)) {
-                // Set session
-                $_SESSION['user_id'] = $user['id']; 
+            if ($user) {
+                $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
                 $_SESSION['role'] = $user['role'];
                 
-                $response = [
-                    'success' => true, 
+                // Regenerate session untuk security
+                session_regenerate_id(true);
+                
+                // Response
+                echo json_encode([
+                    'success' => true,
                     'message' => 'Login berhasil',
                     'redirect' => 'index.php?page=dashboard'
-                ];
-                
-                error_log("Login SUCCESS: " . json_encode($response));
-                echo json_encode($response);
-                
+                ]);
             } else {
-                // Coba bypass untuk testing
-                error_log("Normal login failed, trying bypass...");
-                
-                // BYPASS FOR TESTING - HAPUS INI SETELAH BERHASIL
-                if ($username === 'admin' || $username === 'kasir1') {
-                    $_SESSION['user_id'] = 1;
-                    $_SESSION['username'] = $username;
-                    $_SESSION['nama_lengkap'] = $username === 'admin' ? 'Administrator' : 'Kasir Satu';
-                    $_SESSION['role'] = $username === 'admin' ? 'admin' : 'kasir';
-                    
-                    $response = [
-                        'success' => true, 
-                        'message' => 'Login berhasil (bypass)',
-                        'redirect' => 'index.php?page=dashboard'
-                    ];
-                    
-                    error_log("Bypass login SUCCESS: " . json_encode($response));
-                    echo json_encode($response);
-                    exit;
-                }
-                // END BYPASS
-                
-                $response = [
+                http_response_code(401);
+                echo json_encode([
                     'success' => false,
                     'message' => 'Username atau password salah'
-                ];
-                
-                error_log("Login FAILED: " . json_encode($response));
-                echo json_encode($response);
+                ]);
             }
             
         } catch (Exception $e) {
-            error_log("Login EXCEPTION: " . $e->getMessage());
-            
-            $response = [
+            error_log("AuthController error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
                 'success' => false,
-                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
-            ];
-            
-            echo json_encode($response);
+                'message' => 'Terjadi kesalahan sistem'
+            ]);
         }
-        
-        // Clean output buffer
-        ob_end_flush();
-        exit;
     }
 
     public function logout() {
-        if (session_status() == PHP_SESSION_NONE) {
-            session_start();
-        }
         session_destroy();
-        header('Location: index.php?page=login');
-        exit;
+        echo json_encode([
+            'success' => true,
+            'redirect' => 'index.php?page=login'
+        ]);
     }
 }
 ?>
