@@ -32,55 +32,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // ==================================================
-// FIX SESSION FOR VERCEL
+// FIX SESSION COOKIE FOR VERCEL
 // ==================================================
-session_set_cookie_params([
-    'lifetime' => 86400,
-    'path' => '/',
-    'domain' => parse_url($origin, PHP_URL_HOST),
-    'secure' => true,
-    'httponly' => true,
-    'samesite' => 'None'
-]);
+$isVercel = getenv('VERCEL') === '1' || isset($_ENV['VERCEL']);
 
-// ==================================================
-// FIX REQUEST URI & SCRIPT NAME
-// ==================================================
-// Simulate direct access to public/index.php
-$_SERVER['SCRIPT_NAME'] = '/index.php';
-
-// Fix untuk assets yang masih pakai path lama
-$requestUri = $_SERVER['REQUEST_URI'] ?? '';
-if (strpos($requestUri, '/css/') === 0 || 
-    strpos($requestUri, '/js/') === 0 || 
-    strpos($requestUri, '/img/') === 0) {
-    // Assets sudah dihandle oleh vercel.json, tapi masuk ke sini
-    // Redirect ke public folder
-    $publicPath = __DIR__ . '/../public' . $requestUri;
-    if (file_exists($publicPath)) {
-        if (strpos($requestUri, '.css')) {
-            header('Content-Type: text/css');
-        } elseif (strpos($requestUri, '.js')) {
-            header('Content-Type: application/javascript');
-        } elseif (strpos($requestUri, '.png')) {
-            header('Content-Type: image/png');
-        } elseif (strpos($requestUri, '.jpg') || strpos($requestUri, '.jpeg')) {
-            header('Content-Type: image/jpeg');
-        }
-        readfile($publicPath);
-        exit;
-    }
+if ($isVercel) {
+    ini_set('session.save_handler', 'files');
+    ini_set('session.save_path', sys_get_temp_dir());
+    
+    session_set_cookie_params([
+        'lifetime' => 86400,
+        'path' => '/',
+        'secure' => true,
+        'httponly' => true,
+        'samesite' => 'None'
+    ]);
 }
 
-// ==================================================
-// START SESSION
-// ==================================================
+// Start session
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// ✅ DEBUG: Log session info
+error_log("Session ID: " . session_id());
+error_log("Session user_id: " . ($_SESSION['user_id'] ?? 'NOT SET'));
+
 // ==================================================
-// INCLUDE MAIN APPLICATION
+// FIX FOR STATIC FILES (CSS/JS/IMG)
 // ==================================================
+$requestUri = $_SERVER['REQUEST_URI'] ?? '';
+
+// ✅ Handle static files - langsung redirect ke public folder
+if (preg_match('/\.(css|js|png|jpg|jpeg|gif|ico|svg)$/', $requestUri)) {
+    $publicFile = __DIR__ . '/../public' . $requestUri;
+    if (file_exists($publicFile)) {
+        $extension = pathinfo($requestUri, PATHINFO_EXTENSION);
+        $contentTypes = [
+            'css' => 'text/css',
+            'js' => 'application/javascript',
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'svg' => 'image/svg+xml',
+            'ico' => 'image/x-icon'
+        ];
+        
+        if (isset($contentTypes[$extension])) {
+            header('Content-Type: ' . $contentTypes[$extension]);
+        }
+        
+        readfile($publicFile);
+        exit;
+    }
+}
+
+// Continue to main app
 require_once __DIR__ . '/../public/index.php';
 ?>

@@ -1,83 +1,66 @@
 <?php
+// public/index.php
+
 // ==================================================
 // VERCEL CONFIGURATION
 // ==================================================
 $isVercel = isset($_ENV['VERCEL']) || getenv('VERCEL') === '1';
 
 if ($isVercel) {
-    // Debug
-    error_log("=== PUBLIC/INDEX.PHP (Vercel Mode) ===");
-    error_log("Session ID: " . (session_id() ?: 'NOT STARTED'));
-    error_log("Session user_id: " . ($_SESSION['user_id'] ?? 'NOT SET'));
-    
-    // Ensure CORS headers
-    if (!headers_sent()) {
-        $origin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? '*';
-        header('Access-Control-Allow-Origin: ' . $origin);
-        header('Access-Control-Allow-Credentials: true');
-    }
+    session_set_cookie_params([
+        'lifetime' => 86400,
+        'path' => '/',
+        'domain' => '', // Biarkan kosong untuk Vercel
+        'secure' => true,
+        'httponly' => true,
+        'samesite' => 'None'
+    ]);
 }
-// ==================================================
-// SESSION START
-// ==================================================
+
+// Start session
 if (session_status() == PHP_SESSION_NONE) {
-    if ($isVercel) {
-        session_set_cookie_params([
-            'lifetime' => 86400,
-            'path' => '/',
-            'secure' => true,
-            'httponly' => true,
-            'samesite' => 'None'
-        ]);
-    }
     session_start();
 }
 
-
-// ==================================================
-// AUTOLOAD
-// ==================================================
-require_once __DIR__ . '/../vendor/autoload.php';
-
-// ==================================================
-// ENVIRONMENT
-// ==================================================
-if (!$isVercel && file_exists(__DIR__ . '/../.env')) {
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-    $dotenv->load();
-}
+// ✅ DEBUG SESSION
+error_log("=== SESSION DEBUG ===");
+error_log("Session ID: " . (session_id() ?: 'NO SESSION'));
+error_log("User ID in session: " . ($_SESSION['user_id'] ?? 'NOT SET'));
 
 // ====================================================
-// AUTH MIDDLEWARE
+// ✅ FIXED AUTH MIDDLEWARE (lebih sederhana)
 // ====================================================
-function checkAuth() {
-    $publicPages = ['login', 'logout', '404'];
-    $publicActions = ['login', 'searchPelanggan', 'getKandangTersedia'];
-    
-    $page = $_GET['page'] ?? 'dashboard';
-    $action = $_GET['action'] ?? $_POST['action'] ?? null;
-    
-    // Skip auth untuk public pages/actions
-    if (in_array($page, $publicPages) || in_array($action, $publicActions)) {
-        return;
-    }
-    
-    // Check if user is logged in
-    if (!isset($_SESSION['user_id']) || !isset($_SESSION['username'])) {
-        // Untuk AJAX/API requests
-        if ($action || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Unauthorized', 'redirect' => 'index.php?page=login']);
-            exit;
-        }
-        // Untuk browser requests
-        header('Location: index.php?page=login');
+$page = $_GET['page'] ?? 'dashboard';
+$action = $_GET['action'] ?? $_POST['action'] ?? null;
+
+// ✅ Pages yang boleh diakses tanpa login
+$publicPages = ['login', 'logout', '404'];
+$publicActions = ['login', 'logout', 'searchPelanggan', 'getKandangTersedia'];
+
+// Check if this is a public page/action
+$isPublic = in_array($page, $publicPages) || in_array($action, $publicActions);
+
+// Jika bukan public page dan user belum login, redirect ke login
+if (!$isPublic && empty($_SESSION['user_id'])) {
+    // ✅ Untuk AJAX request, return JSON
+    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+        strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+        header('Content-Type: application/json');
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized', 'redirect' => 'index.php?page=login']);
         exit;
     }
+    
+    // ✅ Untuk normal request, redirect
+    header('Location: index.php?page=login');
+    exit;
 }
 
-checkAuth();
+// Jika sudah login tapi akses halaman login, redirect ke dashboard
+if ($page === 'login' && !empty($_SESSION['user_id'])) {
+    header('Location: index.php?page=dashboard');
+    exit;
+}
 
 // ==================================================
 // ROUTING
