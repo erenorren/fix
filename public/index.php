@@ -1,34 +1,21 @@
 <?php
-// ==================================================
-// VERCEL DETECTION
-// ==================================================
-$isVercel = isset($_ENV['VERCEL']) || getenv('VERCEL') === '1';
-
-if ($isVercel) {
-    // Debug
-    error_log("=== PUBLIC/INDEX.PHP (Vercel Mode) ===");
-    error_log("Session ID: " . (session_id() ?: 'NOT STARTED'));
-    error_log("Session user_id: " . ($_SESSION['user_id'] ?? 'NOT SET'));
-    
-    // Ensure CORS headers
-    if (!headers_sent()) {
-        $origin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? '*';
-        header('Access-Control-Allow-Origin: ' . $origin);
-        header('Access-Control-Allow-Credentials: true');
-    }
-}
+// public/index.php - SIMPLE VERSION
 
 // ==================================================
-// SESSION CHECK (jika belum started oleh api/index.php)
+// SESSION START - FIXED FOR VERCEL
 // ==================================================
+$isVercel = isset($_SERVER['VERCEL']) || getenv('VERCEL') === '1';
+
 if (session_status() == PHP_SESSION_NONE) {
     if ($isVercel) {
+        // Vercel specific settings
         session_set_cookie_params([
             'lifetime' => 86400,
             'path' => '/',
-            'secure' => true,
+            'domain' => $_SERVER['HTTP_HOST'],
+            'secure' => true,      // HTTPS only
             'httponly' => true,
-            'samesite' => 'None'
+            'samesite' => 'Lax'    // Coba Lax dulu, lebih compatible
         ]);
     }
     session_start();
@@ -39,59 +26,40 @@ if (session_status() == PHP_SESSION_NONE) {
 // ==================================================
 require_once __DIR__ . '/../vendor/autoload.php';
 
-// ==================================================
-// ENVIRONMENT
-// ==================================================
-if (!$isVercel && file_exists(__DIR__ . '/../.env')) {
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-    $dotenv->load();
-}
+// ====================================================
+// SIMPLE AUTH CHECK
+// ====================================================
+$publicPages = ['login', 'logout'];
+$publicActions = ['login', 'searchPelanggan', 'getKandangTersedia'];
 
-// ====================================================
-// AUTH MIDDLEWARE
-// ====================================================
-function checkAuth() {
-    $publicPages = ['login', 'logout', '404'];
-    $publicActions = ['login', 'searchPelanggan', 'getKandangTersedia'];
-    
-    $page = $_GET['page'] ?? 'dashboard';
-    $action = $_GET['action'] ?? $_POST['action'] ?? null;
-    
-    // Skip auth untuk public pages/actions
-    if (in_array($page, $publicPages) || in_array($action, $publicActions)) {
-        return;
-    }
-    
-    // Check if user is logged in
-    if (!isset($_SESSION['user_id']) || !isset($_SESSION['username'])) {
-        // Untuk AJAX/API requests
-        if ($action || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')) {
+$page = $_GET['page'] ?? 'dashboard';
+$action = $_GET['action'] ?? null;
+
+// Skip auth check for public pages
+if (!in_array($page, $publicPages) && !in_array($action, $publicActions)) {
+    if (!isset($_SESSION['user_id'])) {
+        if ($action) {
             http_response_code(401);
-            echo json_encode(['error' => 'Unauthorized', 'redirect' => 'index.php?page=login']);
+            echo json_encode(['error' => 'Unauthorized']);
             exit;
         }
-        // Untuk browser requests
         header('Location: index.php?page=login');
         exit;
     }
 }
 
-checkAuth();
-
 // ==================================================
 // ROUTING
 // ==================================================
-$action = $_GET['action'] ?? $_POST['action'] ?? null;
+$action = $_GET['action'] ?? null;
 
-// API/ACTION ROUTES
 if ($action) {
     switch ($action) {
         case 'login':
             require_once __DIR__ . '/../controllers/AuthController.php';
             (new AuthController())->login();
             break;
-            
+
         case 'logout':
             require_once __DIR__ . '/../controllers/AuthController.php';
             (new AuthController())->logout();
@@ -136,10 +104,8 @@ if ($action) {
 
 // PAGE ROUTES
 $page = $_GET['page'] ?? 'dashboard';
-
 switch ($page) {
     case 'login':
-        // Jika sudah login, redirect ke dashboard
         if (isset($_SESSION['user_id'])) {
             header('Location: index.php?page=dashboard');
             exit;
