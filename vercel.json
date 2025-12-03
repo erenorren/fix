@@ -8,6 +8,10 @@
   },
   "routes": [
     {
+      "src": "/vercel-debug",
+      "dest": "/vercel-debug.php"
+    },
+    {
       "src": "/css/(.*)",
       "dest": "/public/css/"
     },
