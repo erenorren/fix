@@ -26,6 +26,39 @@ class Hewan
      * 
      * @return array Array berisi semua data hewan beserta nama pemilik
      */
+    /**
+ * Ambil semua data hewan
+ * 
+ * @return array Array berisi semua data hewan beserta nama pemilik
+ */
+public function getAll()
+{
+    try {
+        $sql = "SELECT 
+                    h.id_hewan,
+                    h.nama_hewan,
+                    h.jenis,
+                    h.ras,
+                    h.ukuran,
+                    h.warna,
+                    h.catatan,
+                    h.status,
+                    p.id_pelanggan,
+                    p.nama_pelanggan,
+                    p.no_hp
+                FROM hewan h
+                LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan
+                ORDER BY h.nama_hewan";
+        
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll();
+        
+    } catch (Exception $e) {
+        error_log("Error getAll hewan: " . $e->getMessage());
+        return [];
+    }
+}
+
 public function create($data) {
     try {
         $sql = "INSERT INTO hewan (id_pelanggan, nama_hewan, jenis, ras, ukuran, warna, catatan, status) 
