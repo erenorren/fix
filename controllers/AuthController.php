@@ -11,7 +11,7 @@ class AuthController {
     }
     
     public function login() {
-        // Set JSON header
+        // Set JSON header IMMEDIATELY
         header('Content-Type: application/json; charset=utf-8');
         
         if ($this->isVercel) {
@@ -41,14 +41,21 @@ class AuthController {
             $user = $this->userModel->login($username, $password);
             
             if ($user) {
-                // Set session
+                // ✅ FIX SESSION - Gunakan cara yang lebih reliable
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
-                $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
-                $_SESSION['role'] = $user['role'];
+                $_SESSION['nama_lengkap'] = $user['nama_lengkap'] ?? 'Admin';
+                $_SESSION['role'] = $user['role'] ?? 'admin';
+                $_SESSION['logged_in'] = true;
                 
-                // Regenerate session untuk security
-                session_regenerate_id(true);
+                // ✅ Debug info (opsional)
+                if ($this->isVercel) {
+                    error_log("Login successful for user: " . $username);
+                    error_log("Session ID after login: " . session_id());
+                }
+                
+                // ✅ Pastikan session ditulis
+                session_write_close();
                 
                 echo json_encode([
                     'success' => true,
@@ -68,7 +75,7 @@ class AuthController {
             http_response_code(500);
             echo json_encode([
                 'success' => false,
-                'message' => 'Terjadi kesalahan sistem'
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
             ]);
         }
     }

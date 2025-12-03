@@ -89,6 +89,7 @@ if (session_status() == PHP_SESSION_NONE) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta1/dist/js/adminlte.min.js"></script>
 
+<!-- Di bagian JS login.php, GANTI script dengan ini: -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
@@ -111,81 +112,71 @@ document.addEventListener('DOMContentLoaded', function() {
             // Clear alerts
             if (alertContainer) alertContainer.innerHTML = '';
             
-            // Test 1: Cek session cookies
-            console.log('Cookies:', document.cookie);
-            
             // Prepare data
-            const formData = {
-                username: this.querySelector('[name="username"]').value.trim(),
-                password: this.querySelector('[name="password"]').value
-            };
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
             
-            console.log('Sending:', formData.username);
+            console.log('Sending login request...');
             
             try {
-                // Test endpoint dulu
-                console.log('Testing endpoint...');
-                const testResponse = await fetch('.', { 
-                    credentials: 'include',
-                    method: 'HEAD'
-                });
-                console.log('Test response:', testResponse.status);
-                
-                // Send login request
+                // ✅ FIX: Gunakan URL yang benar
                 const response = await fetch('index.php?action=login', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: JSON.stringify(formData),
-                    credentials: 'include' // CRITICAL FOR VERCEL
+                    body: new URLSearchParams(data),
+                    credentials: 'include' // IMPORTANT for cookies
                 });
                 
-                console.log('Login response status:', response.status);
-                console.log('Login response headers:', [...response.headers.entries()]);
+                console.log('Response status:', response.status);
                 
-                const responseText = await response.text();
-                console.log('Raw response:', responseText);
+                const result = await response.json();
+                console.log('Response data:', result);
                 
-                let data;
-                try {
-                    data = JSON.parse(responseText);
-                } catch (e) {
-                    console.error('JSON parse error:', e);
-                    throw new Error('Invalid response from server');
-                }
-                
-                console.log('Parsed data:', data);
-                
-                if (data.success) {
-                    console.log('Login success! Redirecting to:', data.redirect);
-                    // Check session after login
-                    setTimeout(async () => {
-                        console.log('Checking session after login...');
-                        const check = await fetch('.', { credentials: 'include' });
-                        console.log('Session check:', check.status);
-                        
-                        // Redirect
-                        window.location.href = data.redirect;
+                if (result.success) {
+                    // ✅ Show success message
+                    if (alertContainer) {
+                        alertContainer.innerHTML = `
+                            <div class="alert alert-success alert-dismissible fade show mb-3">
+                                <i class="bi bi-check-circle me-2"></i>
+                                ${result.message}
+                            </div>
+                        `;
+                    }
+                    
+                    // ✅ Redirect setelah 1 detik
+                    setTimeout(() => {
+                        console.log('Redirecting to:', result.redirect);
+                        window.location.href = result.redirect;
                     }, 1000);
+                    
                 } else {
-                    console.log('Login failed:', data.message);
-                    showError(data.message || 'Login gagal');
+                    // ✅ Show error message
+                    if (alertContainer) {
+                        alertContainer.innerHTML = `
+                            <div class="alert alert-danger alert-dismissible fade show mb-3">
+                                <i class="bi bi-exclamation-circle me-2"></i>
+                                ${result.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        `;
+                    }
                 }
                 
             } catch (error) {
-                console.error('Login error details:', error);
+                console.error('Login error:', error);
                 
-                let errorMsg = 'Terjadi kesalahan. ';
-                if (error.message.includes('Failed to fetch')) {
-                    errorMsg += 'Tidak bisa terhubung ke server. ';
-                } else if (error.message.includes('JSON')) {
-                    errorMsg += 'Server mengembalikan response tidak valid. ';
+                // ✅ Show network error
+                if (alertContainer) {
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-danger alert-dismissible fade show mb-3">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Gagal terhubung ke server. Silakan coba lagi.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    `;
                 }
-                errorMsg += 'Silakan coba lagi.';
-                
-                showError(errorMsg);
                 
             } finally {
                 submitBtn.disabled = false;
@@ -193,28 +184,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        function showError(message) {
-            if (!alertContainer) {
-                // Create alert container
-                const container = document.createElement('div');
-                container.id = 'alert-container';
-                loginForm.parentNode.insertBefore(container, loginForm);
-                alertContainer = container;
-            }
-            
-            const alertHTML = `
-                <div class="alert alert-danger alert-dismissible fade show mb-3">
-                    <i class="bi bi-exclamation-circle me-2"></i>
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-            alertContainer.innerHTML = alertHTML;
-        }
-        
-        // Auto-test on load
-        console.log('Auto-testing connection...');
-        fetch('index.php?page=login', { credentials: 'include' })
+        // ✅ Test connection on load
+        console.log('Testing connection...');
+        fetch('index.php?page=login')
             .then(res => console.log('Connection test:', res.status))
             .catch(err => console.warn('Connection test failed:', err));
     }
