@@ -3,12 +3,12 @@ $pageTitle  = 'Data Pelanggan';
 $activeMenu = 'pemilik';
 
 // ====== LOAD MODEL PELANGGAN ======
-require_once _DIR_ . '/../models/Pelanggan.php';
+require_once __DIR__ . '/../models/Pelanggan.php';
 $pelangganModel = new Pelanggan();
 
 // (Opsional) load model Transaksi untuk riwayat pelanggan
 $transaksiModel     = null;
-$transaksiModelPath = _DIR_ . '/../models/Transaksi.php';
+$transaksiModelPath = __DIR__ . '/../models/Transaksi.php';
 
 if (file_exists($transaksiModelPath)) {
     require_once $transaksiModelPath;
