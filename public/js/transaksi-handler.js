@@ -138,68 +138,54 @@ if (selectPelanggan && noHpInput && alamatInput) {
     console.log("alamatInput:", alamatInput);
 }
 
-    // =============================================
-    // 2. KALKULASI TOTAL HARGA (FIXED)
-    // =============================================
-    function hitungTotal() {
-        if (!paketSelect || !totalHargaElement) return;
-        
-        let total = 0;
-        let hargaPaket = 0;
-        let lamaInap = 1;
-        let namaPaket = '';
-        
-        // Get lama inap
-        if (lamaInapInput) {
-            lamaInap = parseInt(lamaInapInput.value) || 1;
-            if (lamaInap < 1) {
-                lamaInap = 1;
-                lamaInapInput.value = 1;
-            }
-        }
-        
-        // Get harga paket
-        if (paketSelect.value) {
-            const selectedOption = paketSelect.options[paketSelect.selectedIndex];
-            hargaPaket = parseInt(selectedOption.getAttribute('data-harga')) || 0;
-            namaPaket = selectedOption.getAttribute('data-nama') || '';
-            
-            total = hargaPaket * lamaInap;
-            
-            // Update paket info
-            if (paketInfo) {
-                paketInfo.innerHTML = `
-                    <strong>${namaPaket}</strong><br>
-                    <small>Harga: Rp ${hargaPaket.toLocaleString('id-ID')} / hari</small>
-                `;
-            }
-        } else {
-            if (paketInfo) {
-                paketInfo.textContent = 'Pilih paket untuk melihat detail';
-            }
-        }
-        
-        // Update display
-        totalHargaElement.textContent = `Rp ${total.toLocaleString('id-ID')}`;
-        if (totalInput) totalInput.value = total;
-        
-        if (detailPerhitungan) {
-            if (hargaPaket > 0) {
-                detailPerhitungan.textContent = `Rp ${hargaPaket.toLocaleString('id-ID')} × ${lamaInap} hari`;
-            } else {
-                detailPerhitungan.textContent = '-';
-            }
-        }
-        
-        console.log("Hitung total:", { hargaPaket, lamaInap, total });
-    }
+// =============================================
+// KALKULASI HARGA - PASTI BEKERJA
+// =============================================
 
-    // Attach event listeners
-    if (paketSelect) paketSelect.addEventListener('change', hitungTotal);
-    if (lamaInapInput) lamaInapInput.addEventListener('input', hitungTotal);
+// Fungsi hitung total
+function hitungTotalSekarang() {
+    // Ambil elemen
+    const paketSelect = document.getElementById('paketSelect');
+    const lamaInapInput = document.getElementById('lamaInap');
+    const totalDisplay = document.getElementById('totalHarga');
+    const totalHidden = document.getElementById('totalInput');
     
-    // Initial calculation
-    setTimeout(hitungTotal, 100);
+    // Jika elemen tidak ada, berhenti
+    if (!paketSelect || !totalDisplay) return;
+    
+    // Ambil harga dari data-attribute
+    const selectedOption = paketSelect.options[pakapSelect.selectedIndex];
+    const hargaPerHari = parseInt(selectedOption.getAttribute('data-harga')) || 0;
+    const lamaInap = parseInt(lamaInapInput.value) || 1;
+    
+    // Hitung total
+    const total = hargaPerHari * lamaInap;
+    
+    // Update tampilan
+    totalDisplay.textContent = 'Rp ' + total.toLocaleString('id-ID');
+    if (totalHidden) totalHidden.value = total;
+}
+
+// Pasang event saat halaman load
+document.addEventListener('DOMContentLoaded', function() {
+    // Ambil elemen dropdown paket
+    const paketSelect = document.getElementById('paketSelect');
+    
+    // Jika dropdown ada, pasang event listener
+    if (paketSelect) {
+        // Event saat pilih paket berubah
+        paketSelect.addEventListener('change', hitungTotalSekarang);
+        
+        // Hitung saat pertama kali load
+        setTimeout(hitungTotalSekarang, 100);
+    }
+    
+    // Juga pasang event untuk input lama inap
+    const lamaInapInput = document.getElementById('lamaInap');
+    if (lamaInapInput) {
+        lamaInapInput.addEventListener('input', hitungTotalSekarang);
+    }
+});
 
     // =============================================
     // 3. PEMILIHAN KANDANG DENGAN FILTER YANG BENAR

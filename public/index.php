@@ -60,8 +60,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'login' && $_SERVER['REQUEST_M
 // 4. SIMPLE AUTH CHECK
 // ==================================================
 $page = $_GET['page'] ?? 'login';
+$action = $_GET['action'] ?? '';
 
 // Public pages (no auth required)
+$publicPages = ['login'];
 if ($page === 'login') {
     // Jika sudah login, redirect ke dashboard
     if (isset($_SESSION['user_id'])) {
@@ -76,12 +78,30 @@ if ($page === 'login') {
 
 // Private pages (require auth)
 if (!isset($_SESSION['user_id'])) {
-    header('Location: index.php?page=login');
+    header('Location: index.php?page=login&redirect=' . urlencode($page));
     exit;
 }
 
 // ==================================================
-// 5. ROUTE PAGES YANG SUDAH LOGIN
+// 5. HANDLE ACTIONS FIRST (BEFORE PAGE ROUTING)
+// ==================================================
+if ($action === 'createTransaksi' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_once __DIR__ . '/../controllers/TransaksiController.php';
+    $controller = new TransaksiController();
+    $controller->create();
+    exit;
+}
+
+if ($action === 'checkoutTransaksi') {
+    require_once __DIR__ . '/../controllers/TransaksiController.php';
+    $controller = new TransaksiController();
+    $controller->checkout();
+    exit;
+}
+
+
+// ==================================================
+// 6. ROUTE PAGES YANG SUDAH LOGIN
 // ==================================================
 switch ($page) {
     case 'dashboard':
@@ -90,7 +110,8 @@ switch ($page) {
         
     case 'transaksi':
         require_once __DIR__ . '/../controllers/TransaksiController.php';
-        (new TransaksiController())->index();
+        $controller = new TransaksiController();
+        $controller->index();
         break;
         
     case 'hewan':
@@ -106,6 +127,7 @@ switch ($page) {
         break;
         
     case 'pemilik':
+    case 'pelanggan':
         require_once __DIR__ . '/../views/pelanggan.php';
         break;
         

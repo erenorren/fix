@@ -50,26 +50,34 @@ include __DIR__ . '/template/header.php';
 
                 <?php if ($tab === 'pendaftaran'): ?>
                     <h5 class="mb-3">Form Pendaftaran Penitipan</h5>
-                    <form method="post" action="index.php?action=createTransaksi" id="formPendaftaran">
-                        <div class="row g-4">
+                        <!-- FORM ACTION HARUS PERSIS SEPERTI INI -->
+                        <form method="POST" action="index.php?action=createTransaksi" id="formPendaftaran">                        <div class="row g-4">
                             <!-- GANTI SELURUH BAGIAN "Informasi Pemilik" dengan ini: -->
                             <div class="col-lg-6">
                                 <div class="card p-3 h-100 position-relative">
                                     <h6 class="mb-3 text-primary">Informasi Pemilik</h6>
 
                                     <!-- DROPDOWN PELANGGAN -->
+                                    <!-- DROPDOWN PELANGGAN - VERSI DIPERBAIKI -->
+                                    <!-- DROPDOWN PELANGGAN - FIXED VERSION -->
                                     <div class="mb-3">
                                         <label class="form-label">Pilih Pemilik <span class="text-danger">*</span></label>
-                                        <!-- Di views/transaksi.php, dropdown pelanggan: -->
                                         <select name="id_pelanggan" class="form-select" id="selectPelanggan" required>
                                             <option value="">-- Pilih Pemilik --</option>
                                             <?php if (!empty($pelangganList)): ?>
                                                 <?php foreach ($pelangganList as $p): ?>
-                                                    <option value="<?= $p['id'] ?? '' ?>" 
-                                                        data-hp="<?= htmlspecialchars($p['hp'] ?? $p['no_hp'] ?? '') ?>" 
-                                                        data-alamat="<?= htmlspecialchars($p['alamat'] ?? '') ?>">
-                                                        <?= htmlspecialchars($p['nama'] ?? $p['nama_pelanggan'] ?? '') ?> 
-                                                        (<?= htmlspecialchars($p['hp'] ?? $p['no_hp'] ?? '') ?>)
+                                                    <?php 
+                                                    // PASTIKAN DATA DIAMBIL DENGAN BENAR
+                                                    $id = $p['id'] ?? $p['id_pelanggan'] ?? '';
+                                                    $nama = $p['nama'] ?? $p['nama_pelanggan'] ?? '';
+                                                    $hp = $p['hp'] ?? $p['no_hp'] ?? '';
+                                                    $alamat = $p['alamat'] ?? '';
+                                                    ?>
+                                                    <option value="<?= $id ?>" 
+                                                        data-hp="<?= htmlspecialchars($hp) ?>" 
+                                                        data-alamat="<?= htmlspecialchars($alamat) ?>">
+                                                        <?= htmlspecialchars($nama) ?> 
+                                                        (<?= htmlspecialchars($hp) ?>)
                                                     </option>
                                                 <?php endforeach; ?>
                                             <?php endif; ?>
@@ -159,16 +167,16 @@ include __DIR__ . '/template/header.php';
                                         <div class="col-lg-4">
                                             <label class="form-label">Paket Utama <span class="text-danger">*</span></label>
                                             <select name="id_layanan" class="form-select" id="paketSelect" required>
-                                                <option value="">-- Pilih Paket --</option>
-                                                <?php foreach ($paketList as $pk): ?>
-                                                    <option value="<?= $pk['id_layanan'] ?>" 
-                                                        data-harga="<?= $pk['harga'] ?>" 
-                                                        data-nama="<?= htmlspecialchars($pk['nama_layanan']) ?>">
-                                                        <?= htmlspecialchars($pk['nama_layanan']) ?>
-                                                        - Rp <?= number_format($pk['harga'], 0, ',', '.'); ?>/hari
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </select>
+    <option value="">-- Pilih Paket --</option>
+    <?php foreach ($paketList as $pk): ?>
+        <option value="<?= $pk['id_layanan'] ?>" 
+            data-harga="<?= $pk['harga'] ?>" 
+            data-nama="<?= htmlspecialchars($pk['nama_layanan']) ?>">
+            <?= htmlspecialchars($pk['nama_layanan']) ?>
+            - Rp <?= number_format($pk['harga'], 0, ',', '.'); ?>/hari
+        </option>
+    <?php endforeach; ?>
+</select>
                                             <div class="form-text">Pilih salah satu paket penitipan</div>
                                         </div>
 
@@ -349,49 +357,283 @@ include __DIR__ . '/template/header.php';
 </div>
 
 <!-- DEBUG SCRIPT - Tampilkan data pelanggan -->
+<!-- TEMPATKAN DI BAWAH KODE HTML, SEBELUM footer.php -->
 <script>
-console.log("=== DEBUG DATA PELANGGAN ===");
-
-// Cek apakah data pelanggan ada
-const pelangganList = <?= json_encode($pelangganList) ?>;
-console.log("Data pelanggan dari PHP:", pelangganList);
-console.log("Jumlah pelanggan:", pelangganList.length);
-
-// Cek contoh data pertama
-if (pelangganList.length > 0) {
-    console.log("Contoh data pelanggan pertama:", pelangganList[0]);
-    console.log("Struktur:", {
-        id: pelangganList[0].id,
-        nama: pelangganList[0].nama,
-        hp: pelangganList[0].hp,
-        alamat: pelangganList[0].alamat
-    });
-}
-
-// Test get data dari dropdown
+// =============================================
+// 1. AUTO-FILL PELANGGAN
+// =============================================
 document.addEventListener('DOMContentLoaded', function() {
-    const select = document.getElementById('selectPelanggan');
+    const selectPelanggan = document.getElementById('selectPelanggan');
+    const noHpInput = document.getElementById('p_hp');
+    const alamatInput = document.getElementById('p_alamat');
+    const newCustomerFields = document.getElementById('newCustomerFields');
     
-    // Manual test: coba pilih option ke-1 (jika ada)
-    if (select && select.options.length > 1) {
-        // Simulasikan pilihan
-        console.log("=== TEST MANUAL ===");
-        select.selectedIndex = 1; // Pilih option pertama (bukan 'Pilih Pemilik')
-        const testOption = select.options[1];
-        
-        console.log("Test option:", {
-            value: testOption.value,
-            text: testOption.text,
-            dataHp: testOption.getAttribute('data-hp'),
-            dataAlamat: testOption.getAttribute('data-alamat')
+    if (selectPelanggan && noHpInput && alamatInput) {
+        selectPelanggan.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            
+            if (this.value === 'new') {
+                // Tampilkan form baru, kosongkan field
+                if (newCustomerFields) newCustomerFields.style.display = 'block';
+                noHpInput.value = '';
+                alamatInput.value = '';
+            } 
+            else if (this.value && this.value !== '') {
+                // Sembunyikan form baru, isi data
+                if (newCustomerFields) newCustomerFields.style.display = 'none';
+                noHpInput.value = selectedOption.getAttribute('data-hp') || '';
+                alamatInput.value = selectedOption.getAttribute('data-alamat') || '';
+            }
         });
+    }
+});
+
+// =============================================
+// 2. KALKULASI HARGA
+// =============================================
+document.addEventListener('DOMContentLoaded', function() {
+    function hitungTotal() {
+        const paketSelect = document.getElementById('paketSelect');
+        const lamaInapInput = document.getElementById('lamaInap');
+        const totalDisplay = document.getElementById('totalHarga');
+        const totalInput = document.getElementById('totalInput');
         
-        // Trigger change event
-        const event = new Event('change');
-        select.dispatchEvent(event);
+        if (!paketSelect || !totalDisplay) return;
+        
+        const selectedOption = paketSelect.options[paketSelect.selectedIndex];
+        const harga = parseInt(selectedOption.getAttribute('data-harga')) || 0;
+        const hari = parseInt(lamaInapInput.value) || 1;
+        const total = harga * hari;
+        
+        totalDisplay.textContent = 'Rp ' + total.toLocaleString('id-ID');
+        if (totalInput) totalInput.value = total;
+    }
+    
+    // Event untuk dropdown paket
+    const paketSelect = document.getElementById('paketSelect');
+    if (paketSelect) {
+        paketSelect.addEventListener('change', hitungTotal);
+        setTimeout(hitungTotal, 100);
+    }
+    
+    // Event untuk input lama inap
+    const lamaInapInput = document.getElementById('lamaInap');
+    if (lamaInapInput) {
+        lamaInapInput.addEventListener('input', hitungTotal);
+    }
+});
+
+// =============================================
+// 3. FILTER KANDANG
+// =============================================
+document.addEventListener('DOMContentLoaded', function() {
+    const btnPilihKandang = document.getElementById('btnPilihKandang');
+    const panelKandang = document.getElementById('panelKandang');
+    const jenisHewanSelect = document.getElementById('jenisHewanSelect');
+    const ukuranHewanSelect = document.getElementById('ukuranHewanSelect');
+    const kandangLabel = document.getElementById('kandangLabel');
+    const idKandangInput = document.getElementById('id_kandang');
+    
+    if (!btnPilihKandang || !panelKandang || !jenisHewanSelect) return;
+    
+    // Data kandang dari PHP
+    const kandangData = <?= json_encode($kandangTersedia ?? []) ?>;
+    
+    // Tampilkan panel pilih kandang
+    btnPilihKandang.addEventListener('click', function() {
+        const jenis = jenisHewanSelect.value;
+        const ukuran = ukuranHewanSelect ? ukuranHewanSelect.value : '';
+        
+        if (!jenis) {
+            alert('Pilih jenis hewan terlebih dahulu');
+            return;
+        }
+        
+        panelKandang.innerHTML = '';
+        panelKandang.classList.remove('d-none');
+        
+        // Filter kandang berdasarkan jenis dan ukuran
+        let kandangFiltered = kandangData.filter(k => k.status === 'tersedia');
+        
+        if (jenis === 'Kucing') {
+            if (ukuran === 'Sedang') {
+                kandangFiltered = kandangFiltered.filter(k => k.tipe === 'Sedang' || k.tipe === 'Besar');
+            } else if (ukuran === 'Besar') {
+                kandangFiltered = kandangFiltered.filter(k => k.tipe === 'Besar');
+            }
+        } 
+        else if (jenis === 'Anjing') {
+            if (ukuran === 'Kecil') {
+                kandangFiltered = kandangFiltered.filter(k => k.tipe === 'Sedang');
+            } else if (ukuran === 'Sedang') {
+                kandangFiltered = kandangFiltered.filter(k => k.tipe === 'Sedang' || k.tipe === 'Besar');
+            } else if (ukuran === 'Besar') {
+                kandangFiltered = kandangFiltered.filter(k => k.tipe === 'Besar');
+            } else {
+                kandangFiltered = kandangFiltered.filter(k => k.tipe === 'Sedang' || k.tipe === 'Besar');
+            }
+        }
+        
+        // Tampilkan hasil
+        if (kandangFiltered.length === 0) {
+            panelKandang.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="bi bi-inbox display-6 opacity-50"></i>
+                    <p class="mt-2 mb-0">Tidak ada kandang tersedia</p>
+                    <small>Untuk ${jenis} ${ukuran ? 'ukuran ' + ukuran : ''}</small>
+                </div>
+            `;
+            return;
+        }
+        
+        kandangFiltered.forEach(kandang => {
+            const item = document.createElement('div');
+            item.className = 'p-2 border-bottom';
+            item.style.cursor = 'pointer';
+            item.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-semibold">${kandang.kode_kandang}</span>
+                        <small class="text-muted ms-2">${kandang.tipe}</small>
+                    </div>
+                    <span class="badge bg-success">Tersedia</span>
+                </div>
+            `;
+            
+            item.addEventListener('click', function() {
+                kandangLabel.textContent = `${kandang.kode_kandang} - ${kandang.tipe}`;
+                idKandangInput.value = kandang.id;
+                panelKandang.classList.add('d-none');
+                btnPilihKandang.classList.remove('btn-outline-secondary');
+                btnPilihKandang.classList.add('btn-outline-success');
+            });
+            
+            panelKandang.appendChild(item);
+        });
+    });
+    
+    // Reset pilihan saat jenis/ukuran berubah
+    if (jenisHewanSelect) {
+        jenisHewanSelect.addEventListener('change', function() {
+            idKandangInput.value = '';
+            kandangLabel.textContent = 'Pilih kandang yang tersedia';
+            btnPilihKandang.classList.remove('btn-outline-success');
+            btnPilihKandang.classList.add('btn-outline-secondary');
+        });
+    }
+    
+    if (ukuranHewanSelect) {
+        ukuranHewanSelect.addEventListener('change', function() {
+            idKandangInput.value = '';
+            kandangLabel.textContent = 'Pilih kandang yang tersedia';
+            btnPilihKandang.classList.remove('btn-outline-success');
+            btnPilihKandang.classList.add('btn-outline-secondary');
+        });
+    }
+    
+    // Tutup panel saat klik di luar
+    document.addEventListener('click', function(e) {
+        if (!panelKandang.contains(e.target) && 
+            e.target !== btnPilihKandang && 
+            !btnPilihKandang.contains(e.target)) {
+            panelKandang.classList.add('d-none');
+        }
+    });
+});
+
+// =============================================
+// 4. PENCARIAN CHECKOUT
+// =============================================
+document.addEventListener('DOMContentLoaded', function() {
+    const btnCariCheckout = document.getElementById('btnCariCheckout');
+    
+    if (btnCariCheckout) {
+        btnCariCheckout.addEventListener('click', function() {
+            const searchTerm = document.getElementById('searchCheckout').value.toLowerCase();
+            const filterKandang = document.getElementById('filterKandang').value;
+            
+            const rows = document.querySelectorAll('.table-responsive tbody tr');
+            let adaHasil = false;
+            
+            rows.forEach(row => {
+                if (row.classList.contains('no-results-message')) return;
+                
+                const pemilik = row.cells[1].textContent.toLowerCase();
+                const hewan = row.cells[2].textContent.toLowerCase();
+                const kandang = row.cells[3].textContent;
+                
+                const cocokSearch = pemilik.includes(searchTerm) || hewan.includes(searchTerm);
+                const cocokKandang = !filterKandang || kandang.includes(filterKandang);
+                
+                if (cocokSearch && cocokKandang) {
+                    row.style.display = '';
+                    adaHasil = true;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Hapus pesan tidak ada hasil sebelumnya
+            const pesanLama = document.querySelector('.no-results-message');
+            if (pesanLama) pesanLama.remove();
+            
+            // Tambah pesan jika tidak ada hasil
+            if (!adaHasil) {
+                const tbody = document.querySelector('.table-responsive tbody');
+                const tr = document.createElement('tr');
+                tr.className = 'no-results-message';
+                tr.innerHTML = `
+                    <td colspan="8" class="text-center text-muted py-4">
+                        <i class="bi bi-search display-6 opacity-50"></i>
+                        <p class="mt-3 mb-0">Tidak ditemukan hasil pencarian</p>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+        });
+    }
+});
+
+// =============================================
+// 5. FUNGSI CHECKOUT GLOBAL
+// =============================================
+window.prosesCheckout = function(id_transaksi) {
+    if (confirm('Apakah Anda yakin ingin melakukan check-out?')) {
+        window.location.href = 'index.php?action=checkoutTransaksi&id=' + id_transaksi;
+    }
+};
+
+// =============================================
+// 6. VALIDASI FORM - VERSI DIPERBAIKI
+// =============================================
+document.addEventListener('DOMContentLoaded', function() {
+    const formPendaftaran = document.getElementById('formPendaftaran');
+    
+    if (formPendaftaran) {
+        formPendaftaran.addEventListener('submit', function(e) {
+            // Cek apakah kandang sudah dipilih
+            const idKandang = document.getElementById('id_kandang');
+            if (!idKandang || !idKandang.value) {
+                e.preventDefault();
+                alert('Silakan pilih kandang terlebih dahulu');
+                document.getElementById('btnPilihKandang').focus();
+                return false;
+            }
+            
+            // Cek apakah paket sudah dipilih
+            const paketSelect = document.getElementById('paketSelect');
+            if (!paketSelect || !paketSelect.value) {
+                e.preventDefault();
+                alert('Silakan pilih paket layanan');
+                paketSelect.focus();
+                return false;
+            }
+            
+            // JIKA SEMUA VALID, FORM BOLEH DISUBMIT
+            return true;
+        });
     }
 });
 </script>
-<script src="<?= $base_url ?>/public/js/transaksi-handler.js"></script> 
 
 <?php include __DIR__ . '/template/footer.php'; ?>
