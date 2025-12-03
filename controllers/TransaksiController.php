@@ -26,24 +26,30 @@ class TransaksiController extends BaseController {
     }
         
     public function index() {
-        error_log("=== TRANSAKSI CONTROLLER INDEX DIPANGGIL ===");
-        
-        $tab = $_GET['tab'] ?? 'pendaftaran';
-        
-        // DEBUG: Cek data pelanggan
-        $pelangganList = $this->pelangganModel->getAll();
-        error_log("Jumlah pelanggan: " . count($pelangganList));
-        
-        $data = [
-            'tab' => $tab,
-            'pelangganList' => $pelangganList, 
-            'paketList' => $this->layananModel->getAll(),
-            'kandangTersedia' => $this->kandangModel->getAll(),
-            'hewanMenginap' => $this->transaksiModel->getActiveTransactions(),
-        ];
-
-        $this->view('transaksi', $data); 
+    error_log("=== TRANSAKSI CONTROLLER INDEX DIPANGGIL ===");
+    
+    $tab = $_GET['tab'] ?? 'pendaftaran';
+    
+    // Get pelanggan dengan debug
+    $pelangganList = $this->pelangganModel->getAll();
+    
+    // DEBUG: Log struktur data
+    error_log("Jumlah pelanggan: " . count($pelangganList));
+    if (count($pelangganList) > 0) {
+        error_log("Contoh data pelanggan pertama:");
+        error_log(print_r($pelangganList[0], true));
     }
+    
+    $data = [
+        'tab' => $tab,
+        'pelangganList' => $pelangganList, 
+        'paketList' => $this->layananModel->getAll(),
+        'kandangTersedia' => $this->kandangModel->getAll(),
+        'hewanMenginap' => $this->transaksiModel->getActiveTransactions(),
+    ];
+
+    $this->view('transaksi', $data); 
+}
 
 
 /**

@@ -1,18 +1,11 @@
-// /js/transaksi-handler.js
+// /js/transaksi-handler.js - PERBAIKAN COMPLETE
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("=== SCRIPT TRANSAKSI DIMULAI (External) ===");
+    console.log("=== SCRIPT TRANSAKSI DIMULAI ===");
 
-    // Akses variabel global yang didefinisikan di PHP
-    const kandangTersedia = (typeof PHP_DATA !== 'undefined' && PHP_DATA.kandangTersedia) ? PHP_DATA.kandangTersedia : [];
-    const hewanMenginap = (typeof PHP_DATA !== 'undefined' && PHP_DATA.hewanMenginap) ? PHP_DATA.hewanMenginap : [];
-    
+    // =============================================
     // ELEMEN UTAMA
-    const selectPelanggan = document.getElementById('selectPelanggan');
-    const noHpInput = document.getElementById('p_hp');
-    const alamatInput = document.getElementById('p_alamat');
-    const newCustomerFields = document.getElementById('newCustomerFields');
-    const namaBaruInput = document.querySelector('[name="nama_pelanggan_baru"]');
+    // =============================================
     
     const paketSelect = document.getElementById('paketSelect');
     const lamaInapInput = document.getElementById('lamaInap');
@@ -31,98 +24,153 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const formPendaftaran = document.getElementById('formPendaftaran');
 
-    // Elemen Pengembalian (Checkout)
-    const searchCheckout = document.getElementById('searchCheckout');
-    const filterKandang = document.getElementById('filterKandang');
-    const btnCariCheckout = document.getElementById('btnCariCheckout');
-    const tabelHewanMenginapBody = document.querySelector('.table-responsive table tbody');
+// DIBAWAH BAGIAN 1. AUTO-FILL DATA PELANGGAN, GANTI DENGAN:
 
+// REPLACE BAGIAN AUTO-FILL PELANGGAN DENGAN INI:
 
-    // =============================================
-    // Fungsi Utility
-    // =============================================
-    function formatRupiah(angka) {
-        return 'Rp ' + (angka || 0).toLocaleString('id-ID');
+// =============================================
+// 1. AUTO-FILL DATA PELANGGAN - SIMPLE VERSION
+// =============================================
+console.log("=== INIT AUTO-FILL PELANGGAN ===");
+
+const selectPelanggan = document.getElementById('selectPelanggan');
+const noHpInput = document.getElementById('p_hp');
+const alamatInput = document.getElementById('p_alamat');
+const newCustomerFields = document.getElementById('newCustomerFields');
+const namaBaruInput = document.querySelector('[name="nama_pelanggan_baru"]');
+
+if (selectPelanggan && noHpInput && alamatInput) {
+    console.log("Semua elemen ditemukan!");
+    
+    // Debug: tampilkan semua options
+    console.log("Jumlah options:", selectPelanggan.options.length);
+    for (let i = 0; i < selectPelanggan.options.length; i++) {
+        const opt = selectPelanggan.options[i];
+        console.log(`Option ${i}:`, {
+            value: opt.value,
+            text: opt.text,
+            dataHp: opt.getAttribute('data-hp'),
+            dataAlamat: opt.getAttribute('data-alamat')
+        });
     }
-
-    // =============================================
-    // 1. AUTO-FILL & LOGIKA PELANGGAN (FIX: Masalah Dropdown)
-    // =============================================
-    if (selectPelanggan && newCustomerFields && namaBaruInput) {
+    
+    // Fungsi untuk toggle form pelanggan baru
+    function toggleNewCustomerForm(show) {
+        console.log("Toggle new customer form:", show);
         
-        function toggleNewCustomerFields(isNew) {
-            if (isNew) {
-                // Tampilkan field nama baru
-                newCustomerFields.style.display = 'block';
+        if (show) {
+            // Tampilkan form pelanggan baru
+            if (newCustomerFields) newCustomerFields.style.display = 'block';
+            if (namaBaruInput) {
                 namaBaruInput.required = true;
                 namaBaruInput.disabled = false;
-                
-                // Kosongkan HP dan Alamat saat membuat baru
-                noHpInput.value = '';
-                alamatInput.value = '';
-
-            } else {
-                // Sembunyikan field nama baru
-                newCustomerFields.style.display = 'none';
+            }
+            
+            // Kosongkan semua field
+            if (noHpInput) noHpInput.value = '';
+            if (alamatInput) alamatInput.value = '';
+            
+        } else {
+            // Sembunyikan form pelanggan baru
+            if (newCustomerFields) newCustomerFields.style.display = 'none';
+            if (namaBaruInput) {
                 namaBaruInput.required = false;
                 namaBaruInput.disabled = true;
-                namaBaruInput.value = ''; 
+                namaBaruInput.value = '';
             }
-            noHpInput.required = true;
-            alamatInput.required = true;
         }
-
-        selectPelanggan.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            
-            if (selectedOption.value === 'new') {
-                toggleNewCustomerFields(true); 
-                
-            } else if (selectedOption.value) {
-                toggleNewCustomerFields(false);
-
-                // Auto-fill data pelanggan yang dipilih (Menggunakan data-attribute)
-                noHpInput.value = selectedOption.dataset.hp || '';
-                alamatInput.value = selectedOption.dataset.alamat || '';
-                
-            } else {
-                toggleNewCustomerFields(false);
-                noHpInput.value = '';
-                alamatInput.value = '';
-            }
-        });
-        
-        // Inisialisasi awal
-        toggleNewCustomerFields(selectPelanggan.value === 'new');
     }
+    
+    // Event listener untuk dropdown
+    selectPelanggan.addEventListener('change', function() {
+        console.log("=== DROPDOWN BERUBAH ===");
+        console.log("Nilai dipilih:", this.value);
+        console.log("Option dipilih:", this.options[this.selectedIndex]);
+        
+        const selectedOption = this.options[this.selectedIndex];
+        
+        if (this.value === 'new') {
+            console.log("Mode: Tambah pemilik baru");
+            toggleNewCustomerForm(true);
+            
+        } else if (this.value && this.value !== '') {
+            console.log("Mode: Pemilih pelanggan existing");
+            toggleNewCustomerForm(false);
+            
+            // Ambil data dari data-attribute
+            const hp = selectedOption.getAttribute('data-hp');
+            const alamat = selectedOption.getAttribute('data-alamat');
+            
+            console.log("Data dari option:", { hp, alamat });
+            
+            // Isi field otomatis
+            if (noHpInput) noHpInput.value = hp || '';
+            if (alamatInput) alamatInput.value = alamat || '';
+            
+        } else {
+            console.log("Mode: Tidak ada pilihan");
+            toggleNewCustomerForm(false);
+            if (noHpInput) noHpInput.value = '';
+            if (alamatInput) alamatInput.value = '';
+        }
+    });
+    
+    // Inisialisasi awal
+    console.log("Nilai awal dropdown:", selectPelanggan.value);
+    if (selectPelanggan.value === 'new') {
+        toggleNewCustomerForm(true);
+    } else {
+        toggleNewCustomerForm(false);
+        // Jika sudah ada pilihan, isi data
+        if (selectPelanggan.value) {
+            const selectedOption = selectPelanggan.options[selectPelanggan.selectedIndex];
+            if (selectedOption && noHpInput && alamatInput) {
+                noHpInput.value = selectedOption.getAttribute('data-hp') || '';
+                alamatInput.value = selectedOption.getAttribute('data-alamat') || '';
+            }
+        }
+    }
+    
+} else {
+    console.error("Elemen tidak ditemukan!");
+    console.log("selectPelanggan:", selectPelanggan);
+    console.log("noHpInput:", noHpInput);
+    console.log("alamatInput:", alamatInput);
+}
 
     // =============================================
-    // 2. KALKULASI TOTAL HARGA
+    // 2. KALKULASI TOTAL HARGA (FIXED)
     // =============================================
     function hitungTotal() {
+        if (!paketSelect || !totalHargaElement) return;
+        
         let total = 0;
         let hargaPaket = 0;
         let lamaInap = 1;
         let namaPaket = '';
         
-        lamaInap = parseInt(lamaInapInput ? lamaInapInput.value : 1) || 1;
-        // Pastikan lamaInap tidak kurang dari 1
-        if (lamaInap < 1) {
-            lamaInap = 1;
-            if(lamaInapInput) lamaInapInput.value = 1;
+        // Get lama inap
+        if (lamaInapInput) {
+            lamaInap = parseInt(lamaInapInput.value) || 1;
+            if (lamaInap < 1) {
+                lamaInap = 1;
+                lamaInapInput.value = 1;
+            }
         }
-
-        if (paketSelect && paketSelect.value) {
+        
+        // Get harga paket
+        if (paketSelect.value) {
             const selectedOption = paketSelect.options[paketSelect.selectedIndex];
             hargaPaket = parseInt(selectedOption.getAttribute('data-harga')) || 0;
             namaPaket = selectedOption.getAttribute('data-nama') || '';
             
             total = hargaPaket * lamaInap;
             
+            // Update paket info
             if (paketInfo) {
                 paketInfo.innerHTML = `
                     <strong>${namaPaket}</strong><br>
-                    <small>Harga: ${formatRupiah(hargaPaket)} / hari</small>
+                    <small>Harga: Rp ${hargaPaket.toLocaleString('id-ID')} / hari</small>
                 `;
             }
         } else {
@@ -130,304 +178,275 @@ document.addEventListener('DOMContentLoaded', function() {
                 paketInfo.textContent = 'Pilih paket untuk melihat detail';
             }
         }
-
-        if (totalHargaElement) {
-            totalHargaElement.textContent = formatRupiah(total);
-        }
-        if (totalInput) {
-            totalInput.value = total;
-        }
+        
+        // Update display
+        totalHargaElement.textContent = `Rp ${total.toLocaleString('id-ID')}`;
+        if (totalInput) totalInput.value = total;
+        
         if (detailPerhitungan) {
             if (hargaPaket > 0) {
-                detailPerhitungan.textContent = `${formatRupiah(hargaPaket)} × ${lamaInap} hari`;
+                detailPerhitungan.textContent = `Rp ${hargaPaket.toLocaleString('id-ID')} × ${lamaInap} hari`;
             } else {
                 detailPerhitungan.textContent = '-';
             }
         }
+        
+        console.log("Hitung total:", { hargaPaket, lamaInap, total });
     }
 
-    if (paketSelect) {
-        paketSelect.addEventListener('change', hitungTotal);
-    }
-    if (lamaInapInput) {
-        lamaInapInput.addEventListener('input', hitungTotal);
-    }
-    hitungTotal();
-
-// =============================================
-// 3. PEMILIHAN KANDANG (FIXED - TIDAK AUTO-TRIGGER)
-// =============================================
-if (btnPilihKandang) {
+    // Attach event listeners
+    if (paketSelect) paketSelect.addEventListener('change', hitungTotal);
+    if (lamaInapInput) lamaInapInput.addEventListener('input', hitungTotal);
     
-    function filterKandang() {
-        const jenisHewan = jenisHewanSelect.value;
-        const ukuranHewan = ukuranHewanSelect ? ukuranHewanSelect.value : '';
-        
-        console.log("Filter kandang - Jenis:", jenisHewan, "Ukuran:", ukuranHewan);
-        
-        if (!jenisHewan) {
-            alert('Pilih jenis hewan terlebih dahulu');
-            panelKandang.classList.add('d-none');
-            return;
-        }
-        
-        // LOGICA FILTER (tetap sama seperti sebelumnya)
-        let tipeKandangYangCocok = [];
-        
-        if (jenisHewan === 'Kucing') {
-            if (ukuranHewan === 'Kecil') {
-                tipeKandangYangCocok = ['Kecil', 'Sedang', 'Besar'];
-            } else if (ukuranHewan === 'Sedang') {
-                tipeKandangYangCocok = ['Sedang', 'Besar'];
-            } else if (ukuranHewan === 'Besar') {
-                tipeKandangYangCocok = ['Besar'];
-            } else {
-                tipeKandangYangCocok = ['Kecil', 'Sedang', 'Besar'];
-            }
-        } else if (jenisHewan === 'Anjing') {
-            if (ukuranHewan === 'Kecil') {
-                tipeKandangYangCocok = ['Sedang', 'Besar'];
-            } else if (ukuranHewan === 'Sedang') {
-                tipeKandangYangCocok = ['Sedang', 'Besar'];
-            } else if (ukuranHewan === 'Besar') {
-                tipeKandangYangCocok = ['Besar'];
-            } else {
-                tipeKandangYangCocok = ['Sedang', 'Besar'];
-            }
-        }
+    // Initial calculation
+    setTimeout(hitungTotal, 100);
 
-        console.log("Tipe kandang yang cocok:", tipeKandangYangCocok);
-
-        // Tampilkan loading sementara
-        panelKandang.innerHTML = `
-            <div class="text-center py-2">
-                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                <span class="text-muted">Memuat kandang tersedia...</span>
-            </div>
-        `;
-        panelKandang.classList.remove('d-none');
+    // =============================================
+    // 3. PEMILIHAN KANDANG DENGAN FILTER YANG BENAR
+    // =============================================
+    if (btnPilihKandang && jenisHewanSelect) {
+        const kandangData = window.PHP_DATA?.kandangTersedia || [];
+        console.log("Data kandang tersedia:", kandangData);
         
-        setTimeout(() => {
-            panelKandang.innerHTML = '';
-            let kandangDitemukan = false;
+        function getTipeKandangYangCocok(jenis, ukuran) {
+            console.log("Get tipe kandang untuk:", jenis, ukuran);
             
-            kandangTersedia.forEach(kandang => {
-                const kodeKandang = kandang.kode_kandang;
-                const tipeKandang = kandang.tipe;
-                const statusKandang = kandang.status;
-                const idKandang = kandang.id;
-                
-                // Filter berdasarkan tipe kandang yang cocok DAN status tersedia
-                if (statusKandang === 'tersedia' && tipeKandangYangCocok.includes(tipeKandang)) { 
-                    kandangDitemukan = true;
-                    
-                    const kandangItem = document.createElement('div');
-                    kandangItem.className = 'p-2 border-bottom';
-                    kandangItem.style.cursor = 'pointer';
-                    kandangItem.innerHTML = `
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="fw-semibold">${kodeKandang}</span>
-                                <small class="text-muted ms-2">${tipeKandang}</small>
-                            </div>
-                            <span class="badge bg-success">Tersedia</span>
-                        </div>
-                    `;
-                    
-                    kandangItem.addEventListener('click', function() {
-                        kandangLabel.textContent = `${kodeKandang} - ${tipeKandang}`;
-                        idKandangInput.value = idKandang; 
-                        panelKandang.classList.add('d-none');
-                        kandangInfo.innerHTML = `<span class="text-success"><i class="bi bi-check-circle"></i> Kandang ${kodeKandang} dipilih</span>`;
-                        validateKandang();
-                    });
-                    
-                    panelKandang.appendChild(kandangItem);
+            if (jenis === 'Kucing') {
+                if (ukuran === 'Kecil') {
+                    return ['Kecil', 'Sedang', 'Besar'];
+                } else if (ukuran === 'Sedang') {
+                    return ['Sedang', 'Besar'];
+                } else if (ukuran === 'Besar') {
+                    return ['Besar'];
+                } else {
+                    return ['Kecil', 'Sedang', 'Besar']; // default
                 }
+            } 
+            else if (jenis === 'Anjing') {
+                if (ukuran === 'Kecil') {
+                    return ['Sedang']; // Anjing kecil → kandang sedang saja
+                } else if (ukuran === 'Sedang') {
+                    return ['Sedang', 'Besar'];
+                } else if (ukuran === 'Besar') {
+                    return ['Besar'];
+                } else {
+                    return ['Sedang', 'Besar']; // default
+                }
+            }
+            return [];
+        }
+        
+        function showKandangPanel() {
+            if (!jenisHewanSelect.value) {
+                alert('Pilih jenis hewan terlebih dahulu');
+                return;
+            }
+            
+            const jenis = jenisHewanSelect.value;
+            const ukuran = ukuranHewanSelect ? ukuranHewanSelect.value : '';
+            const tipeCocok = getTipeKandangYangCocok(jenis, ukuran);
+            
+            console.log("Filter kandang:", { jenis, ukuran, tipeCocok });
+            
+            // Clear panel
+            panelKandang.innerHTML = '';
+            panelKandang.classList.remove('d-none');
+            
+            // Filter kandang
+            const kandangFiltered = kandangData.filter(k => {
+                return k.status === 'tersedia' && tipeCocok.includes(k.tipe);
             });
             
-            if (!kandangDitemukan) {
+            console.log("Kandang tersedia setelah filter:", kandangFiltered);
+            
+            if (kandangFiltered.length === 0) {
                 panelKandang.innerHTML = `
                     <div class="text-center text-muted py-3">
                         <i class="bi bi-inbox display-6 opacity-50"></i>
                         <p class="mt-2 mb-0">Tidak ada kandang tersedia</p>
-                        <small>Untuk ${jenisHewan} ${ukuranHewan ? 'ukuran ' + ukuranHewan : ''}</small>
+                        <small>Untuk ${jenis} ${ukuran ? 'ukuran ' + ukuran : ''}</small>
                     </div>
                 `;
-                // Reset pilihan jika tidak ada yang ditemukan
-                if (idKandangInput.value) {
-                     resetKandangPilihan();
-                }
+                return;
             }
-        }, 300);
-    }
-
-    btnPilihKandang.addEventListener('click', function(e) {
-        e.preventDefault();
-        filterKandang();
-    });
-
-    function validateKandang() {
-        if (idKandangInput.value) {
+            
+            // Display kandang
+            kandangFiltered.forEach(kandang => {
+                const item = document.createElement('div');
+                item.className = 'p-2 border-bottom hover-bg-light';
+                item.style.cursor = 'pointer';
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-semibold">${kandang.kode_kandang}</span>
+                            <small class="text-muted ms-2">${kandang.tipe}</small>
+                        </div>
+                        <span class="badge bg-success">Tersedia</span>
+                    </div>
+                `;
+                
+                item.addEventListener('click', function() {
+                    selectKandang(kandang);
+                });
+                
+                panelKandang.appendChild(item);
+            });
+        }
+        
+        function selectKandang(kandang) {
+            kandangLabel.textContent = `${kandang.kode_kandang} - ${kandang.tipe}`;
+            idKandangInput.value = kandang.id;
+            panelKandang.classList.add('d-none');
+            
+            if (kandangInfo) {
+                kandangInfo.innerHTML = `
+                    <span class="text-success">
+                        <i class="bi bi-check-circle"></i> Kandang ${kandang.kode_kandang} (${kandang.tipe}) dipilih
+                    </span>
+                `;
+            }
+            
+            // Update button style
             btnPilihKandang.classList.remove('btn-outline-secondary');
             btnPilihKandang.classList.add('btn-outline-success');
-        } else {
+            
+            console.log("Kandang dipilih:", kandang);
+        }
+        
+        function resetKandangSelection() {
+            idKandangInput.value = '';
+            kandangLabel.textContent = 'Pilih kandang yang tersedia';
+            panelKandang.classList.add('d-none');
+            
+            if (kandangInfo) {
+                kandangInfo.innerHTML = `
+                    Pilih kandang: 
+                    <span id="kandangRuleInfo">
+                        Kucing kecil: semua kandang | Kucing sedang: sedang & besar | Kucing besar: besar saja | 
+                        Anjing kecil: sedang | Anjing sedang: sedang & besar | Anjing besar: besar saja
+                    </span>
+                `;
+            }
+            
+            // Reset button style
             btnPilihKandang.classList.remove('btn-outline-success');
             btnPilihKandang.classList.add('btn-outline-secondary');
         }
-    }
-
-    function resetKandangPilihan() {
-        idKandangInput.value = '';
-        kandangLabel.textContent = 'Pilih kandang yang tersedia';
-        kandangInfo.innerHTML = 'Pilih kandang yang sesuai dengan jenis dan ukuran hewan';
-        panelKandang.classList.add('d-none');
-        validateKandang();
-    }
-
-    // hanya reset pilihan, TIDAK auto-trigger filter
-    if (jenisHewanSelect) {
-        jenisHewanSelect.addEventListener('change', resetKandangPilihan);
-    }
-    if (ukuranHewanSelect) {
-        ukuranHewanSelect.addEventListener('change', resetKandangPilihan);
-    }
-    
-    validateKandang();
-}
-    // 4. FORM SUBMIT HANDLER & VALIDASI PENDAFTARAN
-
-    if (formPendaftaran) {
         
-        function validateForm(event) {
-            // 1. Validasi bawaan browser (required fields)
-            if (!formPendaftaran.checkValidity()) {
-                 return; // Biarkan browser menampilkan error bawaan
+        // Event Listeners
+        btnPilihKandang.addEventListener('click', showKandangPanel);
+        
+        if (jenisHewanSelect) {
+            jenisHewanSelect.addEventListener('change', resetKandangSelection);
+        }
+        
+        if (ukuranHewanSelect) {
+            ukuranHewanSelect.addEventListener('change', resetKandangSelection);
+        }
+        
+        // Close panel when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!panelKandang.contains(e.target) && 
+                e.target !== btnPilihKandang && 
+                !btnPilihKandang.contains(e.target)) {
+                panelKandang.classList.add('d-none');
             }
+        });
+    }
 
-            // 2. Validasi Kandang
-            if (!idKandangInput.value) {
-                event.preventDefault(); // Hentikan submit
-                alert('Pilih kandang terlebih dahulu untuk menyelesaikan pendaftaran.');
+    // =============================================
+    // 4. FORM VALIDATION
+    // =============================================
+    if (formPendaftaran) {
+        formPendaftaran.addEventListener('submit', function(e) {
+            // Basic validation
+            if (!idKandangInput || !idKandangInput.value) {
+                e.preventDefault();
+                alert('Silakan pilih kandang terlebih dahulu');
                 btnPilihKandang.focus();
                 return;
             }
-
-            // 3. Validasi Total Biaya
-            if (parseInt(totalInput.value) <= 0) {
-                 event.preventDefault(); // Hentikan submit
-                alert('Total biaya tidak valid. Pastikan Paket Utama dan Lama Inap sudah diisi dengan benar.');
+            
+            if (!paketSelect || !paketSelect.value) {
+                e.preventDefault();
+                alert('Silakan pilih paket layanan');
                 paketSelect.focus();
                 return;
             }
-        }
-        
-        formPendaftaran.addEventListener('submit', validateForm);
-    }
-    
-    // =============================================
-    // 5. FITUR CHECKOUT (PENCARIAN & FILTER)
-    // =============================================
-    
-    // Fungsi untuk memformat tanggal ke format d/m/Y
-    function formatDate(dateString) {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'});
-    }
-    
-    // Fungsi untuk merender ulang tabel
-    function renderHewanMenginap(data) {
-        if (!tabelHewanMenginapBody) return;
-
-        tabelHewanMenginapBody.innerHTML = ''; // Kosongkan tabel
-        
-        if (data.length === 0) {
-            tabelHewanMenginapBody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="text-center text-muted py-4">
-                        <i class="bi bi-inbox display-4 text-muted opacity-50"></i>
-                        <p class="mt-3 mb-0">Tidak ada hewan yang sesuai kriteria pencarian</p>
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        data.forEach(hewan => {
-            const hewanIcon = hewan.jenis_hewan === 'Kucing' ? 'bi-cat text-info' : 'bi-dog text-warning';
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td class="fw-semibold">${hewan.kode_transaksi}</td>
-                <td>${hewan.nama_pelanggan}</td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <i class="bi ${hewanIcon} me-2"></i>
-                        ${hewan.nama_hewan}
-                    </div>
-                </td>
-                <td><span class="badge bg-secondary">${hewan.kode_kandang}</span></td>
-                <td>${formatDate(hewan.tanggal_masuk)}</td>
-                <td>${hewan.durasi} hari</td>
-                <td class="fw-semibold text-primary">${formatRupiah(hewan.total_biaya)}</td>
-                <td>
-                    <button type="button" class="btn btn-success btn-sm" onclick="prosesCheckout('${hewan.id_transaksi}')">
-                        <i class="bi bi-check-lg me-1"></i>Check-out
-                    </button>
-                </td>
-            `;
-            tabelHewanMenginapBody.appendChild(row);
-        });
-    }
-    
-    // Fungsi Pencarian/Filter
-    function applyCheckoutFilter() {
-        const searchTerm = searchCheckout.value.toLowerCase();
-        const selectedKandang = filterKandang.value;
-        
-        const filteredData = hewanMenginap.filter(hewan => {
-            // Filter 1: Pencarian
-            const matchesSearch = hewan.nama_pelanggan.toLowerCase().includes(searchTerm) || 
-                                  hewan.nama_hewan.toLowerCase().includes(searchTerm);
             
-            // Filter 2: Kandang
-            const matchesKandang = !selectedKandang || 
-                                   (selectedKandang === 'KK' && (hewan.kode_kandang.startsWith('KK'))) ||
-                                   (selectedKandang === 'KB' && (hewan.kode_kandang.startsWith('KB')));
-                                   
-            return matchesSearch && matchesKandang;
+            // Validate total
+            const total = parseInt(totalInput.value) || 0;
+            if (total <= 0) {
+                e.preventDefault();
+                alert('Total biaya tidak valid. Periksa paket dan lama inap.');
+                return;
+            }
+            
+            console.log("Form submitted dengan data:", {
+                kandang: idKandangInput.value,
+                paket: paketSelect.value,
+                total: totalInput.value
+            });
         });
-        
-        renderHewanMenginap(filteredData);
     }
 
-    if (btnCariCheckout) {
-        btnCariCheckout.addEventListener('click', applyCheckoutFilter);
-    }
-    
-    // Juga terapkan filter saat input atau select berubah (Opsional: agar lebih interaktif)
-    if (searchCheckout) {
-        searchCheckout.addEventListener('input', applyCheckoutFilter);
-    }
-    if (filterKandang) {
-        filterKandang.addEventListener('change', applyCheckoutFilter);
-    }
-    
-    // Tambahkan fungsi global untuk proses checkout dari button di tabel
+    // =============================================
+    // 5. CHECKOUT/PENGEMBALIAN FUNCTIONALITY
+    // =============================================
+    // Fungsi global untuk proses checkout
     window.prosesCheckout = function(id_transaksi) {
-    console.log("Proses checkout untuk ID: " + id_transaksi);
+        if (confirm(`Apakah Anda yakin ingin melakukan check-out untuk transaksi ini?`)) {
+            window.location.href = `index.php?action=checkoutTransaksi&id=${id_transaksi}`;
+        }
+    };
     
-    if (confirm(`Apakah Anda yakin ingin menyelesaikan transaksi (Check-out) untuk transaksi ID: ${id_transaksi}?`)) {
-        // Arahkan ke action controller untuk proses check-out
-        console.log("Redirect ke checkout...");
-        window.location.href = `index.php?action=checkoutTransaksi&id=${id_transaksi}`;
+    // Search functionality for checkout tab
+    const searchCheckout = document.getElementById('searchCheckout');
+    const filterKandang = document.getElementById('filterKandang');
+    const btnCariCheckout = document.getElementById('btnCariCheckout');
+    
+    if (btnCariCheckout) {
+        btnCariCheckout.addEventListener('click', function() {
+            const searchTerm = searchCheckout.value.toLowerCase();
+            const kandangFilter = filterKandang.value;
+            
+            const rows = document.querySelectorAll('.table-responsive tbody tr');
+            let found = false;
+            
+            rows.forEach(row => {
+                const pemilik = row.cells[1].textContent.toLowerCase();
+                const hewan = row.cells[2].textContent.toLowerCase();
+                const kandang = row.cells[3].textContent;
+                
+                const matchSearch = pemilik.includes(searchTerm) || hewan.includes(searchTerm);
+                const matchKandang = !kandangFilter || kandang.includes(kandangFilter);
+                
+                if (matchSearch && matchKandang) {
+                    row.style.display = '';
+                    found = true;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Show no results message
+            const noResults = document.querySelector('.no-results-message');
+            if (!found && !noResults) {
+                const tbody = document.querySelector('.table-responsive tbody');
+                const tr = document.createElement('tr');
+                tr.className = 'no-results-message';
+                tr.innerHTML = `
+                    <td colspan="8" class="text-center text-muted py-4">
+                        <i class="bi bi-search display-6 opacity-50"></i>
+                        <p class="mt-3 mb-0">Tidak ditemukan hasil pencarian</p>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            } else if (found && noResults) {
+                noResults.remove();
+            }
+        });
     }
-}
     
-    // Panggil saat DOMContentLoaded untuk memastikan data awal ditampilkan (jika tab pengembalian aktif)
-    // Cek apakah tabel hewan menginap ada di halaman.
-    if(tabelHewanMenginapBody) {
-         applyCheckoutFilter();
-    }
-    
+    console.log("Transaksi handler initialized successfully");
 });

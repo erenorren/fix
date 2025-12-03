@@ -52,41 +52,46 @@ include __DIR__ . '/template/header.php';
                     <h5 class="mb-3">Form Pendaftaran Penitipan</h5>
                     <form method="post" action="index.php?action=createTransaksi" id="formPendaftaran">
                         <div class="row g-4">
+                            <!-- GANTI SELURUH BAGIAN "Informasi Pemilik" dengan ini: -->
                             <div class="col-lg-6">
                                 <div class="card p-3 h-100 position-relative">
                                     <h6 class="mb-3 text-primary">Informasi Pemilik</h6>
 
+                                    <!-- DROPDOWN PELANGGAN -->
                                     <div class="mb-3">
-                                        <label class="form-label">Nama Pemilik <span class="text-danger">*</span></label>
+                                        <label class="form-label">Pilih Pemilik <span class="text-danger">*</span></label>
                                         <select name="id_pelanggan" class="form-select" id="selectPelanggan" required>
                                             <option value="">-- Pilih Pemilik --</option>
-                                            <?php foreach ($pelangganList as $p): ?>
-                                                <option value="<?= htmlspecialchars($p['id']) ?>" 
-                                                    data-hp="<?= htmlspecialchars($p['hp']) ?>" 
-                                                    data-alamat="<?= htmlspecialchars($p['alamat']) ?>">
-                                                    <?= htmlspecialchars($p['nama']) ?> (<?= htmlspecialchars($p['hp']) ?>)
-                                                </option>
-                                            <?php endforeach; ?>
+                                            <?php if (!empty($pelangganList)): ?>
+                                                <?php foreach ($pelangganList as $p): ?>
+                                                    <option value="<?= $p['id'] ?>" 
+                                                        data-hp="<?= htmlspecialchars($p['hp'] ?? '') ?>" 
+                                                        data-alamat="<?= htmlspecialchars($p['alamat'] ?? '') ?>">
+                                                        <?= htmlspecialchars($p['nama'] ?? '') ?> 
+                                                        (<?= htmlspecialchars($p['hp'] ?? '') ?>)
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
                                             <option value="new">+ Tambah Pemilik Baru</option>
                                         </select>
                                         <small class="text-muted">Pilih dari daftar pelanggan terdaftar</small>
                                     </div>
 
-                                        <div class="mb-3" id="newCustomerFields" style="display: none;">
-                                                <label class="form-label">Nama Pemilik Baru <span class="text-danger">*</span></label>
-                                                <input type="text" name="nama_pelanggan_baru" class="form-control" 
-                                                    placeholder="Ketik nama pemilik baru" required>
-                                            </div>
+                                    <!-- FIELDS UNTUK PELANGGAN BARU (AWALNYA DISEMBUNYIKAN) -->
+                                    <div id="newCustomerFields" style="display: none;">
+                                        <div class="mb-3">
+                                            <label class="form-label">Nama Pemilik Baru <span class="text-danger">*</span></label>
+                                            <input type="text" name="nama_pelanggan_baru" class="form-control" 
+                                                placeholder="Masukkan nama lengkap pemilik" required>
+                                        </div>
+                                    </div>
 
-                                            <!-- Field untuk pelanggan existing (jika menggunakan search/autocomplete) -->
-                                            <input type="hidden" name="search_pemilik" id="search_pemilik">
-                                            
-                                            <!-- Field lainnya -->
-                                            <div class="mb-3">
-                                                <label class="form-label">Nomor HP <span class="text-danger">*</span></label>
-                                                <input type="text" name="no_hp" id="p_hp" class="form-control"
-                                                    placeholder="Contoh: 08123456789" required>
-                                            </div>
+                                    <!-- FIELDS UNTUK NO HP DAN ALAMAT (SELALU TAMPIL) -->
+                                    <div class="mb-3">
+                                        <label class="form-label">Nomor HP <span class="text-danger">*</span></label>
+                                        <input type="text" name="no_hp" id="p_hp" class="form-control"
+                                            placeholder="Contoh: 08123456789" required>
+                                    </div>
 
                                     <div class="mb-3">
                                         <label class="form-label">Alamat <span class="text-danger">*</span></label>
@@ -342,12 +347,49 @@ include __DIR__ . '/template/header.php';
     </div>
 </div>
 
+<!-- DEBUG SCRIPT - Tampilkan data pelanggan -->
 <script>
-    // 1. Menyediakan data PHP ke variabel JavaScript global
-    const PHP_DATA = {
-        kandangTersedia: <?= json_encode($kandangTersedia ?? []) ?>,
-        hewanMenginap: <?= json_encode($hewanMenginap ?? []) ?>
-    };
+console.log("=== DEBUG DATA PELANGGAN ===");
+
+// Cek apakah data pelanggan ada
+const pelangganList = <?= json_encode($pelangganList) ?>;
+console.log("Data pelanggan dari PHP:", pelangganList);
+console.log("Jumlah pelanggan:", pelangganList.length);
+
+// Cek contoh data pertama
+if (pelangganList.length > 0) {
+    console.log("Contoh data pelanggan pertama:", pelangganList[0]);
+    console.log("Struktur:", {
+        id: pelangganList[0].id,
+        nama: pelangganList[0].nama,
+        hp: pelangganList[0].hp,
+        alamat: pelangganList[0].alamat
+    });
+}
+
+// Test get data dari dropdown
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('selectPelanggan');
+    
+    // Manual test: coba pilih option ke-1 (jika ada)
+    if (select && select.options.length > 1) {
+        // Simulasikan pilihan
+        console.log("=== TEST MANUAL ===");
+        select.selectedIndex = 1; // Pilih option pertama (bukan 'Pilih Pemilik')
+        const testOption = select.options[1];
+        
+        console.log("Test option:", {
+            value: testOption.value,
+            text: testOption.text,
+            dataHp: testOption.getAttribute('data-hp'),
+            dataAlamat: testOption.getAttribute('data-alamat')
+        });
+        
+        // Trigger change event
+        const event = new Event('change');
+        select.dispatchEvent(event);
+    }
+});
 </script>
 <script src="<?= $base_url ?>/public/js/transaksi-handler.js"></script> 
 
