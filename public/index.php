@@ -1,178 +1,148 @@
-// public/index.php - Perbaikan bagian session
 <?php
-// SESSION START - FIXED FOR VERCEL
+// public/index.php - HARUS TANPA SPASI SEBELUM <?php
+
+// ==================================================
+// SESSION HARUS DIATAS SEGALANYA
+// ==================================================
 $isVercel = isset($_SERVER['VERCEL']) || (isset($_ENV['VERCEL']) && $_ENV['VERCEL'] === '1');
 
-if (session_status() == PHP_SESSION_NONE) {
-    if ($isVercel) {
-        // Vercel specific settings - PASTIKAN SAMA PERSIS
-        ini_set('session.cookie_secure', '1');
-        ini_set('session.cookie_httponly', '1');
-        ini_set('session.cookie_samesite', 'Lax');
-        
-        session_set_cookie_params([
-            'lifetime' => 86400,
-            'path' => '/',
-            'domain' => $_SERVER['HTTP_HOST'],
-            'secure' => true,
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]);
-    }
-    
-    session_name('PHPSESSID'); // PASTIKAN nama session
-    session_start();
-    
-    // Debug: Cek session
-    error_log("Session started. ID: " . session_id());
-    error_log("User ID in session: " . ($_SESSION['user_id'] ?? 'not set'));
+// Set session configuration SEBELUM session_start()
+if ($isVercel) {
+    ini_set('session.cookie_secure', '1');
+    ini_set('session.cookie_httponly', '1');
+    ini_set('session.cookie_samesite', 'Lax');
 }
+
+// Start session
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// ==================================================
+// DEBUG MODE
+// ==================================================
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 // ==================================================
 // AUTOLOAD
 // ==================================================
 require_once __DIR__ . '/../vendor/autoload.php';
 
-// ====================================================
-// AUTH CHECK - PERBAIKI LOGIKA
-// ====================================================
-$publicPages = ['login', 'logout'];
-$publicActions = ['login', 'searchPelanggan', 'getKandangTersedia'];
+// ==================================================
+// BASE URL CONFIG
+// ==================================================
+function getBaseUrl() {
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'];
+    
+    // Jika di Vercel, path langsung dari root
+    if (isset($_SERVER['VERCEL']) || (isset($_ENV['VERCEL']) && $_ENV['VERCEL'] === '1')) {
+        return $protocol . $host;
+    } else {
+        // Localhost
+        return $protocol . $host . '/public';
+    }
+}
 
-$page = $_GET['page'] ?? 'dashboard';
+define('BASE_URL', getBaseUrl());
+
+// ==================================================
+// SIMPLE AUTH CHECK
+// ==================================================
+$currentPage = $_GET['page'] ?? 'dashboard';
 $action = $_GET['action'] ?? null;
 
-// Cek jika user sudah login
+// Halaman yang boleh diakses tanpa login
+$publicPages = ['login', 'logout'];
+
+// Cek apakah user sudah login
 $isLoggedIn = isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 
-// Debug log
-error_log("Page: $page, Action: $action, Logged in: " . ($isLoggedIn ? 'YES' : 'NO'));
-
-// Jika belum login dan mencoba akses halaman terproteksi
+// Logika autentikasi
 if (!$isLoggedIn) {
-    // Izinkan akses ke halaman publik dan action publik
-    $isPublic = in_array($page, $publicPages) || in_array($action, $publicActions);
-    
-    if (!$isPublic) {
-        // Jika request AJAX/API
-        if ($action) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Unauthorized', 'session_id' => session_id()]);
-            exit;
-        }
-        // Redirect ke login untuk request biasa
+    // Jika belum login
+    if (!in_array($currentPage, $publicPages)) {
+        // Redirect ke login jika mencoba akses halaman terproteksi
         header('Location: index.php?page=login');
+        exit;
+    }
+} else {
+    // Jika sudah login
+    if ($currentPage === 'login') {
+        // Redirect ke dashboard jika sudah login tapi mencoba akses login page
+        header('Location: index.php?page=dashboard');
         exit;
     }
 }
 
-// Jika sudah login tapi mencoba akses halaman login
-if ($isLoggedIn && $page === 'login') {
-    header('Location: index.php?page=dashboard');
-    exit;
-}
-
 // ==================================================
-// ROUTING
+// ROUTING UNTUK ACTION (API CALLS)
 // ==================================================
-$action = $_GET['action'] ?? null;
-
 if ($action) {
     switch ($action) {
         case 'login':
             require_once __DIR__ . '/../controllers/AuthController.php';
-            (new AuthController())->login();
-            break;
-
+            $auth = new AuthController();
+            $auth->login();
+            exit;
+            
         case 'logout':
-            require_once __DIR__ . '/../controllers/AuthController.php';
-            (new AuthController())->logout();
-            break;
-            
-        case 'searchPelanggan':
-            require_once __DIR__ . '/../models/Pelanggan.php';
-            $model = new Pelanggan();
-            $keyword = $_GET['q'] ?? '';
-            $results = $model->search($keyword);
-            header('Content-Type: application/json');
-            echo json_encode($results);
+            session_destroy();
+            echo json_encode(['success' => true, 'redirect' => 'index.php?page=login']);
             exit;
-            
-        case 'getKandangTersedia':
-            require_once __DIR__ . '/../models/Kandang.php';
-            $model = new Kandang();
-            $jenis = $_GET['jenis'] ?? '';
-            $ukuran = $_GET['ukuran'] ?? '';
-            $results = $model->getAvailable($jenis, $ukuran);
-            header('Content-Type: application/json');
-            echo json_encode($results);
-            exit;
-            
-        case 'createTransaksi':
-            require_once __DIR__ . '/../controllers/TransaksiController.php';
-            (new TransaksiController())->create();
-            break;
-            
-        case 'checkoutTransaksi':
-            require_once __DIR__ . '/../controllers/TransaksiController.php';
-            (new TransaksiController())->checkout();
-            break;
             
         default:
             http_response_code(404);
             echo json_encode(['error' => 'Action not found']);
             exit;
     }
-    exit;
 }
 
-// PAGE ROUTES
-$page = $_GET['page'] ?? 'dashboard';
-switch ($page) {
+// ==================================================
+// ROUTING UNTUK PAGES
+// ==================================================
+switch ($currentPage) {
     case 'login':
-        if (isset($_SESSION['user_id'])) {
-            header('Location: index.php?page=dashboard');
-            exit;
-        }
+        // Tampilkan halaman login
         require_once __DIR__ . '/../views/login.php';
         break;
-
+        
     case 'dashboard':
+        // Tampilkan dashboard
+        $pageTitle = 'Dashboard';
+        require_once __DIR__ . '/../views/template/header.php';
         require_once __DIR__ . '/../views/dashboard.php';
+        require_once __DIR__ . '/../views/template/footer.php';
         break;
         
-    case 'transaksi':
-        require_once __DIR__ . '/../controllers/TransaksiController.php';
-        (new TransaksiController())->index();
+    case 'hewan':
+        // Tampilkan halaman hewan
+        $pageTitle = 'Data Hewan';
+        require_once __DIR__ . '/../views/template/header.php';
+        require_once __DIR__ . '/../views/hewan.php';
+        require_once __DIR__ . '/../views/template/footer.php';
+        break;
+        
+    case 'kandang':
+        // Tampilkan halaman kandang
+        $pageTitle = 'Data Kandang';
+        require_once __DIR__ . '/../views/template/header.php';
+        require_once __DIR__ . '/../views/kandang.php';
+        require_once __DIR__ . '/../views/template/footer.php';
         break;
         
     case 'logout':
+        // Logout dan redirect ke login
         session_destroy();
         header('Location: index.php?page=login');
         exit;
         
-    case 'hewan':
-        require_once __DIR__ . '/../views/hewan.php';
-        break;
-        
-    case 'kandang':
-        require_once __DIR__ . '/../views/kandang.php';
-        break;
-        
-    case 'layanan':
-        require_once __DIR__ . '/../views/layanan.php';
-        break;
-        
-    case 'pemilik':
-        require_once __DIR__ . '/../views/pelanggan.php';
-        break;
-        
-    case 'laporan':
-        require_once __DIR__ . '/../views/laporan.php';
-        break;
-        
     default:
+        // 404 Page
+        $pageTitle = 'Page Not Found';
+        require_once __DIR__ . '/../views/template/header.php';
         require_once __DIR__ . '/../views/404.php';
+        require_once __DIR__ . '/../views/template/footer.php';
         break;
 }
-?>

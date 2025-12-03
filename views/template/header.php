@@ -1,5 +1,7 @@
-<!-- header.php - Perbaikan bagian CSS -->
 <?php
+// views/template/header.php - HARUS TANPA SPASI SEBELUM <?php
+
+// Jika session belum dimulai, mulailah
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -9,11 +11,14 @@ $isVercel = isset($_SERVER['VERCEL']) || (isset($_ENV['VERCEL']) && $_ENV['VERCE
 
 // Tentukan base URL
 if ($isVercel) {
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
-    $base_url = $protocol . $_SERVER['HTTP_HOST'];
+    $base_url = 'https://' . $_SERVER['HTTP_HOST'];
 } else {
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
-    $base_url = $protocol . $_SERVER['HTTP_HOST'] . '/public';
+    $base_url = 'http://' . $_SERVER['HTTP_HOST'] . '/public';
+}
+
+// Pastikan $pageTitle sudah di-set
+if (!isset($pageTitle)) {
+    $pageTitle = 'Sistem Penitipan Hewan';
 }
 ?>
 <!DOCTYPE html>
@@ -23,118 +28,58 @@ if ($isVercel) {
     <title><?= htmlspecialchars($pageTitle) ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     
-    <!-- CSS dengan path absolut -->
-    <link rel="stylesheet" href="<?= $base_url ?>/css/adminlte.css">
-    <link rel="stylesheet" href="<?= $base_url ?>/css/custom.css">
+    <!-- CSS dari CDN untuk memastikan styling bekerja -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
-    <!-- Pastikan folder css ada di public/css -->
+    <!-- AdminLTE CSS (jika ada) -->
+    <!-- <link rel="stylesheet" href="<?= $base_url ?>/css/adminlte.css"> -->
+    
+    <!-- CSS Custom -->
+    <link rel="stylesheet" href="<?= $base_url ?>/css/custom.css">
+    
+    <style>
+        /* Fallback styling jika CSS gagal load */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .app-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+        .app-sidebar {
+            width: 250px;
+            background-color: #343a40;
+            color: white;
+        }
+        .app-main {
+            flex: 1;
+            padding: 20px;
+        }
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+    </style>
 </head>
-
-
-<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
-    <div class="app-wrapper">
-
-        <!-- HEADER / NAVBAR -->
-        <nav class="app-header navbar navbar-expand bg-body border-bottom shadow-sm">
-            <div class="container-fluid">
-
-                <!-- Tombol toggle sidebar (kiri) -->
-                <button class="navbar-toggler" type="button" data-lte-toggle="sidebar" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-
-                <!-- Kosongkan sisi kiri, biar badge user di kanan -->
-                <div class="flex-grow-1"></div>
-
-                <!-- Badge user di pojok kanan -->
-                <!-- Badge user di pojok kanan -->
-                <div class="d-flex align-items-center">
-                    <div class="px-3 py-1 rounded-pill bg-primary text-white d-flex align-items-center">
-                        <i class="bi bi-person-fill me-2"></i>
-                        <span class="small">
-                            <?= htmlspecialchars($_SESSION['username'] ?? 'admin'); ?>
-                            <!-- Ganti $_SESSION['user']['username'] menjadi $_SESSION['username'] -->
-                        </span>
-                    </div>
-                </div>
+<body>
+    <!-- Simple layout untuk testing -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.php?page=dashboard">
+                <i class="bi bi-heart-pulse me-2"></i>Sistem Penitipan Hewan
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="me-3 text-dark">
+                    <i class="bi bi-person-circle me-1"></i>
+                    <?= htmlspecialchars($_SESSION['username'] ?? 'Guest') ?>
+                </span>
+                <a href="index.php?page=logout" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-box-arrow-right me-1"></i>Logout
+                </a>
             </div>
-        </nav>
-        <!-- /HEADER -->
-
-        <!-- SIDEBAR -->
-        <?php include __DIR__ . '/sidebar.php'; ?>
-
-        <!-- MAIN CONTENT WRAPPER -->
-        <main class="app-main">
-            <div class="app-content p-3">
-                <script>
-                    document.addEventListener('DOMContentLoaded', function () {
-                        const paketSelect = document.getElementById('paketSelect'); // select Layanan Utama
-                        const dropdownBtn = document.getElementById('dropdownLayananTambahan'); // tombol dropdown
-                        const labelSpan = document.getElementById('ltLabel'); // teks di tombol
-                        const checkboxes = document.querySelectorAll('.lt-checkbox'); // semua checkbox
-                        const hiddenContainer = document.getElementById('ltHiddenContainer'); // div untuk hidden input
-
-                        // Kalau elemen tidak ada (misal di tab lain), jangan apa-apa
-                        if (!dropdownBtn || !hiddenContainer) return;
-
-                        // Fungsi sinkron pilihan checkbox -> hidden input + label
-                        function syncLayananTambahan() {
-                            hiddenContainer.innerHTML = ''; // reset
-
-                            const selectedLabels = [];
-
-                            checkboxes.forEach(cb => {
-                                if (cb.checked) {
-                                    // buat input hidden name="layanan_tambahan[]" untuk form
-                                    const input = document.createElement('input');
-                                    input.type = 'hidden';
-                                    input.name = 'layanan_tambahan[]';
-                                    input.value = cb.value;
-                                    hiddenContainer.appendChild(input);
-
-                                    // ambil teks label untuk ditampilkan
-                                    const text = cb.nextElementSibling?.textContent.trim() || cb.value;
-                                    selectedLabels.push(text);
-                                }
-                            });
-
-                            if (selectedLabels.length === 0) {
-                                labelSpan.textContent = 'Pilih layanan tambahan (opsional)';
-                            } else if (selectedLabels.length === 1) {
-                                labelSpan.textContent = selectedLabels[0];
-                            } else {
-                                labelSpan.textContent = selectedLabels.length + ' layanan dipilih';
-                            }
-                        }
-
-                        // Saat checkbox berubah -> sync
-                        checkboxes.forEach(cb => {
-                            cb.addEventListener('change', syncLayananTambahan);
-                        });
-
-                        // ===== Hubungkan dengan Layanan Utama =====
-                        if (paketSelect) {
-                            // awal: kalau belum pilih layanan utama, "disable" dropdown
-                            function updateDropdownState() {
-                                const disabled = !paketSelect.value;
-
-                                dropdownBtn.classList.toggle('disabled', disabled);
-                                dropdownBtn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-
-                                if (disabled) {
-                                    // reset semua pilihan layanan tambahan
-                                    checkboxes.forEach(cb => cb.checked = false);
-                                    syncLayananTambahan();
-                                }
-                            }
-
-                            paketSelect.addEventListener('change', updateDropdownState);
-                            updateDropdownState(); // panggil sekali di awal
-                        }
-
-                        // Jalankan sync pertama kali
-                        syncLayananTambahan();
-                    });
-                </script>
+        </div>
+    </nav>
+    
+    <div class="container-fluid mt-4">
