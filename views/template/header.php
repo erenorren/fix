@@ -1,35 +1,34 @@
+<!-- header.php - Perbaikan bagian CSS -->
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($pageTitle)) {
-    $pageTitle = 'Sistem Penitipan Hewan';
-}
+// Deteksi environment Vercel
+$isVercel = isset($_SERVER['VERCEL']) || (isset($_ENV['VERCEL']) && $_ENV['VERCEL'] === '1');
 
-$host = $_SERVER['HTTP_HOST'];
-
-if (strpos($host, 'localhost') !== false) {
-    $base_url = 'http://' . $host;
+// Tentukan base URL
+if ($isVercel) {
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+    $base_url = $protocol . $_SERVER['HTTP_HOST'];
 } else {
-    $base_url = 'https://' . $host;
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+    $base_url = $protocol . $_SERVER['HTTP_HOST'] . '/public';
 }
 ?>
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <title><?= htmlspecialchars($pageTitle) ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- AdminLTE v4 CSS -->
-    <link rel="stylesheet" href="<?= $base_url ?>/public/css/adminlte.css">
-    <link rel="stylesheet" href="<?= $base_url ?>/public/css/custom.css">
     
-
-    <!-- Bootstrap Icons (ikon di sidebar/nav) -->
+    <!-- CSS dengan path absolut -->
+    <link rel="stylesheet" href="<?= $base_url ?>/css/adminlte.css">
+    <link rel="stylesheet" href="<?= $base_url ?>/css/custom.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- Pastikan folder css ada di public/css -->
 </head>
 
 

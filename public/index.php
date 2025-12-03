@@ -1,24 +1,31 @@
+// public/index.php - Perbaikan bagian session
 <?php
-// public/index.php - SIMPLE VERSION
-
-// ==================================================
 // SESSION START - FIXED FOR VERCEL
-// ==================================================
-$isVercel = isset($_SERVER['VERCEL']) || getenv('VERCEL') === '1';
+$isVercel = isset($_SERVER['VERCEL']) || (isset($_ENV['VERCEL']) && $_ENV['VERCEL'] === '1');
 
 if (session_status() == PHP_SESSION_NONE) {
     if ($isVercel) {
-        // Vercel specific settings
+        // Vercel specific settings - PASTIKAN SAMA PERSIS
+        ini_set('session.cookie_secure', '1');
+        ini_set('session.cookie_httponly', '1');
+        ini_set('session.cookie_samesite', 'Lax');
+        
         session_set_cookie_params([
             'lifetime' => 86400,
             'path' => '/',
             'domain' => $_SERVER['HTTP_HOST'],
-            'secure' => true,      // HTTPS only
+            'secure' => true,
             'httponly' => true,
-            'samesite' => 'Lax'    // Coba Lax dulu, lebih compatible
+            'samesite' => 'Lax'
         ]);
     }
+    
+    session_name('PHPSESSID'); // PASTIKAN nama session
     session_start();
+    
+    // Debug: Cek session
+    error_log("Session started. ID: " . session_id());
+    error_log("User ID in session: " . ($_SESSION['user_id'] ?? 'not set'));
 }
 
 // ==================================================
@@ -27,7 +34,7 @@ if (session_status() == PHP_SESSION_NONE) {
 require_once __DIR__ . '/../vendor/autoload.php';
 
 // ====================================================
-// SIMPLE AUTH CHECK
+// AUTH CHECK - PERBAIKI LOGIKA
 // ====================================================
 $publicPages = ['login', 'logout'];
 $publicActions = ['login', 'searchPelanggan', 'getKandangTersedia'];
@@ -35,17 +42,34 @@ $publicActions = ['login', 'searchPelanggan', 'getKandangTersedia'];
 $page = $_GET['page'] ?? 'dashboard';
 $action = $_GET['action'] ?? null;
 
-// Skip auth check for public pages
-if (!in_array($page, $publicPages) && !in_array($action, $publicActions)) {
-    if (!isset($_SESSION['user_id'])) {
+// Cek jika user sudah login
+$isLoggedIn = isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+
+// Debug log
+error_log("Page: $page, Action: $action, Logged in: " . ($isLoggedIn ? 'YES' : 'NO'));
+
+// Jika belum login dan mencoba akses halaman terproteksi
+if (!$isLoggedIn) {
+    // Izinkan akses ke halaman publik dan action publik
+    $isPublic = in_array($page, $publicPages) || in_array($action, $publicActions);
+    
+    if (!$isPublic) {
+        // Jika request AJAX/API
         if ($action) {
             http_response_code(401);
-            echo json_encode(['error' => 'Unauthorized']);
+            echo json_encode(['error' => 'Unauthorized', 'session_id' => session_id()]);
             exit;
         }
+        // Redirect ke login untuk request biasa
         header('Location: index.php?page=login');
         exit;
     }
+}
+
+// Jika sudah login tapi mencoba akses halaman login
+if ($isLoggedIn && $page === 'login') {
+    header('Location: index.php?page=dashboard');
+    exit;
 }
 
 // ==================================================
