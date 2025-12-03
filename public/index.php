@@ -1,81 +1,88 @@
 <?php
-// public/index.php - VERCEL COMPATIBLE
+// public/index.php
 
 // ==================================================
-// DETECT ENVIRONMENT
-// ==================================================
-$isVercel = getenv('VERCEL') === '1' || isset($_ENV['VERCEL']);
-
-if ($isVercel) {
-    // Vercel specific settings
-    ini_set('session.save_handler', 'files');
-    ini_set('session.save_path', sys_get_temp_dir());
-    
-    error_log("=== VERCELL MODE ===");
-} else {
-    error_log("=== LOCAL MODE ===");
-}
-
-// ==================================================
-// START SESSION (MUST BE BEFORE ANY OUTPUT)
+// 1. START SESSION - HARUS PERTAMA
 // ==================================================
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
 // ==================================================
-// SET BASE URL FOR VERCELL
+// 2. INCLUDE MODELS (UNTUK LOGIN REAL)
 // ==================================================
-if (!isset($base_url)) {
-    if ($isVercel) {
-        $base_url = 'https://' . $_SERVER['HTTP_HOST'];
-    } else {
-        $base_url = 'http://' . $_SERVER['HTTP_HOST'];
+require_once __DIR__ . '/../models/User.php';
+
+// ==================================================
+// 3. HANDLE LOGIN ACTION FIRST (BEFORE ANY OUTPUT)
+// ==================================================
+if (isset($_GET['action']) && $_GET['action'] === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    // SET HEADERS untuk JSON response
+    header('Content-Type: application/json');
+    
+    // LOGIN REAL DENGAN DATABASE
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
+    
+    if (empty($username) || empty($password)) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Username dan password harus diisi'
+        ]);
+        exit;
     }
+    
+    // Gunakan model User untuk validasi
+    $userModel = new User();
+    $user = $userModel->login($username, $password);
+    
+    if ($user) {
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['nama_lengkap'] = $user['nama_lengkap'] ?? 'Admin';
+        $_SESSION['role'] = $user['role'] ?? 'admin';
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Login berhasil',
+            'redirect' => 'index.php?page=dashboard'
+        ]);
+    } else {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Username atau password salah'
+        ]);
+    }
+    exit;
 }
 
 // ==================================================
-// ROUTING - SIMPLE VERSION FOR VERCELL
+// 4. SIMPLE AUTH CHECK
 // ==================================================
-$page = $_GET['page'] ?? 'dashboard';
-$action = $_GET['action'] ?? $_POST['action'] ?? null;
+$page = $_GET['page'] ?? 'login';
 
-// Handle login first
+// Public pages (no auth required)
 if ($page === 'login') {
+    // Jika sudah login, redirect ke dashboard
     if (isset($_SESSION['user_id'])) {
         header('Location: index.php?page=dashboard');
         exit;
     }
+    
+    // Tampilkan halaman login
     require_once __DIR__ . '/../views/login.php';
     exit;
 }
 
-// Auth check for other pages
-if (!isset($_SESSION['user_id']) && $page !== 'login') {
+// Private pages (require auth)
+if (!isset($_SESSION['user_id'])) {
     header('Location: index.php?page=login');
     exit;
 }
 
-// Handle actions
-if ($action === 'login') {
-    require_once __DIR__ . '/../controllers/AuthController.php';
-    (new AuthController())->login();
-    exit;
-}
-
-if ($action === 'createTransaksi') {
-    require_once __DIR__ . '/../controllers/TransaksiController.php';
-    (new TransaksiController())->create();
-    exit;
-}
-
-if ($action === 'checkoutTransaksi') {
-    require_once __DIR__ . '/../controllers/TransaksiController.php';
-    (new TransaksiController())->checkout();
-    exit;
-}
-
-// Handle pages
+// ==================================================
+// 5. ROUTE PAGES YANG SUDAH LOGIN
+// ==================================================
 switch ($page) {
     case 'dashboard':
         require_once __DIR__ . '/../views/dashboard.php';
@@ -84,20 +91,6 @@ switch ($page) {
     case 'transaksi':
         require_once __DIR__ . '/../controllers/TransaksiController.php';
         (new TransaksiController())->index();
-        break;
-        
-    case 'pemilik':
-    case 'pelanggan':
-        require_once __DIR__ . '/../controllers/PelangganController.php';
-        $controller = new PelangganController();
-        
-        $action = $_GET['action'] ?? 'index';
-        $id = $_GET['id'] ?? null;
-        
-        if ($action === 'create') $controller->create();
-        elseif ($action === 'edit' && $id) $controller->edit($id);
-        elseif ($action === 'delete' && $id) $controller->delete($id);
-        else $controller->index();
         break;
         
     case 'hewan':
@@ -110,6 +103,10 @@ switch ($page) {
         
     case 'layanan':
         require_once __DIR__ . '/../views/layanan.php';
+        break;
+        
+    case 'pemilik':
+        require_once __DIR__ . '/../views/pelanggan.php';
         break;
         
     case 'logout':
