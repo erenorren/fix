@@ -13,6 +13,6 @@
     }
   ],
   "env": {
-    "PHP_INI_SCAN_DIR": "/var/task/user/php-conf"
+    "APP_ENV": "production"
   }
 }
