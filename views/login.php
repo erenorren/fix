@@ -93,117 +93,74 @@ if (session_status() == PHP_SESSION_NONE) {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
-    const alertContainer = document.getElementById('alert-container');
     
-    if (loginForm) {
-        console.log('Login form loaded');
+    loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
         
-        loginForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            console.log('Form submitted');
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        // Show loading
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Loading...';
+        
+        // Get form data
+        const formData = new FormData(this);
+        
+        try {
+            // ✅ FIX: Gunakan URL yang benar untuk Vercel
+            // Coba beberapa kemungkinan URL
+            const urlsToTry = [
+                window.location.pathname + '?action=login',
+                '/?action=login',
+                window.location.href.split('?')[0] + '?action=login'
+            ];
             
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
+            let response;
+            let lastError;
             
-            // Show loading
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Memproses...';
-            
-            // Clear alerts
-            if (alertContainer) alertContainer.innerHTML = '';
-            
-            // Prepare data - menggunakan FormData sederhana
-            const formData = new FormData(this);
-            
-            console.log('Sending login request...');
-            
-            try {
-                // ✅ FIX 1: Gunakan URL absolute untuk Vercel
-                const currentUrl = window.location.href;
-                const baseUrl = currentUrl.split('?')[0]; // Hapus query string
-                const loginUrl = baseUrl + '?action=login';
-                
-                console.log('Login URL:', loginUrl);
-                
-                // ✅ FIX 2: Gunakan fetch dengan headers yang sederhana
-                const response = await fetch(loginUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                    },
-                    body: formData, // FormData auto sets Content-Type
-                    credentials: 'include' // Untuk cookies/session
-                });
-                
-                console.log('Response status:', response.status);
-                
-                // Cek jika response tidak OK
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                console.log('Response data:', result);
-                
-                if (result.success) {
-                    // ✅ Show success message
-                    if (alertContainer) {
-                        alertContainer.innerHTML = `
-                            <div class="alert alert-success alert-dismissible fade show mb-3">
-                                <i class="bi bi-check-circle me-2"></i>
-                                ${result.message}
-                            </div>
-                        `;
-                    }
+            // Coba setiap URL
+            for (const url of urlsToTry) {
+                try {
+                    console.log('Trying URL:', url);
+                    response = await fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'include'
+                    });
                     
-                    // ✅ Redirect setelah 1 detik
-                    setTimeout(() => {
-                        console.log('Redirecting to:', result.redirect);
-                        window.location.href = result.redirect;
-                    }, 1000);
+                    if (response.ok) break;
                     
-                } else {
-                    // ✅ Show error message
-                    if (alertContainer) {
-                        alertContainer.innerHTML = `
-                            <div class="alert alert-danger alert-dismissible fade show mb-3">
-                                <i class="bi bi-exclamation-circle me-2"></i>
-                                ${result.message}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        `;
-                    }
+                } catch (err) {
+                    lastError = err;
+                    console.log('Failed with URL:', url, err);
                 }
-                
-            } catch (error) {
-                console.error('Login error details:', error);
-                
-                // ✅ Show detailed error for debugging
-                let errorMsg = 'Gagal terhubung ke server. ';
-                errorMsg += 'Error: ' + error.message;
-                
-                if (alertContainer) {
-                    alertContainer.innerHTML = `
-                        <div class="alert alert-danger alert-dismissible fade show mb-3">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            ${errorMsg}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    `;
-                }
-                
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
             }
-        });
-        
-        // ✅ Test connection on load
-        console.log('Testing connection...');
-        fetch(window.location.href)
-            .then(res => console.log('Connection test:', res.status))
-            .catch(err => console.warn('Connection test failed:', err));
-    }
+            
+            if (!response || !response.ok) {
+                throw new Error('Tidak bisa menghubungi server');
+            }
+            
+            // Parse response
+            const result = await response.json();
+            console.log('Login result:', result);
+            
+            if (result.success) {
+                // Redirect ke dashboard
+                window.location.href = result.redirect || 'index.php?page=dashboard';
+            } else {
+                alert('Login gagal: ' + result.message);
+            }
+            
+        } catch (error) {
+            console.error('Login error:', error);
+            alert('Error: ' + error.message + '\nCoba refresh halaman.');
+            
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
 });
 </script>
 </body>

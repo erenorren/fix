@@ -8,12 +8,24 @@
   ],
   "routes": [
     {
-      "src": "/test-login",
-      "dest": "/test-login.php"
-    },
-    {
       "src": "/(css|js|img|vendor)/(.*)",
       "dest": "/public/$1/$2"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/public/favicon.ico"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.php"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.php"
+    },
+     {
+      "src": "/api/test",
+      "dest": "/api/test.php"
     },
     {
       "src": "/(.*)",
