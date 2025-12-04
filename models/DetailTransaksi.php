@@ -17,16 +17,25 @@ class DetailTransaksi
     public function create($data)
     {
         try {
-            $sql = "INSERT INTO {$this->table} (id_transaksi, kode_layanan, nama_layanan, harga, quantity, subtotal) VALUES (:id_transaksi, :kode_layanan, :nama_layanan, :harga, :quantity, :subtotal)";
+            // PostgreSQL-ready (tidak ada perubahan besar utk INSERT)
+            $sql = "INSERT INTO {$this->table} 
+                    (id_transaksi, kode_layanan, nama_layanan, harga, quantity, subtotal) 
+                    VALUES 
+                    (:id_transaksi, :kode_layanan, :nama_layanan, :harga, :quantity, :subtotal)";
 
-            // FIX: Gunakan $this->db->execute()
             return $this->db->execute($sql, [
-                "id_transaksi" => $data["id_transaksi"], "kode_layanan" => $data["kode_layanan"], 
-                "nama_layanan" => $data["nama_layanan"], "harga" => $data["harga"],
-                "quantity" => $data["quantity"] ?? 1, "subtotal" => $data["subtotal"]
+                "id_transaksi" => $data["id_transaksi"], 
+                "kode_layanan" => $data["kode_layanan"], 
+                "nama_layanan" => $data["nama_layanan"], 
+                "harga" => $data["harga"],
+                "quantity" => $data["quantity"] ?? 1, 
+                "subtotal" => $data["subtotal"]
             ]);
 
-        } catch (Exception $e) { error_log("Error create detail transaksi: " . $e->getMessage()); return false; }
+        } catch (Exception $e) { 
+            error_log("Error create detail transaksi: " . $e->getMessage()); 
+            return false; 
+        }
     }
 
     /**
@@ -34,8 +43,12 @@ class DetailTransaksi
      */
     public function getByTransaksiId($id_transaksi)
     {
-        $sql = "SELECT * FROM {$this->table} WHERE id_transaksi = ? ORDER BY created_at";
-        $stmt = $this->db->query($sql, [$id_transaksi]); // FIX: Hapus $stmt->execute()
+        // FIX UNTUK POSTGRES:
+        // ORDER BY created_at menyebabkan error jika kolom tidak ada
+        // Maka diganti ORDER BY id (atau hapus)
+        $sql = "SELECT * FROM {$this->table} WHERE id_transaksi = $1 ORDER BY id";
+
+        $stmt = $this->db->query($sql, [$id_transaksi]);
         return $stmt->fetchAll();
     }
 
@@ -44,7 +57,8 @@ class DetailTransaksi
      */
     public function deleteByTransaksiId($id_transaksi)
     {
-        $sql = "DELETE FROM {$this->table} WHERE id_transaksi = ?";
+        // Query ini sudah valid di PostgreSQL
+        $sql = "DELETE FROM {$this->table} WHERE id_transaksi = $1";
         return $this->db->execute($sql, [$id_transaksi]);
     }
 
@@ -53,8 +67,9 @@ class DetailTransaksi
      */
     public function getTotalLayananTambahan($id_transaksi)
     {
-        $sql = "SELECT SUM(subtotal) as total FROM {$this->table} WHERE id_transaksi = ?";
-        $stmt = $this->db->query($sql, [$id_transaksi]); // FIX: Hapus $stmt->execute()
+        // Query ini juga valid untuk PostgreSQL
+        $sql = "SELECT SUM(subtotal) as total FROM {$this->table} WHERE id_transaksi = $1";
+        $stmt = $this->db->query($sql, [$id_transaksi]);
         $result = $stmt->fetch();
         return $result['total'] ?? 0;
     }
