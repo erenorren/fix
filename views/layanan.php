@@ -3,7 +3,7 @@ $pageTitle  = 'Data Layanan';
 $activeMenu = 'layanan';
 
 // Load model dulu
-require_once _DIR_ . '/../models/Layanan.php';
+require_once __DIR__ . '/../models/Layanan.php';
 $layananModel = new Layanan();
 
 // PARAMETER
