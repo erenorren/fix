@@ -71,7 +71,7 @@ if (session_status() == PHP_SESSION_NONE) {
             <div class="text-center mt-3">
                 <small class="text-muted">
                     <i class="bi bi-info-circle me-1"></i>
-                    Gunakan: <strong>admin</strong> / <strong>password123</strong>
+                    Gunakan: <strong>admin</strong> / <strong>password</strong>
                 </small>
             </div>
 
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const passInput = document.querySelector('input[name="password"]');
         if(userInput && passInput && !userInput.value) {
             userInput.value = 'admin';
-            passInput.value = 'password123';
+            passInput.value = 'password';
         }
         
         loginForm.addEventListener('submit', async function(e) {
