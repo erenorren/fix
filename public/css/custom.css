@@ -18,6 +18,9 @@ body {
   --accent-orange: #ffb113;
   --light-bg: #ffffff;
   --card-shadow: rgba(0, 0, 0, 0.05);
+
+  /* PENTING: Sinkronisasi dengan AdminLTE */
+  --lte-sidebar-width: 260px;
 }
 
 /* ==============================
@@ -57,7 +60,6 @@ h2,
 
 /* ==============================
    IKON BULAT UNTUK STAT CARD
-   (dibatasi hanya di dalam .card)
 ============================== */
 .card .rounded-circle {
   display: flex;
@@ -94,60 +96,72 @@ h2,
   color: #c73636 !important;
 }
 
-/* aksen khusus */
 .badge-accent {
   background: var(--accent-orange);
   color: #ffffff;
 }
 
 /* ==============================
-   SIDEBAR
-   (dibatasi hanya di .app-sidebar,
-    supaya nav di navbar tidak ikut kena)
+   SIDEBAR FIX
 ============================== */
 
-/* ====== Sidebar biru ====== */
+/* Sidebar Background */
 .bg-primary-blue {
   background-color: #0265fe !important;
 }
 
-/* ====== Sidebar tema mirip AdminLTE 3 ====== */
 .modern-sidebar {
-  width: 260px;
-  min-height: 100vh;
+  /* HAPUS width statis agar responsif ikut AdminLTE */
+  /* width: 260px;  <-- DIHAPUS */
+
   background-color: #111827; /* dark grey */
   color: #c2c7d0;
   box-shadow: 2px 0 6px rgba(0, 0, 0, 0.45);
 }
 
+/* Fix Z-Index untuk Mobile agar sidebar muncul di atas konten */
+@media (max-width: 991.98px) {
+  .app-sidebar {
+    z-index: 1050;
+    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.3);
+  }
+}
+
 /* Brand bar biru di atas sidebar */
 .sidebar-brand {
-  padding: 0.75rem 1.25rem;
-  background-color: #0265fe; /* warna utama kamu */
+  min-height: 57px; /* Sesuaikan dengan tinggi navbar */
+  padding: 0 1rem;
+  background-color: #0265fe;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
 }
 
 .brand-logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
+  width: 35px;
+  height: 35px;
 }
 
 .brand-logo-img {
   max-width: 100%;
   height: auto;
-  object-fit: contain; /* bentuk logo tidak dipotong */
+  object-fit: contain;
 }
 
 .sidebar-brand .brand-name {
   font-size: 1.05rem;
+  line-height: 1.2;
 }
 
 .sidebar-brand .brand-subtitle {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   opacity: 0.9;
+  line-height: 1.2;
 }
 
 /* MENU UTAMA */
@@ -162,13 +176,29 @@ h2,
   color: #c2c7d0;
   padding: 0.55rem 0.9rem;
   border-radius: 4px;
-  display: flex;
+
+  /* FIX DROPDOWN: Gunakan Flexbox !important untuk menimpa default AdminLTE */
+  display: flex !important;
   align-items: center;
+  justify-content: space-between;
+  width: 100%;
+
   gap: 10px;
   font-weight: 500;
   font-size: 0.9rem;
   transition: background-color 0.15s ease, color 0.15s ease;
   text-decoration: none;
+}
+
+/* Pastikan teks menu mengisi ruang tengah */
+.modern-link span.flex-grow-1 {
+  flex-grow: 1;
+}
+
+/* Pastikan panah di ujung kanan */
+.modern-link .dropdown-arrow,
+.modern-link .ms-auto {
+  margin-left: auto !important;
 }
 
 .modern-link:hover {
@@ -178,7 +208,7 @@ h2,
 
 .modern-link.active,
 .modern-link.active-dropdown {
-  background-color: #0265fe; /* biru aktif */
+  background-color: #0265fe;
   color: #ffffff;
 }
 
@@ -188,6 +218,7 @@ h2,
   font-size: 1rem;
   text-align: center;
   color: inherit;
+  flex-shrink: 0; /* Icon jangan mengecil */
 }
 
 .modern-link.active .modern-icon,
@@ -197,73 +228,41 @@ h2,
 
 /* SUBMENU */
 .submenu {
-  padding-left: 0.75rem;
+  padding-left: 0.5rem;
   margin-top: 4px;
   display: none;
+  background: rgba(0, 0, 0, 0.2); /* Gelapkan dikit biar kontras */
+  border-radius: 8px;
 }
 
 .submenu.show {
   display: block;
 }
 
-/* Item submenu dengan icon */
+/* Item submenu */
 .sub-link {
   color: #e3eaff;
-  padding: 6px 10px;
-  border-radius: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-size: 0.85rem;
   text-decoration: none;
 }
 
-/* kotak icon di kiri */
-.sub-icon {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(5, 5, 5, 0.16);
-  font-size: 1rem;
-  color: #ffffff;
-}
-
-/* hover */
 .sub-link:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
 }
 
-.sub-link:hover .sub-icon {
-  background: #ffffff;
-  color: #0265fe; /* biru utama */
-}
-
-/* aktif */
 .sub-link.active {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.2);
   font-weight: 600;
   color: #ffffff;
 }
 
-.sub-link.active .sub-icon {
-  background: #ffffff;
-  color: #0265fe;
-}
-
-/* Arrow dropdown seperti AdminLTE */
-.modern-link .bi-chevron-left {
-  transition: transform 0.2s;
-}
-
-.modern-link.active-dropdown .bi-chevron-left {
-  transform: rotate(-90deg);
-}
-
-/* Arrow dropdown */
+/* Arrow dropdown rotation */
 .dropdown-arrow {
   transition: transform 0.2s;
   font-size: 0.8rem;
@@ -271,98 +270,4 @@ h2,
 
 .has-dropdown.active-dropdown .dropdown-arrow {
   transform: rotate(180deg);
-}
-
-/* CSS pemilik */
-#suggest_pemilik div.hover-bg:hover {
-  background: #f0f4ff;
-}
-
-/* ==============================
-   TABLE STYLE
-============================== */
-table thead tr {
-  background: #f0f4ff;
-}
-
-.table-hover tbody tr:hover {
-  background: #f8fbff;
-}
-
-/* ==============================
-   PROGRESS BAR
-============================== */
-.progress-bar.bg-primary {
-  background: var(--primary-blue) !important;
-}
-
-/* ==============================
-   BUTTON STYLE
-============================== */
-.btn-primary {
-  background: var(--primary-blue) !important;
-  border-color: var(--primary-blue) !important;
-  border-radius: 10px;
-  font-weight: 600;
-}
-
-.btn-accent {
-  background: var(--accent-orange) !important;
-  border-radius: 10px;
-  color: #fff !important;
-}
-
-.btn-primary:hover,
-.btn-accent:hover {
-  opacity: 0.9;
-}
-
-/* ==============================
-   CARD TITLE
-============================== */
-.card-title {
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-/* ==============================
-   ANIMASI STAT KECIL
-============================== */
-[data-count],
-[data-money] {
-  font-weight: 700;
-  color: var(--primary-blue);
-}
-
-/* Samakan tinggi header (navbar) dengan brand sidebar */
-.app-header.navbar {
-  min-height: 75px; /* sesuaikan, 60–70px juga boleh */
-  display: flex;
-  align-items: center; /* biar isi header ketengah vertikal */
-  padding-top: 0;
-  padding-bottom: 0;
-}
-
-/* Tinggi area logo/brand di sidebar */
-/* Samakan tinggi header dan sidebar brand */
-/* Brand sidebar hanya rata kiri, bukan center */
-.app-sidebar .sidebar-brand {
-  min-height: 75px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start; /* <— pindahkan ke kiri */
-  gap: 12px; /* jarak antara logo & teks */
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
-}
-
-/* Rapikan teks brand / nav link supaya nggak nambah tinggi */
-.app-sidebar .sidebar-brand .brand-name,
-.app-sidebar .sidebar-brand .brand-subtitle {
-  line-height: 1.2;
-}
-
-.navbar-nav .nav-link {
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
 }
