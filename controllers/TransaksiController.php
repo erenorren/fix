@@ -6,6 +6,7 @@ require_once __DIR__ . '/../models/Pelanggan.php';
 require_once __DIR__ . '/../models/Hewan.php';
 require_once __DIR__ . '/../models/Kandang.php';
 require_once __DIR__ . '/../models/Layanan.php';
+require_once __DIR__ . '/../helper/auth.php';
 
 class TransaksiController extends BaseController {
     
@@ -17,6 +18,8 @@ class TransaksiController extends BaseController {
     private $layananModel;
 
     public function __construct() {
+        session_start();
+        auth_required(); // CEK LOGIN DI SETIAP AKSES CONTROLLER
         $this->transaksiModel = new Transaksi();
         $this->pelangganModel = new Pelanggan();
         $this->hewanModel = new Hewan(); 
@@ -26,6 +29,7 @@ class TransaksiController extends BaseController {
     }
         
     public function index() {
+        auth_required();
         error_log("=== TRANSAKSI CONTROLLER INDEX ===");
         
         $tab = $_GET['tab'] ?? 'pendaftaran';
@@ -56,6 +60,7 @@ class TransaksiController extends BaseController {
     }
 
     public function createTransaksi() {
+        auth_required();
         try {
             // ========== DEBUG START ==========
             error_log("========== CREATE TRANSAKSI START ==========");

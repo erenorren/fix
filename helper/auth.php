@@ -5,9 +5,8 @@ function auth_required() {
         session_start();
     }
 
-    // Jika user belum login → paksa ke halaman login
     if (!isset($_SESSION['user'])) {
-        header("Location: login.php");
+        header("Location: /login");
         exit;
     }
 }

@@ -2,26 +2,36 @@
 require_once __DIR__ . '/../models/User.php';
 
 class AuthController {
-<<<<<<< HEAD
+
     private $userModel;
-    
-    public function __construct() {
+
+    public function __construct() 
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
         $this->userModel = new User();
     }
-    
-    public function login() {
+
+    public function login() 
+    {
+        // Bersihkan output buffer biar JSON tidak rusak
+        if (ob_get_level()) ob_clean();
+
         header('Content-Type: application/json');
-        
-        // Get input
+        ini_set('display_errors', 0);
+
+        // Ambil input JSON atau POST
         $input = json_decode(file_get_contents('php://input'), true);
         if (!$input) {
             $input = $_POST;
         }
-        
+
         $username = trim($input['username'] ?? '');
         $password = $input['password'] ?? '';
-        
-        // Validation
+
+        // Validasi input
         if (empty($username) || empty($password)) {
             http_response_code(400);
             echo json_encode([
@@ -30,99 +40,60 @@ class AuthController {
             ]);
             exit;
         }
-        
-        // Try login
-        $user = $this->userModel->login($username, $password);
-        
-        if ($user) {
-            // Set session
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
-            $_SESSION['role'] = $user['role'];
-            
-            // Regenerate session ID
-            session_regenerate_id(true);
-            
-            echo json_encode([
-                'success' => true,
-                'message' => 'Login berhasil',
-                'redirect' => 'index.php?page=dashboard'
-            ]);
-        } else {
-            http_response_code(401);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Username atau password salah'
-=======
-    
-    public function login() {
-        // ✅ CLEAR ANY PREVIOUS OUTPUT
-        if (ob_get_level()) ob_clean();
-        
-        // ✅ SET JSON HEADERS IMMEDIATELY
-        header('Content-Type: application/json');
-        
-        // ✅ SUPRESS ERRORS
-        ini_set('display_errors', 0);
-        
+
+        // Cek ke database
         try {
-            // Get POST data
-            $username = $_POST['username'] ?? '';
-            $password = $_POST['password'] ?? '';
-            
-            // Debug log
-            error_log("Login attempt: " . $username);
-            
-            // Validate
-            if (empty($username) || empty($password)) {
-                http_response_code(400);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Username dan password diperlukan'
-                ]);
-                exit;
-            }
-            
-            // Create user model
-            $userModel = new User();
-            $user = $userModel->login($username, $password);
-            
-            if ($user) {
-                // Set session
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['username'] = $user['username'];
-                $_SESSION['role'] = $user['role'];
-                
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Login berhasil',
-                    'redirect' => 'index.php?page=dashboard'
-                ]);
-            } else {
-                http_response_code(401);
-                echo json_encode([
-                    'success' => false, 
-                    'message' => 'Username atau password salah'
-                ]);
-            }
-            
+            $user = $this->userModel->login($username, $password);
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Server error: ' . $e->getMessage()
->>>>>>> 436296297ae3bc4292313dd1b0b95eac90ba58de
             ]);
+            exit;
         }
-        
-        exit; // IMPORTANT!
-    }
-    
-    public function logout() {
-        session_destroy();
+
+        // Jika user ditemukan
+        if ($user) {
+
+            // Regenerate session ID untuk keamanan
+            session_regenerate_id(true);
+
+            // Set session lengkap
+            $_SESSION['user_id']      = $user['id'];
+            $_SESSION['username']     = $user['username'];
+            $_SESSION['nama_lengkap'] = $user['nama_lengkap'] ?? '';
+            $_SESSION['role']         = $user['role'];
+
+            echo json_encode([
+                'success'  => true,
+                'message'  => 'Login berhasil',
+                'redirect' => 'index.php?page=dashboard'
+            ]);
+            exit;
+        }
+
+        // Jika user salah
+        http_response_code(401);
         echo json_encode([
-            'success' => true,
+            'success' => false,
+            'message' => 'Username atau password salah'
+        ]);
+        exit;
+    }
+
+    public function logout()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        session_unset();
+        session_destroy();
+
+        echo json_encode([
+            'success'  => true,
+            'message'  => 'Logout berhasil',
             'redirect' => 'index.php?page=login'
         ]);
         exit;
