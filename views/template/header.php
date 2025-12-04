@@ -1,7 +1,6 @@
 <?php
 // views/template/header.php
 
-// Cek session
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -10,21 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
 if (!isset($pageTitle)) {
     $pageTitle = 'Sistem Penitipan Hewan';
 }
-
-// Logika Base URL
-if (!isset($base_url)) {
-    $host = $_SERVER['HTTP_HOST'];
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-    
-    // Cek jika localhost
-    if (strpos($host, 'localhost') !== false) {
-        $base_url = $protocol . '://' . $host; 
-    } else {
-        $base_url = $protocol . '://' . $host;
-    }
-}
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -33,9 +18,16 @@ if (!isset($base_url)) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- AdminLTE & Custom CSS -->
+<<<<<<< HEAD
     <link rel="stylesheet" href="/css/adminlte.css">
     <link rel="stylesheet" href="/css/custom.css">
     
+=======
+    <!-- Pakai root-relative path, aman di localhost & Vercel -->
+    <link rel="stylesheet" href="/css/adminlte.css">
+    <link rel="stylesheet" href="/css/custom.css">
+
+>>>>>>> 3383a0ed41c58a75a1a84456f2a530525e85d89a
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
@@ -72,7 +64,7 @@ if (!isset($base_url)) {
                 </div>
             </div>
         </nav>
-        
+
         <!-- Load Sidebar -->
         <?php include __DIR__ . '/sidebar.php'; ?>
 

@@ -1,7 +1,6 @@
 <?php
 // views/template/sidebar.php
 
-// 1. Pastikan variabel aman (cegah error 'Undefined variable')
 // Prioritaskan $page, lalu $activeMenu, lalu default ke 'dashboard'
 $activePage = isset($page) ? $page : (isset($activeMenu) ? $activeMenu : 'dashboard');
 ?>
@@ -10,7 +9,8 @@ $activePage = isset($page) ? $page : (isset($activeMenu) ? $activeMenu : 'dashbo
 
   <div class="sidebar-brand d-flex align-items-center">
     <div class="brand-logo me-2">
-      <img src="<?= isset($base_url) ? $base_url : '' ?>/img/kucing.png" class="brand-logo-img" alt="Logo">
+      <!-- Root-relative logo path -->
+      <img src="/img/kucing.png" class="brand-logo-img" alt="Logo">
     </div>
     <div class="d-flex flex-column">
       <span class="brand-name text-white fw-bold">SIP Hewan</span>
@@ -19,10 +19,10 @@ $activePage = isset($page) ? $page : (isset($activeMenu) ? $activeMenu : 'dashbo
   </div>
 
   <div class="sidebar-wrapper d-flex flex-column">
-
     <nav class="mt-2 flex-grow-1">
       <ul class="nav flex-column modern-menu">
 
+        <!-- DASHBOARD -->
         <li class="nav-item mb-1">
           <a href="index.php?page=dashboard" 
              class="nav-link modern-link <?= $activePage === 'dashboard' ? 'active' : '' ?>">
@@ -31,12 +31,11 @@ $activePage = isset($page) ? $page : (isset($activeMenu) ? $activeMenu : 'dashbo
           </a>
         </li>
 
+        <!-- MENU DATA -->
         <li class="nav-item mb-1 menu-group">
           <?php 
-            // Cek apakah halaman aktif termasuk dalam grup "Data"
             $isDataActive = in_array($activePage, ['hewan', 'pemilik', 'pelanggan', 'layanan']); 
           ?>
-          
           <a href="#"
              class="nav-link modern-link has-dropdown <?= $isDataActive ? 'active-dropdown' : '' ?>"
              data-target="#menuData">
@@ -48,21 +47,22 @@ $activePage = isset($page) ? $page : (isset($activeMenu) ? $activeMenu : 'dashbo
           <div class="submenu <?= $isDataActive ? 'show' : '' ?>" id="menuData">
             <a href="index.php?page=hewan"
                class="nav-link sub-link <?= $activePage === 'hewan' ? 'active' : '' ?>">
-              <i class="bi bi-dot me-1"></i> Data Hewan
+              <i class="bi bi-emoji-smile me-1"></i> Data Hewan
             </a>
 
             <a href="index.php?page=pemilik"
                class="nav-link sub-link <?= $activePage === 'pemilik' || $activePage === 'pelanggan' ? 'active' : '' ?>">
-              <i class="bi bi-dot me-1"></i> Data Pelanggan
+              <i class="bi bi-people me-1"></i> Data Pelanggan
             </a>
 
             <a href="index.php?page=layanan"
                class="nav-link sub-link <?= $activePage === 'layanan' ? 'active' : '' ?>">
-              <i class="bi bi-dot me-1"></i> Jenis Layanan
+              <i class="bi bi-tools me-1"></i> Jenis Layanan
             </a>
           </div>
         </li>
 
+        <!-- TRANSAKSI -->
         <li class="nav-item mb-1">
           <a href="index.php?page=transaksi"
              class="nav-link modern-link <?= $activePage === 'transaksi' ? 'active' : '' ?>">
@@ -71,6 +71,7 @@ $activePage = isset($page) ? $page : (isset($activeMenu) ? $activeMenu : 'dashbo
           </a>
         </li>
 
+        <!-- LOGOUT -->
         <li class="nav-item mt-2">
           <a href="index.php?page=logout" class="nav-link modern-link text-warning">
             <i class="bi bi-box-arrow-right modern-icon"></i>
@@ -80,6 +81,5 @@ $activePage = isset($page) ? $page : (isset($activeMenu) ? $activeMenu : 'dashbo
 
       </ul>
     </nav>
-
   </div>
 </aside>
