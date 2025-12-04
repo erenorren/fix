@@ -153,7 +153,8 @@ class TransaksiController extends BaseController {
                 'biaya_paket' => $biayaData['biaya_paket'],
                 'tanggal_masuk' => $_POST['tanggal_masuk'] ?? date('Y-m-d'),
                 'durasi' => $_POST['durasi'] ?? 1,
-                'total_biaya' => $biayaData['total_biaya']
+                'total_biaya' => $biayaData['total_biaya'],
+                'status' => 'menginap'
             ];
             
             error_log("Transaksi Data: " . print_r($transaksiData, true));

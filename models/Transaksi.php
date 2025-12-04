@@ -44,12 +44,12 @@ class Transaksi
     public function getActiveTransactions()
     {
         $sql = "SELECT t.id_transaksi, t.kode_transaksi, p.nama_pelanggan, h.nama_hewan, 
-                       h.jenis as jenis_hewan, k.kode_kandang, t.tanggal_masuk, t.durasi, t.total_biaya
+                    h.jenis as jenis_hewan, k.kode_kandang, t.tanggal_masuk, t.durasi, t.total_biaya
                 FROM transaksi t
                 LEFT JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan
                 LEFT JOIN hewan h ON t.id_hewan = h.id_hewan
                 LEFT JOIN kandang k ON t.id_kandang = k.id_kandang
-                WHERE t.status = 'active'
+                WHERE t.status = ('active', 'menginap', 'sedang_dititipkan')
                 ORDER BY t.tanggal_masuk DESC";
 
         return $this->db->query($sql)->fetchAll();
