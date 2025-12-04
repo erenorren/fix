@@ -18,7 +18,7 @@ class TransaksiController extends BaseController {
     private $layananModel;
 
     public function __construct() {
-        session_start();
+        // session_start();
         auth_required(); // CEK LOGIN DI SETIAP AKSES CONTROLLER
         $this->transaksiModel = new Transaksi();
         $this->pelangganModel = new Pelanggan();
