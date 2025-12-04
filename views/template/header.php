@@ -18,16 +18,10 @@ if (!isset($pageTitle)) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- AdminLTE & Custom CSS -->
-<<<<<<< HEAD
-    <link rel="stylesheet" href="/css/adminlte.css">
-    <link rel="stylesheet" href="/css/custom.css">
-    
-=======
     <!-- Pakai root-relative path, aman di localhost & Vercel -->
     <link rel="stylesheet" href="/css/adminlte.css">
     <link rel="stylesheet" href="/css/custom.css">
 
->>>>>>> 3383a0ed41c58a75a1a84456f2a530525e85d89a
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
