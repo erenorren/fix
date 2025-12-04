@@ -21,7 +21,7 @@ $pelangganList = $pelangganModel->getAll();
 
         <div>
             <h5 class="card-title mb-1">Daftar Pelanggan</h5>
-            <small class="text-muted">
+            <small class="text-muted"><br>
                 Data pemilik hewan yang pernah melakukan penitipan.
             </small>
         </div>
