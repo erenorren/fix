@@ -106,85 +106,98 @@ h2,
     supaya nav di navbar tidak ikut kena)
 ============================== */
 
-/* Background sidebar */
-/* ==============================
-   MODERN SIDEBAR (seperti contoh)
-============================== */
-
 /* ====== Sidebar biru ====== */
 .bg-primary-blue {
   background-color: #0265fe !important;
 }
 
+/* ====== Sidebar tema mirip AdminLTE 3 ====== */
 .modern-sidebar {
   width: 260px;
   min-height: 100vh;
-  padding: 10px 0;
+  background-color: #111827; /* dark grey */
+  color: #c2c7d0;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.45);
 }
 
-/* Brand */
+/* Brand bar biru di atas sidebar */
 .sidebar-brand {
   padding: 0.75rem 1.25rem;
+  background-color: #0265fe; /* warna utama kamu */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.brand-logo-circle {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.25);
+.brand-logo {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 42px;
+  height: 42px;
 }
 
 .brand-logo-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain; /* bentuk logo tidak dipotong */
 }
 
-/* Link utama */
+.sidebar-brand .brand-name {
+  font-size: 1.05rem;
+}
+
+.sidebar-brand .brand-subtitle {
+  font-size: 0.78rem;
+  opacity: 0.9;
+}
+
+/* MENU UTAMA */
 .modern-menu {
   list-style: none;
   padding-left: 0;
+  padding: 0.75rem 0.5rem 1rem;
   margin-bottom: 0;
 }
 
 .modern-link {
-  color: #ffffff;
-  padding: 0.5rem 1rem;
-  border-radius: 10px;
+  color: #c2c7d0;
+  padding: 0.55rem 0.9rem;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   gap: 10px;
   font-weight: 500;
   font-size: 0.9rem;
-  transition: 0.15s;
+  transition: background-color 0.15s ease, color 0.15s ease;
   text-decoration: none;
 }
 
 .modern-link:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background-color: #9fbeea;
+  color: #ffffff;
 }
 
 .modern-link.active,
 .modern-link.active-dropdown {
-  background: rgba(255, 255, 255, 0.3);
+  background-color: #0265fe; /* biru aktif */
   color: #ffffff;
 }
 
 /* Icon */
 .modern-icon {
   width: 22px;
-  font-size: 1.1rem;
+  font-size: 1rem;
   text-align: center;
+  color: inherit;
+}
+
+.modern-link.active .modern-icon,
+.modern-link:hover .modern-icon {
   color: #ffffff;
 }
 
-/* Submenu */
+/* SUBMENU */
 .submenu {
-  padding-left: 1.5rem;
+  padding-left: 0.75rem;
   margin-top: 4px;
   display: none;
 }
@@ -193,22 +206,61 @@ h2,
   display: block;
 }
 
+/* Item submenu dengan icon */
 .sub-link {
   color: #e3eaff;
-  padding: 4px 8px;
+  padding: 6px 10px;
   border-radius: 8px;
   display: flex;
   align-items: center;
+  gap: 10px;
   font-size: 0.85rem;
+  text-decoration: none;
 }
 
+/* kotak icon di kiri */
+.sub-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 5, 5, 0.16);
+  font-size: 1rem;
+  color: #ffffff;
+}
+
+/* hover */
 .sub-link:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
 }
 
+.sub-link:hover .sub-icon {
+  background: #ffffff;
+  color: #0265fe; /* biru utama */
+}
+
+/* aktif */
 .sub-link.active {
   background: rgba(255, 255, 255, 0.3);
   font-weight: 600;
+  color: #ffffff;
+}
+
+.sub-link.active .sub-icon {
+  background: #ffffff;
+  color: #0265fe;
+}
+
+/* Arrow dropdown seperti AdminLTE */
+.modern-link .bi-chevron-left {
+  transition: transform 0.2s;
+}
+
+.modern-link.active-dropdown .bi-chevron-left {
+  transform: rotate(-90deg);
 }
 
 /* Arrow dropdown */
@@ -281,8 +333,8 @@ table thead tr {
   font-weight: 700;
   color: var(--primary-blue);
 }
-/* Samakan tinggi header (navbar) dengan brand sidebar */
 
+/* Samakan tinggi header (navbar) dengan brand sidebar */
 .app-header.navbar {
   min-height: 75px; /* sesuaikan, 60–70px juga boleh */
   display: flex;
@@ -292,10 +344,16 @@ table thead tr {
 }
 
 /* Tinggi area logo/brand di sidebar */
+/* Samakan tinggi header dan sidebar brand */
+/* Brand sidebar hanya rata kiri, bukan center */
 .app-sidebar .sidebar-brand {
-  min-height: 64px; /* harus sama dengan .app-header.navbar */
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
+  min-height: 75px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* <— pindahkan ke kiri */
+  gap: 12px; /* jarak antara logo & teks */
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
 }
 
 /* Rapikan teks brand / nav link supaya nggak nambah tinggi */
