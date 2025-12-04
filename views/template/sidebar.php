@@ -1,8 +1,14 @@
 <?php
-// pastikan variabel halaman ada
-$currentPage = $page ?? ($activeMenu ?? 'dashboard');
-// di include dari header (dapat akses $base_url)
+// views/template/sidebar.php - TETAP SAMA PERSIS
 ?>
+<<<<<<< HEAD
+<aside class="app-sidebar bg-body shadow-sm">
+    <div class="sidebar-brand">
+        <a href="index.php?page=dashboard" class="brand-link text-decoration-none text-dark">
+            <i class="bi bi-heart-pulse brand-icon"></i>
+            <span class="brand-text fw-bold">PetCare System</span>
+        </a>
+=======
 
 <aside class="app-sidebar modern-sidebar bg-primary-blue">
 
