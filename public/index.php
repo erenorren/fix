@@ -1,4 +1,7 @@
 <?php
+echo "<pre>";
+print_r(scandir(__DIR__ . '/..'));
+echo "</pre>";
 
 // PAKSA LOAD helper.php
 require_once __DIR__ . '/../helper/helper.php';
