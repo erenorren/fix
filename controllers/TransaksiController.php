@@ -19,17 +19,13 @@ class TransaksiController extends BaseController {
 
     public function __construct() {
         // session_start();
-        // auth_required(); // CEK LOGIN DI SETIAP AKSES CONTROLLER
+        auth_required(); // CEK LOGIN DI SETIAP AKSES CONTROLLER
         $this->transaksiModel = new Transaksi();
         $this->pelangganModel = new Pelanggan();
         $this->hewanModel = new Hewan(); 
         $this->detailTransaksiModel = new DetailTransaksi();
         $this->kandangModel = new Kandang();
         $this->layananModel = new Layanan();
-        
-        error_log("Session ID di Controller: " . session_id());
-        error_log("User ID di Session: " . ($_SESSION['user_id'] ?? 'KOSONG'));
-
     }
         
     public function index() {
