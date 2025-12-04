@@ -1,30 +1,15 @@
 <?php
 require_once __DIR__ . '/../core/Database.php';
 
-/**
- * Class Transaksi
- * 
- * Model untuk mengelola transaksi penitipan hewan.
- * Semua fungsi di sini sudah kompatibel dengan PostgreSQL Supabase.
- * 
- * Dampak perubahan:
- * - Semua query menggunakan PDO dan prepared statement.
- * - Fungsi create() dan checkout() memakai RETURNING agar Supabase mengembalikan ID.
- * - Tidak ada fungsi dihapus; semua fitur tetap ada.
- */
 class Transaksi 
 {
     private $db;
 
     public function __construct()
     {
-        // Pastikan Database.php menginisialisasi PDO dengan Supabase
         $this->db = new Database();
     }
 
-    /**
-     * Ambil semua data transaksi beserta relasi ke pelanggan, hewan, layanan, dan kandang
-     */
     public function getAll()
     {
         $sql = "SELECT t.*, p.nama_pelanggan, h.nama_hewan, l.nama_layanan, k.kode_kandang
@@ -34,301 +19,228 @@ class Transaksi
                 LEFT JOIN layanan l ON t.id_layanan = l.id_layanan
                 LEFT JOIN kandang k ON t.id_kandang = k.id_kandang
                 ORDER BY t.tanggal_masuk DESC";
-
         return $this->db->query($sql)->fetchAll();
     }
 
-    /**
-     * Ambil transaksi yang statusnya active
-     */
     public function getActiveTransactions()
     {
         $sql = "SELECT t.id_transaksi, t.kode_transaksi, p.nama_pelanggan, h.nama_hewan, 
-                       h.jenis as jenis_hewan, k.kode_kandang, t.tanggal_masuk, t.durasi, t.total_biaya
+                       h.jenis AS jenis_hewan, k.kode_kandang, t.tanggal_masuk, 
+                       t.durasi, t.total_biaya
                 FROM transaksi t
                 LEFT JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan
                 LEFT JOIN hewan h ON t.id_hewan = h.id_hewan
                 LEFT JOIN kandang k ON t.id_kandang = k.id_kandang
                 WHERE t.status = 'active'
                 ORDER BY t.tanggal_masuk DESC";
-
         return $this->db->query($sql)->fetchAll();
     }
 
-    /**
-     * Buat transaksi baru (Supabase memerlukan RETURNING id_transaksi)
-     */
-    public function create($data) {
+    public function create($data)
+    {
         try {
             $kodeTransaksi = $this->generateKodeTransaksi();
 
-            $sql = "INSERT INTO transaksi 
-                    (kode_transaksi, id_pelanggan, id_hewan, id_kandang, id_layanan, 
-                     biaya_paket, tanggal_masuk, durasi, total_biaya, status)
-                    VALUES 
+            $sql = "INSERT INTO transaksi
+                    (kode_transaksi, id_pelanggan, id_hewan, id_kandang, id_layanan,
+                     biaya_paket, tanggal_masuk, durasi, total_biaya, status_pembayaran)
+                    VALUES
                     (:kode_transaksi, :id_pelanggan, :id_hewan, :id_kandang, :id_layanan,
-                     :biaya_paket, :tanggal_masuk, :durasi, :total_biaya, 'active')
+                     :biaya_paket, :tanggal_masuk, :durasi, :total_biaya, 'belum_lunas')
                     RETURNING id_transaksi";
 
-            $params = [
-                "kode_transaksi" => $kodeTransaksi,
-                "id_pelanggan" => $data["id_pelanggan"],
-                "id_hewan" => $data["id_hewan"],
-                "id_kandang" => $data["id_kandang"],
-                "id_layanan" => $data["id_layanan"],
-                "biaya_paket" => $data["biaya_paket"],
-                "tanggal_masuk" => $data["tanggal_masuk"],
-                "durasi" => $data["durasi"],
-                "total_biaya" => $data["total_biaya"]
-            ];
+            $stmt = $this->db->query($sql, [
+                'kode_transaksi' => $kodeTransaksi,
+                'id_pelanggan' => $data['id_pelanggan'],
+                'id_hewan' => $data['id_hewan'],
+                'id_kandang' => $data['id_kandang'],
+                'id_layanan' => $data['id_layanan'],
+                'biaya_paket' => $data['biaya_paket'],
+                'tanggal_masuk' => $data['tanggal_masuk'],
+                'durasi' => $data['durasi'],
+                'total_biaya' => $data['total_biaya']
+            ]);
 
-            $stmt = $this->db->query($sql, $params);
             $result = $stmt->fetch();
-
             return $result['id_transaksi'] ?? false;
 
         } catch (Exception $e) {
-            error_log("MODEL ERROR create transaksi: " . $e->getMessage());
+            error_log("MODEL ERROR create transaksi: ".$e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Checkout transaksi (ubah status menjadi completed)
-     */
     public function checkout($id)
     {
         try {
-            $sql = "UPDATE transaksi 
+            $sql = "UPDATE transaksi
                     SET status = 'completed', tanggal_keluar = CURRENT_DATE
                     WHERE id_transaksi = :id
                     RETURNING id_transaksi";
 
-            $stmt = $this->db->query($sql, [':id' => $id]);
-            $result = $stmt->fetch();
-
-            return $result ? true : false;
+            $stmt = $this->db->query($sql, ['id' => $id]);
+            return $stmt->fetch() ? true : false;
 
         } catch (Exception $e) {
-            error_log("Error checkout transaksi: " . $e->getMessage());
+            error_log("Error checkout:".$e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Ambil transaksi berdasarkan ID
-     */
     public function getById($id)
     {
         $sql = "SELECT t.*, p.nama_pelanggan, p.no_hp, p.alamat,
                        h.nama_hewan, h.jenis, h.ras, h.ukuran, h.warna,
-                       l.nama_layanan, l.harga as harga_layanan,
-                       k.kode_kandang, k.tipe as tipe_kandang
+                       l.nama_layanan, l.harga AS harga_layanan,
+                       k.kode_kandang, k.tipe AS tipe_kandang
                 FROM transaksi t
                 LEFT JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan
                 LEFT JOIN hewan h ON t.id_hewan = h.id_hewan
                 LEFT JOIN layanan l ON t.id_layanan = l.id_layanan
                 LEFT JOIN kandang k ON t.id_kandang = k.id_kandang
                 WHERE t.id_transaksi = :id";
-
-        return $this->db->query($sql, [':id' => $id])->fetch();
+        return $this->db->query($sql, ['id' => $id])->fetch();
     }
 
-    /**
-     * Hitung total hewan aktif
-     */
-    public function getTotalHewanAktif() {
-        $sql = "SELECT COUNT(*) as total FROM transaksi WHERE status = 'active'";
+    public function getTotalHewanAktif()
+    {
+        $sql = "SELECT COUNT(*) total FROM transaksi WHERE status='active'";
         return $this->db->query($sql)->fetch()['total'] ?? 0;
     }
 
-    /**
-     * Hitung total hewan aktif berdasarkan jenis
-     */
-    public function getTotalHewanAktifByJenis($jenis) {
-        $sql = "SELECT COUNT(*) as total
+    public function getTotalHewanAktifByJenis($jenis)
+    {
+        $sql = "SELECT COUNT(*) total
                 FROM transaksi t
                 JOIN hewan h ON t.id_hewan = h.id_hewan
-                WHERE t.status = 'active' AND h.jenis = :jenis";
-
-        return $this->db->query($sql, [':jenis' => $jenis])->fetch()['total'] ?? 0;
+                WHERE t.status='active' AND h.jenis=:jenis";
+        return $this->db->query($sql, ['jenis'=>$jenis])->fetch()['total'] ?? 0;
     }
 
-    /**
-     * Generate kode transaksi (TRX001, TRX002, ...)
-     */
     private function generateKodeTransaksi()
     {
-        $sql = "SELECT COALESCE(MAX(CAST(SUBSTRING(kode_transaksi FROM 4) AS INTEGER)),0) AS max_number
+        $sql = "SELECT COALESCE(MAX(CAST(SUBSTRING(kode_transaksi FROM 4) AS INTEGER)),0) max_number
                 FROM transaksi WHERE kode_transaksi LIKE 'TRX%'";
-
-        $result = $this->db->query($sql)->fetch();
-        return 'TRX' . str_pad($result['max_number'] + 1, 3, '0', STR_PAD_LEFT);
+        $res = $this->db->query($sql)->fetch();
+        return 'TRX' . str_pad(($res['max_number']+1), 3, '0', STR_PAD_LEFT);
     }
 
-    /**
-     * Ambil transaksi berdasarkan nomor transaksi
-     */
-    public function getByNomor($nomorTransaksi) {
-        $sql = "SELECT t.*, p.nama_pelanggan, p.no_hp, p.alamat,
-                       h.nama_hewan, h.jenis, h.ras, h.ukuran, h.warna,
-                       u.nama_lengkap as nama_kasir
+    public function getByNomor($kodeTransaksi)
+    {
+        $sql = "SELECT t.*, p.nama_pelanggan, p.no_hp,
+                       u.nama_lengkap AS nama_kasir
                 FROM transaksi t
                 LEFT JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan
-                LEFT JOIN hewan h ON t.id_hewan = h.id_hewan
-                LEFT JOIN user u ON t.id_user = u.id_user
-                WHERE t.nomor_transaksi = :nomor";
-
-        $transaksi = $this->db->query($sql, ['nomor' => $nomorTransaksi])->fetch();
-
-        if ($transaksi) {
-            $transaksi['detail_layanan'] = $this->getDetailLayanan($transaksi['id_transaksi']);
+                LEFT JOIN \"user\" u ON t.id_user = u.id_user
+                WHERE t.kode_transaksi = :kode";
+        
+        $trx = $this->db->query($sql, ['kode'=>$kodeTransaksi])->fetch();
+        if ($trx) {
+            $trx['detail_layanan'] = $this->getDetailLayanan($trx['id_transaksi']);
         }
-
-        return $transaksi;
+        return $trx;
     }
 
-    /**
-     * Ambil detail layanan dari transaksi
-     */
-    public function getDetailLayanan($idTransaksi) {
-        $sql = "SELECT dt.*, l.kode_layanan, l.nama_layanan, l.kategori_layanan,
-                       dt.harga_satuan, dt.jumlah, dt.subtotal
+    public function getDetailLayanan($idTransaksi)
+    {
+        $sql = "SELECT dt.*, l.nama_layanan
                 FROM detail_transaksi dt
                 LEFT JOIN layanan l ON dt.id_layanan = l.id_layanan
                 WHERE dt.id_transaksi = :id";
-
-        return $this->db->query($sql, ['id' => $idTransaksi])->fetchAll();
+        return $this->db->query($sql, ['id'=>$idTransaksi])->fetchAll();
     }
 
-    /**
-     * Search transaksi berdasarkan keyword
-     */
-    public function search($keyword) {
+    public function search($keyword)
+    {
         $sql = "SELECT t.*, p.nama_pelanggan, h.nama_hewan
                 FROM transaksi t
                 LEFT JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan
                 LEFT JOIN hewan h ON t.id_hewan = h.id_hewan
-                WHERE t.nomor_transaksi LIKE :keyword
+                WHERE t.kode_transaksi LIKE :keyword
                    OR p.nama_pelanggan LIKE :keyword
                    OR h.nama_hewan LIKE :keyword
                 ORDER BY t.created_at DESC";
-
-        return $this->db->query($sql, ['keyword' => "%{$keyword}%"])->fetchAll();
+        return $this->db->query($sql, ['keyword'=>"%$keyword%"])->fetchAll();
     }
 
-    /**
-     * Update checkout transaksi
-     */
-    public function updateCheckout($id, $data) {
+    public function updateCheckout($id, $data)
+    {
         try {
             $this->db->beginTransaction();
 
-            $transaksi = $this->getById($id);
-
-            if (!isset($data['total_biaya']) || empty($data['total_biaya'])) {
-                $detailLayananStored = $transaksi['detail_layanan'] ?? [];
-                $detailForCalc = [];
-                foreach ($detailLayananStored as $d) {
-                    $detailForCalc[] = [
-                        'harga' => $d['harga_satuan'] ?? $d['harga'] ?? 0,
-                        'qty' => $d['jumlah'] ?? $d['qty'] ?? 1
-                    ];
-                }
-
-                $calc = $this->calculateTotalFromInputs(
-                    $data['durasi_hari'] ?? $transaksi['durasi_hari'] ?? 0,
-                    $detailForCalc,
-                    $data['paket_per_hari'] ?? 0,
-                    $data['diskon'] ?? ($transaksi['diskon'] ?? 0)
-                );
-
-                $data['total_biaya'] = $calc['total_biaya'];
-                $data['diskon'] = $calc['diskon'];
-            }
+            $trx = $this->getById($id);
 
             $sql = "UPDATE transaksi
-                    SET tanggal_keluar_aktual = :tanggal_keluar,
+                    SET tanggal_keluar_aktual = :tgl_keluar,
                         jam_keluar_aktual = :jam_keluar,
-                        durasi_hari = :durasi_hari,
-                        status = 'selesai',
+                        durasi_hari = :durasi,
                         diskon = :diskon,
-                        total_biaya = :total_biaya,
-                        metode_pembayaran = :metode_pembayaran,
+                        total_biaya = :total,
+                        metode_pembayaran = :metode,
+                        status = 'selesai',
                         status_pembayaran = 'lunas'
                     WHERE id_transaksi = :id";
-
             $this->db->execute($sql, [
-                'id' => $id,
-                'tanggal_keluar' => $data['tanggal_keluar_aktual'],
-                'jam_keluar' => $data['jam_keluar_aktual'] ?? date('H:i:s'),
-                'durasi_hari' => $data['durasi_hari'],
-                'diskon' => $data['diskon'],
-                'total_biaya' => $data['total_biaya'],
-                'metode_pembayaran' => $data['metode_pembayaran'] ?? ''
+                'id'=>$id,
+                'tgl_keluar'=>$data['tanggal_keluar_aktual'],
+                'jam_keluar'=>$data['jam_keluar_aktual'] ?? date('H:i:s'),
+                'durasi'=>$data['durasi_hari'],
+                'diskon'=>$data['diskon'] ?? 0,
+                'total'=>$data['total_biaya'],
+                'metode'=>$data['metode_pembayaran']
             ]);
 
-            // Update status hewan
-            $sqlHewan = "UPDATE hewan SET status = 'sudah_diambil' WHERE id_hewan = :id";
-            $this->db->execute($sqlHewan, ['id' => $transaksi['id_hewan']]);
+            $this->db->execute(
+                "UPDATE hewan SET status='sudah_diambil' WHERE id_hewan = :id",
+                ['id'=>$trx['id_hewan']]
+            );
 
             $this->db->commit();
             return true;
 
         } catch (Exception $e) {
             $this->db->rollBack();
-            error_log("Error updateCheckout: " . $e->getMessage());
+            error_log("Error updateCheckout:".$e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Ambil hewan yang sedang dititipkan
-     */
-    public function getSedangDititipkan() {
+    public function getSedangDititipkan()
+    {
         $sql = "SELECT t.*, p.nama_pelanggan, h.nama_hewan
                 FROM transaksi t
                 LEFT JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan
                 LEFT JOIN hewan h ON t.id_hewan = h.id_hewan
                 WHERE t.status = 'sedang_dititipkan'
                 ORDER BY t.tanggal_masuk DESC";
-
         return $this->db->query($sql)->fetchAll();
     }
 
-    /**
-     * Hitung pendapatan antara tanggal mulai dan akhir
-     */
-    public function hitungPendapatan($tanggalMulai, $tanggalAkhir) {
-        $sql = "SELECT SUM(total_biaya) as total
+    public function hitungPendapatan($mulai, $akhir)
+    {
+        $sql = "SELECT SUM(total_biaya) total
                 FROM transaksi
-                WHERE tanggal_masuk::DATE BETWEEN :mulai AND :akhir
-                AND status_pembayaran = 'lunas'";
-
-        return $this->db->query($sql, ['mulai' => $tanggalMulai, 'akhir' => $tanggalAkhir])->fetch()['total'] ?? 0;
+                WHERE tanggal_masuk BETWEEN :mulai AND :akhir
+                AND status_pembayaran='lunas'";
+        return $this->db->query($sql, ['mulai'=>$mulai,'akhir'=>$akhir])->fetch()['total'] ?? 0;
     }
 
-    /**
-     * Hitung total biaya dari durasi, layanan, paket per hari, dan diskon
-     */
-    public function calculateTotalFromInputs(int $durasiHari, array $detailLayanan, float $paketPerHari = 0.0, float $diskon = 0.0) {
-        $subtotalLayanan = 0.0;
-        foreach ($detailLayanan as $d) {
-            $harga = $d['harga'] ?? ($d['harga_satuan'] ?? 0);
-            $qty = $d['qty'] ?? ($d['jumlah'] ?? 1);
+    public function calculateTotalFromInputs(int $durasiHari, array $detailLayanan, float $paketPerHari=0.0, float $diskon=0.0)
+    {
+        $subtotalLayanan = 0;
+        foreach($detailLayanan as $d) {
+            $harga = $d['harga'] ?? $d['harga_satuan'] ?? 0;
+            $qty = $d['quantity'] ?? $d['jumlah'] ?? 1;
             $subtotalLayanan += $harga * $qty;
         }
-
-        $biayaPaket = $paketPerHari * max(1, $durasiHari);
+        $biayaPaket = $paketPerHari * max(1,$durasiHari);
         $subtotal = $biayaPaket + $subtotalLayanan;
-        $total = $subtotal - $diskon;
-
         return [
-            'biaya_paket' => $biayaPaket,
-            'subtotal_layanan' => $subtotalLayanan,
-            'subtotal' => $subtotal,
-            'diskon' => $diskon,
-            'total_biaya' => $total
+            'biaya_paket'=>$biayaPaket,
+            'subtotal_layanan'=>$subtotalLayanan,
+            'subtotal'=>$subtotal,
+            'diskon'=>$diskon,
+            'total_biaya'=>$subtotal - $diskon
         ];
     }
 }
