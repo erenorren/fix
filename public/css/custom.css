@@ -6,26 +6,21 @@
 body {
   font-family: "Inter", sans-serif !important;
   background: #f6f8fa;
-  /* putih 60% */
   color: #333;
 }
 
-/* ==============================
-   WARNA UTAMA
-============================== */
 :root {
   --primary-blue: #0265fe;
   --accent-orange: #ffb113;
   --light-bg: #ffffff;
   --card-shadow: rgba(0, 0, 0, 0.05);
 
-  /* PENTING: Sinkronisasi dengan AdminLTE */
+  /* --- PENGATURAN TINGGI (Ubah angka ini jika ingin lebih tinggi/pendek) --- */
+  --header-height: 60px;
+
   --lte-sidebar-width: 260px;
 }
 
-/* ==============================
-   STYLE KARTU (CARD)
-============================== */
 .card {
   border: none !important;
   border-radius: 14px !important;
@@ -33,110 +28,62 @@ body {
   box-shadow: 0 4px 20px var(--card-shadow);
   transition: 0.2s ease;
 }
-
 .card:hover {
   transform: translateY(-4px);
   box-shadow: 0 6px 26px rgba(0, 0, 0, 0.08);
 }
-
-/* form kelola layanan */
 .modal *,
 .modal {
   transform: none !important;
 }
-
 body.modal-open .card:hover {
   transform: none !important;
 }
 
 /* ==============================
-   HEADER JUDUL HALAMAN
+   HEADER (NAVBAR) FIX
 ============================== */
-h2,
-.page-title {
-  font-weight: 700;
-  color: #222;
-}
-
-/* ==============================
-   IKON BULAT UNTUK STAT CARD
-============================== */
-.card .rounded-circle {
+.app-header {
+  height: var(--header-height) !important;
+  min-height: var(--header-height) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: rgba(2, 101, 254, 0.12);
-  border-radius: 50%;
-}
-
-/* warna icon sesuai kategori */
-.text-primary {
-  color: var(--primary-blue) !important;
-}
-
-.text-accent {
-  color: var(--accent-orange) !important;
 }
 
 /* ==============================
-   BADGE STATUS
+   SIDEBAR FIX (KEMBALI KE BIRU)
 ============================== */
-.badge-success {
-  background: #d1f7c4 !important;
-  color: #2f8f24 !important;
-}
-
-.badge-warning {
-  background: #fff4cc !important;
-  color: #c88400 !important;
-}
-
-.badge-danger {
-  background: #ffe2e2 !important;
-  color: #c73636 !important;
-}
-
-.badge-accent {
-  background: var(--accent-orange);
-  color: #ffffff;
-}
-
-/* ==============================
-   SIDEBAR FIX
-============================== */
-
-/* Sidebar Background */
-.bg-primary-blue {
-  background-color: #0265fe !important;
-}
-
 .modern-sidebar {
-  /* HAPUS width statis agar responsif ikut AdminLTE */
-  /* width: 260px;  <-- DIHAPUS */
-
-  background-color: #111827; /* dark grey */
-  color: #c2c7d0;
+  background-color: var(--primary-blue); /* UBAH KE BIRU */
+  color: #ffffff;
   box-shadow: 2px 0 6px rgba(0, 0, 0, 0.45);
 }
 
-/* Fix Z-Index untuk Mobile agar sidebar muncul di atas konten */
+/* Brand Logo */
+.sidebar-brand {
+  height: var(--header-height) !important;
+  min-height: var(--header-height) !important;
+  padding: 0 1rem;
+
+  /* FIX: Ubah jadi transparent agar warnanya SAMA PERSIS dengan menu di bawahnya */
+  background-color: transparent;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  overflow: hidden;
+}
+
+/* Mobile Z-Index */
 @media (max-width: 991.98px) {
   .app-sidebar {
     z-index: 1050;
     box-shadow: 5px 0 15px rgba(0, 0, 0, 0.3);
   }
-}
-
-/* Brand bar biru di atas sidebar */
-.sidebar-brand {
-  min-height: 57px; /* Sesuaikan dengan tinggi navbar */
-  padding: 0 1rem;
-  background-color: #0265fe;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
 }
 
 .brand-logo {
@@ -146,25 +93,26 @@ h2,
   width: 35px;
   height: 35px;
 }
-
 .brand-logo-img {
   max-width: 100%;
   height: auto;
   object-fit: contain;
 }
-
 .sidebar-brand .brand-name {
   font-size: 1.05rem;
   line-height: 1.2;
+  white-space: nowrap;
 }
-
 .sidebar-brand .brand-subtitle {
   font-size: 0.75rem;
   opacity: 0.9;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
-/* MENU UTAMA */
+/* ==============================
+   MENU STYLE (UNTUK BACKGROUND BIRU)
+============================== */
 .modern-menu {
   list-style: none;
   padding-left: 0;
@@ -173,16 +121,13 @@ h2,
 }
 
 .modern-link {
-  color: #c2c7d0;
+  color: rgba(255, 255, 255, 0.9); /* Teks putih */
   padding: 0.55rem 0.9rem;
   border-radius: 4px;
-
-  /* FIX DROPDOWN: Gunakan Flexbox !important untuk menimpa default AdminLTE */
   display: flex !important;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-
   gap: 10px;
   font-weight: 500;
   font-size: 0.9rem;
@@ -190,40 +135,43 @@ h2,
   text-decoration: none;
 }
 
-/* Pastikan teks menu mengisi ruang tengah */
-.modern-link span.flex-grow-1 {
+/* Posisi teks naik sedikit biar tengah */
+.modern-link span.flex-grow-1,
+.modern-link span {
   flex-grow: 1;
+  position: relative;
+  top: -1px;
 }
-
-/* Pastikan panah di ujung kanan */
 .modern-link .dropdown-arrow,
 .modern-link .ms-auto {
   margin-left: auto !important;
 }
 
+/* Hover Effect: Putih Transparan */
 .modern-link:hover {
-  background-color: #9fbeea;
+  background-color: rgba(255, 255, 255, 0.2);
   color: #ffffff;
 }
 
+/* Active State: Background Putih, Teks Biru */
 .modern-link.active,
 .modern-link.active-dropdown {
-  background-color: #0265fe;
-  color: #ffffff;
+  background-color: #ffffff;
+  color: var(--primary-blue);
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Icon */
 .modern-icon {
   width: 22px;
   font-size: 1rem;
   text-align: center;
   color: inherit;
-  flex-shrink: 0; /* Icon jangan mengecil */
+  flex-shrink: 0;
 }
-
 .modern-link.active .modern-icon,
 .modern-link:hover .modern-icon {
-  color: #ffffff;
+  color: inherit;
 }
 
 /* SUBMENU */
@@ -231,17 +179,15 @@ h2,
   padding-left: 0.5rem;
   margin-top: 4px;
   display: none;
-  background: rgba(0, 0, 0, 0.2); /* Gelapkan dikit biar kontras */
+  background: rgba(0, 0, 0, 0.15); /* Gelapkan dikit untuk submenu */
   border-radius: 8px;
 }
-
 .submenu.show {
   display: block;
 }
 
-/* Item submenu */
 .sub-link {
-  color: #e3eaff;
+  color: rgba(255, 255, 255, 0.8);
   padding: 8px 10px;
   border-radius: 6px;
   display: flex;
@@ -257,17 +203,51 @@ h2,
 }
 
 .sub-link.active {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
   font-weight: 600;
   color: #ffffff;
 }
 
-/* Arrow dropdown rotation */
 .dropdown-arrow {
   transition: transform 0.2s;
   font-size: 0.8rem;
 }
-
 .has-dropdown.active-dropdown .dropdown-arrow {
   transform: rotate(180deg);
+}
+
+/* Lainnya */
+h2,
+.page-title {
+  font-weight: 700;
+  color: #222;
+}
+.card .rounded-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 101, 254, 0.12);
+  border-radius: 50%;
+}
+.text-primary {
+  color: var(--primary-blue) !important;
+}
+.text-accent {
+  color: var(--accent-orange) !important;
+}
+.badge-success {
+  background: #d1f7c4 !important;
+  color: #2f8f24 !important;
+}
+.badge-warning {
+  background: #fff4cc !important;
+  color: #c88400 !important;
+}
+.badge-danger {
+  background: #ffe2e2 !important;
+  color: #c73636 !important;
+}
+.badge-accent {
+  background: var(--accent-orange);
+  color: #ffffff;
 }
