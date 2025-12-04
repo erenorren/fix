@@ -37,7 +37,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'login' && $_SERVER['REQUEST_M
     $user = $userModel->login($username, $password);
     
     if ($user) {
-        $_SESSION['user_id'] = $user['id'];
+        setcookie("user_id", $user['id'], time() + 3600, "/");
         $_SESSION['username'] = $user['username'];
         $_SESSION['nama_lengkap'] = $user['nama_lengkap'] ?? 'Admin';
         $_SESSION['role'] = $user['role'] ?? 'admin';
@@ -76,11 +76,11 @@ if ($page === 'login') {
     exit;
 }
 
-// Private pages (require auth)
-// if (!isset($_SESSION['user_id'])) {
-//     header('Location: index.php?page=login&redirect=' . urlencode($page));
-//     exit;
-// }
+    // Private pages (require auth)
+    if (!isset($_COOKIE['user_id'])) {
+        header('Location: index.php?page=login&redirect=' . urlencode($page));
+        exit;
+        }
 
 // ==================================================
 // 5. HANDLE ACTIONS FIRST (BEFORE PAGE ROUTING)
