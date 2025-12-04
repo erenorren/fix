@@ -6,6 +6,9 @@ $activeMenu = 'dashboard';
 require_once __DIR__ . '/../models/Hewan.php';
 require_once __DIR__ . '/../models/Transaksi.php';
 require_once __DIR__ . '/../models/Kandang.php';
+require_once __DIR__ . '/../helper/auth.php';
+
+auth_required();
 
 $hewanModel = new Hewan();
 // die('Access Dashboard');
