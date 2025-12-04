@@ -1,8 +1,16 @@
 <?php
+<<<<<<< HEAD
 // views/login.php
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
+=======
+// views/login.php - TIDAK DIUBAH TAMPILAN, hanya backend
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+// views/login.php - SIMPLE VERSION
+>>>>>>> 5e58d758596f88747ba8da380c3991f93367293b
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -43,17 +51,29 @@ if (session_status() == PHP_SESSION_NONE) {
             <form id="loginForm">
                 <div class="input-group mb-3">
                     <input type="text" name="username" class="form-control form-control-lg bg-light" 
-                           placeholder="Username" required autofocus>
+                        placeholder="Username" required autofocus>
                     <div class="input-group-text bg-light border-start-0 text-muted">
                         <span class="bi bi-person-fill"></span>
+<<<<<<< HEAD
+=======
+                    <input type="text" name="username" class="form-control" placeholder="Username" required autofocus>
+                    <div class="input-group-text">
+                        <i class="bi bi-person-fill"></i>
+>>>>>>> 5e58d758596f88747ba8da380c3991f93367293b
                     </div>
                 </div>
 
                 <div class="input-group mb-3">
                     <input type="password" name="password" class="form-control form-control-lg bg-light" 
-                           placeholder="Password" required>
+                        placeholder="Password" required>
                     <div class="input-group-text bg-light border-start-0 text-muted">
                         <span class="bi bi-lock-fill"></span>
+<<<<<<< HEAD
+=======
+                    <input type="password" name="password" class="form-control" placeholder="Password" required>
+                    <div class="input-group-text">
+                        <i class="bi bi-lock-fill"></i>
+>>>>>>> 5e58d758596f88747ba8da380c3991f93367293b
                     </div>
                 </div>
 
@@ -63,6 +83,10 @@ if (session_status() == PHP_SESSION_NONE) {
                             <span id="btnText">Sign In</span>
                             <span id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
                         </button>
+<<<<<<< HEAD
+=======
+                        <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm">Sign In</button>
+>>>>>>> 5e58d758596f88747ba8da380c3991f93367293b
                     </div>
                 </div>
             </form>
@@ -186,6 +210,55 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 5000);
         }
     }
+<<<<<<< HEAD
+=======
+    
+    loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        // Show loading
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Loading...';
+        
+        // Get form data
+        const formData = new FormData(this);
+        
+        try {
+            // ✅ SIMPLE FETCH - NO COMPLEX URL
+            const response = await fetch('index.php?action=login', {
+                method: 'POST',
+                body: formData
+            });
+            
+            // Cek jika response OK
+            if (!response.ok) {
+                throw new Error('HTTP error: ' + response.status);
+            }
+            
+            // Parse JSON
+            const result = await response.json();
+            console.log('Login result:', result);
+            
+            if (result.success) {
+                // Redirect ke dashboard
+                window.location.href = result.redirect;
+            } else {
+                alert('Login gagal: ' + result.message);
+            }
+            
+        } catch (error) {
+            console.error('Login error:', error);
+            alert('Error: ' + error.message + '\nCoba refresh halaman atau gunakan:\nUsername: admin\nPassword: admin123');
+            
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+>>>>>>> 5e58d758596f88747ba8da380c3991f93367293b
 });
 </script>
 </body>
