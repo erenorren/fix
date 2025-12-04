@@ -1,7 +1,9 @@
 <?php
 
 // PAKSA LOAD helper.php
-require_once dirname(__DIR__) . '/helper/helper.php';
+require_once '/var/task/user/helper/helper.php';
+var_dump(scandir('/var/task/user'));
+var_dump(scandir('/var/task/user/helper'));
 
 // Jika masih error, cek apakah file-nya benar-benar bisa ditemukan
 if (!function_exists('getDatabaseConfig')) {
