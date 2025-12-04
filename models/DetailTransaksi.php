@@ -1,6 +1,17 @@
 <?php
 require_once __DIR__ . '/../core/Database.php';
 
+/**
+ * Class DetailTransaksi
+ * 
+ * Model untuk mengelola detail transaksi.
+ * Semua fungsi kompatibel dengan PostgreSQL Supabase.
+ * 
+ * Dampak perubahan:
+ * - Semua query memakai prepared statement PostgreSQL agar aman.
+ * - Tidak ada fungsi yang dihapus atau ditambah.
+ * - Semua fitur CRUD tetap ada.
+ */
 class DetailTransaksi
 {
     private $db;
@@ -8,6 +19,7 @@ class DetailTransaksi
 
     public function __construct()
     {
+        // Pastikan Database.php menginisialisasi PDO dengan Supabase
         $this->db = new Database();
     }
 
@@ -17,7 +29,6 @@ class DetailTransaksi
     public function create($data)
     {
         try {
-            // PostgreSQL-ready (tidak ada perubahan besar utk INSERT)
             $sql = "INSERT INTO {$this->table} 
                     (id_transaksi, kode_layanan, nama_layanan, harga, quantity, subtotal) 
                     VALUES 
@@ -43,33 +54,29 @@ class DetailTransaksi
      */
     public function getByTransaksiId($id_transaksi)
     {
-        // FIX UNTUK POSTGRES:
-        // ORDER BY created_at menyebabkan error jika kolom tidak ada
-        // Maka diganti ORDER BY id (atau hapus)
-        $sql = "SELECT * FROM {$this->table} WHERE id_transaksi = $1 ORDER BY id";
+        // Gunakan parameter binding agar kompatibel Supabase
+        $sql = "SELECT * FROM {$this->table} WHERE id_transaksi = :id_transaksi ORDER BY id";
 
-        $stmt = $this->db->query($sql, [$id_transaksi]);
+        $stmt = $this->db->query($sql, ['id_transaksi' => $id_transaksi]);
         return $stmt->fetchAll();
     }
 
     /**
-     * Hapus detail transaksi (DELETE)
+     * Hapus detail transaksi berdasarkan ID transaksi (DELETE)
      */
     public function deleteByTransaksiId($id_transaksi)
     {
-        // Query ini sudah valid di PostgreSQL
-        $sql = "DELETE FROM {$this->table} WHERE id_transaksi = $1";
-        return $this->db->execute($sql, [$id_transaksi]);
+        $sql = "DELETE FROM {$this->table} WHERE id_transaksi = :id_transaksi";
+        return $this->db->execute($sql, ['id_transaksi' => $id_transaksi]);
     }
 
     /**
-     * Hitung total layanan tambahan untuk suatu transaksi (READ)
+     * Hitung total layanan tambahan untuk suatu transaksi
      */
     public function getTotalLayananTambahan($id_transaksi)
     {
-        // Query ini juga valid untuk PostgreSQL
-        $sql = "SELECT SUM(subtotal) as total FROM {$this->table} WHERE id_transaksi = $1";
-        $stmt = $this->db->query($sql, [$id_transaksi]);
+        $sql = "SELECT SUM(subtotal) as total FROM {$this->table} WHERE id_transaksi = :id_transaksi";
+        $stmt = $this->db->query($sql, ['id_transaksi' => $id_transaksi]);
         $result = $stmt->fetch();
         return $result['total'] ?? 0;
     }
