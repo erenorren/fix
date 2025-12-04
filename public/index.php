@@ -1,4 +1,14 @@
 <?php
+try {
+    $pdo = new PDO($dsn, $config['username'], $config['password'], [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+    ]);
+    echo "KONEKSI BERHASIL!";
+} catch (PDOException $e) {
+    echo "ERROR: " . $e->getMessage();
+}
+exit;
+
 // ==================================================
 // 1. START SESSION
 // ==================================================
