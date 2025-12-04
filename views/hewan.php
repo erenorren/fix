@@ -82,7 +82,7 @@ $totalkandangBesar = $kandangCounts['Besar'] ?? 0;
                         <?php foreach ($hewanList as $h): ?>
                             <tr>
                                 <td class="text-muted"><?= $counter++; ?></td>
-                                <td><?= htmlspecialchars($h['nama'] ?? ''); ?></td>
+                                <td><?= htmlspecialchars($h['nama_hewan'] ?? ''); ?></td>
                                 <td>
                                     <?php 
                                     $jenis = $h['jenis'] ?? '';
