@@ -1,19 +1,27 @@
 <?php
-// Mulai session jika belum berjalan
+// views/template/header.php
+
+// Cek session
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Title default
+// Default page title
 if (!isset($pageTitle)) {
     $pageTitle = 'Sistem Penitipan Hewan';
 }
 
-// Base URL hanya dibuat jika belum ada
+// Logika Base URL
 if (!isset($base_url)) {
     $host = $_SERVER['HTTP_HOST'];
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-    $base_url = $protocol . '://' . $host;
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    
+    // Cek jika localhost
+    if (strpos($host, 'localhost') !== false) {
+        $base_url = $protocol . '://' . $host; 
+    } else {
+        $base_url = $protocol . '://' . $host;
+    }
 }
 ?>
 
@@ -24,28 +32,36 @@ if (!isset($base_url)) {
     <title><?= htmlspecialchars($pageTitle) ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- CSS FIX untuk Vercel -->
-    <link rel="stylesheet" href="/css/adminlte.css">
-    <link rel="stylesheet" href="/css/custom.css">
-
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- AdminLTE & Custom CSS -->
+    <link rel="stylesheet" href="<?= $base_url ?>/css/adminlte.css">
+    <link rel="stylesheet" href="<?= $base_url ?>/css/custom.css">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 
+<!-- sidebar-expand-lg: Sidebar otomatis muncul di desktop -->
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
     <div class="app-wrapper">
 
-        <!-- HEADER -->
+        <!-- HEADER / NAVBAR -->
         <nav class="app-header navbar navbar-expand bg-body border-bottom shadow-sm">
             <div class="container-fluid">
 
-                <button class="navbar-toggler" type="button" data-lte-toggle="sidebar" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+                <!-- Tombol Toggle Sidebar (HANYA MUNCUL DI HP / Mobile) -->
+                <ul class="navbar-nav">
+                    <!-- class 'd-lg-none' menyembunyikan tombol ini di layar Desktop -->
+                    <li class="nav-item d-lg-none">
+                        <a class="nav-link" data-lte-toggle="sidebar" href="#" role="button">
+                            <i class="bi bi-list"></i>
+                        </a>
+                    </li>
+                </ul>
 
+                <!-- Spacer -->
                 <div class="flex-grow-1"></div>
 
+                <!-- Badge User -->
                 <div class="d-flex align-items-center">
                     <div class="px-3 py-1 rounded-pill bg-primary text-white d-flex align-items-center">
                         <i class="bi bi-person-fill me-2"></i>
@@ -56,10 +72,10 @@ if (!isset($base_url)) {
                 </div>
             </div>
         </nav>
-
-        <!-- SIDEBAR -->
+        
+        <!-- Load Sidebar -->
         <?php include __DIR__ . '/sidebar.php'; ?>
 
-        <!-- MAIN -->
+        <!-- Content Wrapper -->
         <main class="app-main">
             <div class="app-content p-3">
