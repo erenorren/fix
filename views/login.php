@@ -1,12 +1,9 @@
 <?php
-<<<<<<< HEAD
-// views/login.php - TIDAK DIUBAH TAMPILAN, hanya backend
+// views/login.php
+// Cek session agar aman, meski di index.php sudah ada
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
-=======
-// views/login.php - SIMPLE VERSION
->>>>>>> 436296297ae3bc4292313dd1b0b95eac90ba58de
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -46,48 +43,31 @@ if (session_status() == PHP_SESSION_NONE) {
 
             <form id="loginForm">
                 <div class="input-group mb-3">
-<<<<<<< HEAD
                     <input type="text" name="username" class="form-control form-control-lg bg-light" 
                            placeholder="Username" required autofocus>
                     <div class="input-group-text bg-light border-start-0 text-muted">
                         <span class="bi bi-person-fill"></span>
-=======
-                    <input type="text" name="username" class="form-control" placeholder="Username" required autofocus>
-                    <div class="input-group-text">
-                        <i class="bi bi-person-fill"></i>
->>>>>>> 436296297ae3bc4292313dd1b0b95eac90ba58de
                     </div>
                 </div>
 
                 <div class="input-group mb-3">
-<<<<<<< HEAD
                     <input type="password" name="password" class="form-control form-control-lg bg-light" 
                            placeholder="Password" required>
                     <div class="input-group-text bg-light border-start-0 text-muted">
                         <span class="bi bi-lock-fill"></span>
-=======
-                    <input type="password" name="password" class="form-control" placeholder="Password" required>
-                    <div class="input-group-text">
-                        <i class="bi bi-lock-fill"></i>
->>>>>>> 436296297ae3bc4292313dd1b0b95eac90ba58de
                     </div>
                 </div>
 
                 <div class="row mt-4">
                     <div class="col-12">
-<<<<<<< HEAD
                         <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm fw-bold" id="loginBtn">
                             <span id="btnText">Sign In</span>
                             <span id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
                         </button>
-=======
-                        <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm">Sign In</button>
->>>>>>> 436296297ae3bc4292313dd1b0b95eac90ba58de
                     </div>
                 </div>
             </form>
 
-            <!-- Info untuk testing -->
             <div class="text-center mt-3">
                 <small class="text-muted">
                     <i class="bi bi-info-circle me-1"></i>
@@ -102,7 +82,6 @@ if (session_status() == PHP_SESSION_NONE) {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
-<<<<<<< HEAD
     const loginBtn = document.getElementById('loginBtn');
     const btnText = document.getElementById('btnText');
     const btnSpinner = document.getElementById('btnSpinner');
@@ -112,8 +91,12 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Login form ready');
         
         // Auto-fill for testing (bisa dihapus di production)
-        document.querySelector('input[name="username"]').value = 'admin';
-        document.querySelector('input[name="password"]').value = 'password123';
+        const userInput = document.querySelector('input[name="username"]');
+        const passInput = document.querySelector('input[name="password"]');
+        if(userInput && passInput) {
+             userInput.value = 'admin';
+             passInput.value = 'password123';
+        }
         
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -152,14 +135,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Cek content type
                 const contentType = response.headers.get('content-type');
-                console.log('Content-Type:', contentType);
                 
                 let data;
                 if (contentType && contentType.includes('application/json')) {
                     data = await response.json();
                 } else {
                     const text = await response.text();
-                    console.log('Non-JSON response:', text);
+                    console.error('Non-JSON response:', text);
                     throw new Error('Server returned non-JSON response');
                 }
                 
@@ -217,61 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }, 5000);
         }
-        
-        // Test connection on load
-        console.log('Testing connection...');
-        fetch('.', { credentials: 'include' })
-            .then(res => console.log('Connection OK:', res.status))
-            .catch(err => console.warn('Connection test:', err));
     }
-=======
-    
-    loginForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        
-        // Show loading
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Loading...';
-        
-        // Get form data
-        const formData = new FormData(this);
-        
-        try {
-            // ✅ SIMPLE FETCH - NO COMPLEX URL
-            const response = await fetch('index.php?action=login', {
-                method: 'POST',
-                body: formData
-            });
-            
-            // Cek jika response OK
-            if (!response.ok) {
-                throw new Error('HTTP error: ' + response.status);
-            }
-            
-            // Parse JSON
-            const result = await response.json();
-            console.log('Login result:', result);
-            
-            if (result.success) {
-                // Redirect ke dashboard
-                window.location.href = result.redirect;
-            } else {
-                alert('Login gagal: ' + result.message);
-            }
-            
-        } catch (error) {
-            console.error('Login error:', error);
-            alert('Error: ' + error.message + '\nCoba refresh halaman atau gunakan:\nUsername: admin\nPassword: admin123');
-            
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalText;
-        }
-    });
->>>>>>> 436296297ae3bc4292313dd1b0b95eac90ba58de
 });
 </script>
 </body>
