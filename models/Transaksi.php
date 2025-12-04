@@ -30,7 +30,7 @@ class Transaksi
                 LEFT JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan
                 LEFT JOIN hewan h ON t.id_hewan = h.id_hewan
                 LEFT JOIN kandang k ON t.id_kandang = k.id_kandang
-                WHERE t.status = ('active', 'menginap', 'sedang_dititipkan')
+                WHERE t.status IN ('active', 'menginap', 'sedang_dibersihkan')
                 ORDER BY t.tanggal_masuk DESC";
         return $this->db->query($sql)->fetchAll();
     }
