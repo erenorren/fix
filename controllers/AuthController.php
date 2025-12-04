@@ -63,7 +63,24 @@ class AuthController {
             $_SESSION['user_id']      = $user['id'];
             $_SESSION['username']     = $user['username'];
             $_SESSION['nama_lengkap'] = $user['nama_lengkap'] ?? '';
-            $_SESSION['role']         = $user['role'];
+            $_SESSION['role']         = $user['role'] ?? 'user';
+
+
+            // Set cookie fallback - tanpa domain, path "/" agar dipakai di seluruh host
+            $cookieOptions = [
+            'expires' => time() + 60 * 60 * 24, // 1 hari, sesuaikan
+            'path' => '/',
+            'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'), // true di Vercel
+            'httponly' => true,
+            'samesite' => 'Lax' // Lax biasanya bekerja; jika cross-site req diperlukan, gunakan 'None' + secure
+            ];
+
+// PHP < 7.3 fallback
+if (PHP_VERSION_ID >= 70300) {
+    setcookie('user_id', $user['id'], $cookieOptions);
+} else {
+    setcookie('user_id', $user['id'], $cookieOptions['expires'], $cookieOptions['path']);
+}
 
             echo json_encode([
                 'success'  => true,
