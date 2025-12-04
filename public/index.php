@@ -1,24 +1,29 @@
 <?php
-require_once __DIR__ . '/../helper/helper.php';
-require_once __DIR__ . '/../core/Database.php';
 
-// Ambil konfigurasi
+// PAKSA LOAD helper.php
+require_once dirname(__DIR__) . '/helper/helper.php';
+
+// Jika masih error, cek apakah file-nya benar-benar bisa ditemukan
+if (!function_exists('getDatabaseConfig')) {
+    die("helper.php TIDAK DITEMUKAN");
+}
+
 $config = getDatabaseConfig();
 
-// Buat DSN PostgreSQL (untuk Vercel)
-$dsn = "pgsql:host={$config['host']};port={$config['port']};dbname={$config['dbname']};sslmode=require";
+$dsn = "pgsql:host={$config['host']};port={$config['port']};dbname={$config['dbname']};sslmode={$config['sslmode']}";
 
-// TEST KONEKSI SUPABASE
 try {
     $pdo = new PDO($dsn, $config['username'], $config['password'], [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
-    echo "<h1>KONEKSI BERHASIL ✔</h1>";
+    echo "KONEKSI BERHASIL ✔";
 } catch (PDOException $e) {
-    echo "<h1>ERROR KONEKSI ❌</h1>";
+    echo "KONEKSI GAGAL ❌<br>";
     echo $e->getMessage();
 }
+
 exit;
+
 
 // ==================================================
 // 1. START SESSION
