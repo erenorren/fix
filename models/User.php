@@ -33,7 +33,7 @@ class User {
             
             error_log("User found: " . print_r($user, true));
             
-            // ✅ Password verification
+            // Password verification
             // 1. Cek password_verify dulu
             if (isset($user['password']) && password_verify($password, $user['password'])) {
                 return $this->formatUserData($user);
@@ -60,7 +60,7 @@ class User {
     }
     
     private function formatUserData($user) {
-        // ✅ FIX: Handle berbagai kemungkinan nama kolom
+        // FIX: Handle berbagai kemungkinan nama kolom
         return [
             'id' => $user['id_user'] ?? $user['id'] ?? $user['user_id'] ?? 0,
             'username' => $user['username'] ?? '',

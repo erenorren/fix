@@ -11,7 +11,6 @@ function getDatabaseConfig() {
     if ($isVercel) {
         // PostgreSQL Supabase untuk Vercel
         return [
-            // kode asli kamu — AMAN
         'driver' => getenv('DB_DRIVER') ?: 'pgsql',
         'host' => getenv('DB_HOST') ?: 'aws-1-ap-southeast-1.pooler.supabase.com',
         'port' => getenv('DB_PORT') ?: '5432',
