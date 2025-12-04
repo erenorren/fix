@@ -1,4 +1,12 @@
 {
+  "version": 2,
+  "builds": [
+    {
+      "src": "public/index.php",
+      "use": "vercel-php@0.7.4"
+    }
+  ],
+  "framework": null,
   "functions": {
     "api/index.php": {
       "runtime": "vercel-php@0.7.4"
@@ -7,19 +15,19 @@
   "routes": [
     {
       "src": "/css/(.*)",
-      "dest": "/public/css/$1"
+      "dest": "/public/css/"
     },
     {
       "src": "/img/(.*)",
-      "dest": "/public/img/$1"
+      "dest": "/public/img/"
     },
     {
       "src": "/js/(.*)",
-      "dest": "/public/js/$1"
+      "dest": "/public/js/"
     },
     {
       "src": "/(.*)",
-      "dest": "/api/index.php"
+      "dest": "/public/index.php"
     }
   ],
   "env": {
