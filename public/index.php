@@ -1,7 +1,4 @@
 <?php
-<<<<<<< HEAD
-// public/index.php - VERSION FINAL
-
 // ==================================================
 // 1. SESSION CONFIGURATION - PALING ATAS
 // ==================================================
@@ -132,7 +129,6 @@ if ($action) {
             http_response_code(404);
             echo json_encode(['error' => 'Action not found']);
             exit;
-=======
 // public/index.php
 
 // ==================================================
@@ -186,13 +182,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'login' && $_SERVER['REQUEST_M
             'success' => false,
             'message' => 'Username atau password salah'
         ]);
->>>>>>> 436296297ae3bc4292313dd1b0b95eac90ba58de
     }
     exit;
 }
 
 // ==================================================
-<<<<<<< HEAD
 // 6. PAGE ROUTES - TETAP SAMA
 // ==================================================
 $page = $_GET['page'] ?? 'dashboard';
@@ -205,7 +199,7 @@ switch ($page) {
         require_once __DIR__ . '/../views/login.php';
         break;
 
-=======
+// ==================================================
 // 4. SIMPLE AUTH CHECK
 // ==================================================
 $page = $_GET['page'] ?? 'login';
@@ -253,7 +247,6 @@ if ($action === 'checkoutTransaksi') {
 // 6. ROUTE PAGES YANG SUDAH LOGIN
 // ==================================================
 switch ($page) {
->>>>>>> 436296297ae3bc4292313dd1b0b95eac90ba58de
     case 'dashboard':
         require_once __DIR__ . '/../views/dashboard.php';
         break;
