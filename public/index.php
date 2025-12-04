@@ -1,4 +1,25 @@
 <?php
+require_once __DIR__ . '/../helper/helper.php';
+require_once __DIR__ . '/../core/Database.php';
+
+// Ambil konfigurasi
+$config = getDatabaseConfig();
+
+// Buat DSN PostgreSQL (untuk Vercel)
+$dsn = "pgsql:host={$config['host']};port={$config['port']};dbname={$config['dbname']};sslmode=require";
+
+// TEST KONEKSI SUPABASE
+try {
+    $pdo = new PDO($dsn, $config['username'], $config['password'], [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+    ]);
+    echo "<h1>KONEKSI BERHASIL ✔</h1>";
+} catch (PDOException $e) {
+    echo "<h1>ERROR KONEKSI ❌</h1>";
+    echo $e->getMessage();
+}
+exit;
+
 // ==================================================
 // 1. START SESSION
 // ==================================================
