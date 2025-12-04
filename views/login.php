@@ -1,12 +1,9 @@
 <?php
-<<<<<<< HEAD
 // views/login.php - TIDAK DIUBAH TAMPILAN, hanya backend
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
-=======
-// views/login.php - SIMPLE VERSION
->>>>>>> 436296297ae3bc4292313dd1b0b95eac90ba58de
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
