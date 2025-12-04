@@ -1,9 +1,27 @@
 <?php
+<<<<<<< HEAD
+// views/template/header.php - TETAP SAMA PERSIS
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (!isset($pageTitle)) {
+    $pageTitle = 'Sistem Penitipan Hewan';
+}
+
+$host = $_SERVER['HTTP_HOST'];
+
+if (strpos($host, 'localhost') !== false) {
+    $base_url = 'http://' . $host;
+} else {
+    $base_url = 'https://' . $host;
+=======
 // Di bagian atas template/header.php TAMBAHKAN:
 if (!isset($base_url)) {
     $host = $_SERVER['HTTP_HOST'];
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
     $base_url = $protocol . '://' . $host;
+>>>>>>> 436296297ae3bc4292313dd1b0b95eac90ba58de
 }
 ?>
 
@@ -14,17 +32,27 @@ if (!isset($base_url)) {
     <title><?= htmlspecialchars($pageTitle ?? 'Sistem Penitipan Hewan') ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<<<<<<< HEAD
+     <!-- AdminLTE v4 CSS -->
+    <link rel="stylesheet" href="<?= $base_url ?>/css/adminlte.css">
+    <link rel="stylesheet" href="<?= $base_url ?>/css/custom.css">
+    
+=======
     <!-- ✅ FIX CSS PATH -->
     <!-- <link rel="stylesheet" href="<?= $base_url ?>/css/adminlte.css">
     <link rel="stylesheet" href="<?= $base_url ?>/css/custom.css"> -->
     <link rel="stylesheet" href="/css/adminlte.css">
     <link rel="stylesheet" href="/css/custom.css">
 
+>>>>>>> 436296297ae3bc4292313dd1b0b95eac90ba58de
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 
+<<<<<<< HEAD
+=======
 <!-- old -->
+>>>>>>> 436296297ae3bc4292313dd1b0b95eac90ba58de
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
     <div class="app-wrapper">
 
@@ -41,13 +69,11 @@ if (!isset($base_url)) {
                 <div class="flex-grow-1"></div>
 
                 <!-- Badge user di pojok kanan -->
-                <!-- Badge user di pojok kanan -->
                 <div class="d-flex align-items-center">
                     <div class="px-3 py-1 rounded-pill bg-primary text-white d-flex align-items-center">
                         <i class="bi bi-person-fill me-2"></i>
                         <span class="small">
                             <?= htmlspecialchars($_SESSION['username'] ?? 'admin'); ?>
-                            <!-- Ganti $_SESSION['user']['username'] menjadi $_SESSION['username'] -->
                         </span>
                     </div>
                 </div>
@@ -61,73 +87,3 @@ if (!isset($base_url)) {
         <!-- MAIN CONTENT WRAPPER -->
         <main class="app-main">
             <div class="app-content p-3">
-                <script>
-                    document.addEventListener('DOMContentLoaded', function () {
-                        const paketSelect = document.getElementById('paketSelect'); // select Layanan Utama
-                        const dropdownBtn = document.getElementById('dropdownLayananTambahan'); // tombol dropdown
-                        const labelSpan = document.getElementById('ltLabel'); // teks di tombol
-                        const checkboxes = document.querySelectorAll('.lt-checkbox'); // semua checkbox
-                        const hiddenContainer = document.getElementById('ltHiddenContainer'); // div untuk hidden input
-
-                        // Kalau elemen tidak ada (misal di tab lain), jangan apa-apa
-                        if (!dropdownBtn || !hiddenContainer) return;
-
-                        // Fungsi sinkron pilihan checkbox -> hidden input + label
-                        function syncLayananTambahan() {
-                            hiddenContainer.innerHTML = ''; // reset
-
-                            const selectedLabels = [];
-
-                            checkboxes.forEach(cb => {
-                                if (cb.checked) {
-                                    // buat input hidden name="layanan_tambahan[]" untuk form
-                                    const input = document.createElement('input');
-                                    input.type = 'hidden';
-                                    input.name = 'layanan_tambahan[]';
-                                    input.value = cb.value;
-                                    hiddenContainer.appendChild(input);
-
-                                    // ambil teks label untuk ditampilkan
-                                    const text = cb.nextElementSibling?.textContent.trim() || cb.value;
-                                    selectedLabels.push(text);
-                                }
-                            });
-
-                            if (selectedLabels.length === 0) {
-                                labelSpan.textContent = 'Pilih layanan tambahan (opsional)';
-                            } else if (selectedLabels.length === 1) {
-                                labelSpan.textContent = selectedLabels[0];
-                            } else {
-                                labelSpan.textContent = selectedLabels.length + ' layanan dipilih';
-                            }
-                        }
-
-                        // Saat checkbox berubah -> sync
-                        checkboxes.forEach(cb => {
-                            cb.addEventListener('change', syncLayananTambahan);
-                        });
-
-                        // ===== Hubungkan dengan Layanan Utama =====
-                        if (paketSelect) {
-                            // awal: kalau belum pilih layanan utama, "disable" dropdown
-                            function updateDropdownState() {
-                                const disabled = !paketSelect.value;
-
-                                dropdownBtn.classList.toggle('disabled', disabled);
-                                dropdownBtn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-
-                                if (disabled) {
-                                    // reset semua pilihan layanan tambahan
-                                    checkboxes.forEach(cb => cb.checked = false);
-                                    syncLayananTambahan();
-                                }
-                            }
-
-                            paketSelect.addEventListener('change', updateDropdownState);
-                            updateDropdownState(); // panggil sekali di awal
-                        }
-
-                        // Jalankan sync pertama kali
-                        syncLayananTambahan();
-                    });
-                </script>

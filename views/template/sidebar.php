@@ -1,15 +1,21 @@
 <?php
-// pastikan variabel halaman ada
-$currentPage = $page ?? ($activeMenu ?? 'dashboard');
-// di include dari header (dapat akses $base_url)
+// views/template/sidebar.php - TETAP SAMA PERSIS
 ?>
+<<<<<<< HEAD
+<aside class="app-sidebar bg-body shadow-sm">
+    <div class="sidebar-brand">
+        <a href="index.php?page=dashboard" class="brand-link text-decoration-none text-dark">
+            <i class="bi bi-heart-pulse brand-icon"></i>
+            <span class="brand-text fw-bold">PetCare System</span>
+        </a>
+=======
 
 <aside class="app-sidebar modern-sidebar bg-primary-blue">
 
   <!-- Brand -->
   <div class="sidebar-brand d-flex align-items-center">
     <div class="brand-logo-circle me-2">
-      <img src="<?= $base_url ?>/img/logo.png" class="brand-logo-img" alt="Logo">
+      <img src="<?= $base_url ?>/img/LOGO.png" class="brand-logo-img" alt="Logo">
     </div>
     <div class="d-flex flex-column">
       <span class="brand-name text-white fw-bold">SIP Hewan</span>
