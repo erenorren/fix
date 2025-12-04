@@ -26,89 +26,66 @@ class Hewan
      * 
      * @return array Array berisi semua data hewan beserta nama pemilik
      */
-    public function getAll()
-    {
-        try {
-            $sql = "SELECT 
-                        h.id_hewan as id,
-                        h.nama_hewan as nama, 
-                        h.jenis,
-                        h.ras,
-                        h.ukuran,
-                        h.warna,
-                        h.catatan,
-                        h.status,
-                        p.nama_pelanggan as pemilik
-                    FROM hewan h
-                    LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan
-                    ORDER BY h.id_hewan DESC";
-            
-            $stmt = $this->db->query($sql);
-            return $stmt->fetchAll();
-            
-        } catch (Exception $e) {
-            error_log("Error get all hewan: " . $e->getMessage());
-            return [];
-        }
-    }
-
     /**
-     * Ambil statistik hewan
-     * 
-     * Menghitung total hewan, total kucing, dan total anjing
-     * 
-     * @return array Array dengan keys: total_hewan, total_kucing, total_anjing
-     */
-    public function getSummary()
-    {
-        $sql = "SELECT COUNT(*) as total_hewan, 
-                       SUM(CASE WHEN jenis = 'Kucing' THEN 1 ELSE 0 END) as total_kucing, 
-                       SUM(CASE WHEN jenis = 'Anjing' THEN 1 ELSE 0 END) as total_anjing 
-                FROM hewan";
+ * Ambil semua data hewan
+ * 
+ * @return array Array berisi semua data hewan beserta nama pemilik
+ */
+public function getAll()
+{
+    try {
+        $sql = "SELECT 
+                    h.id_hewan,
+                    h.nama_hewan,
+                    h.jenis,
+                    h.ras,
+                    h.ukuran,
+                    h.warna,
+                    h.catatan,
+                    h.status,
+                    p.id_pelanggan,
+                    p.nama_pelanggan,
+                    p.no_hp
+                FROM hewan h
+                LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan
+                ORDER BY h.nama_hewan";
+        
         $stmt = $this->db->query($sql);
-        return $stmt->fetch();
+        return $stmt->fetchAll();
+        
+    } catch (Exception $e) {
+        error_log("Error getAll hewan: " . $e->getMessage());
+        return [];
     }
+}
 
-    /**
-     * Tambah hewan baru
-     * 
-     * @param array $data Data hewan baru
-     * @return int|false ID hewan baru jika berhasil, false jika gagal
-     */
-    public function create($data) {
-        try {
-            $sql = "INSERT INTO hewan (id_pelanggan, nama_hewan, jenis, ras, ukuran, warna, catatan, status) 
-                    VALUES (:id_pelanggan, :nama_hewan, :jenis, :ras, :ukuran, :warna, :catatan, :status)
-                    RETURNING id_hewan";
-
-            // Validasi ukuran
-            $ukuran = $data['ukuran'] ?? '';
-            $allowedUkuran = ['Kecil', 'Sedang', 'Besar'];
-            if (!in_array($ukuran, $allowedUkuran) && !empty($ukuran)) {
-                error_log("Warning: Ukuran tidak valid: " . $ukuran);
-                $ukuran = '';
-            }
-
-            $params = [
-                "id_pelanggan" => $data['id_pelanggan'],
-                "nama_hewan" => $data['nama_hewan'],
-                "jenis" => $data['jenis'],
-                "ras" => $data['ras'] ?? '',
-                "ukuran" => $ukuran,
-                "warna" => $data['warna'] ?? '',
-                "catatan" => $data['catatan'] ?? '',
-                "status" => $data['status'] ?? 'tersedia'
-            ];
-
-            $stmt = $this->db->execute($sql, $params);
-            $result = $stmt->fetch();
-            return $result['id_hewan'] ?? false;
-
-        } catch (Exception $e) {
-            error_log("Error create hewan: " . $e->getMessage());
-            return false;
-        }
+public function create($data) {
+    try {
+        $sql = "INSERT INTO hewan (id_pelanggan, nama_hewan, jenis, ras, ukuran, warna, catatan, status) 
+                VALUES (:id_pelanggan, :nama_hewan, :jenis, :ras, :ukuran, :warna, :catatan, :status) 
+                RETURNING id_hewan";
+        
+        $params = [
+            ":id_pelanggan" => $data["id_pelanggan"],
+            ":nama_hewan" => $data["nama_hewan"],
+            ":jenis" => $data["jenis"],
+            ":ras" => $data["ras"] ?? null,
+            ":ukuran" => $data["ukuran"] ?? null,
+            ":warna" => $data["warna"] ?? null,
+            ":catatan" => $data["catatan"] ?? null,
+            ":status" => $data["status"] ?? 'tersedia'
+        ];
+        
+        $stmt = $this->db->query($sql, $params);
+        $result = $stmt->fetch();
+        
+        return $result['id_hewan'] ?? false;
+        
+    } catch (Exception $e) {
+        error_log("Error create hewan: " . $e->getMessage());
+        return false;
     }
+}
 
     /**
      * Update data hewan

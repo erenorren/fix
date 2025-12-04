@@ -3,11 +3,10 @@
 
     <!-- FOOTER -->
     <footer class="app-footer border-top small text-muted py-2 px-3">
-        <div class="d-flex justify-content-between">
-            <span>&copy; <?= date('Y') ?> Sistem Penitipan Hewan</span>
-            <span>Ketchua Gachor</span>
-        </div>
-    </footer>
+    <div class="d-flex justify-content-end">
+        <span>&copy; <?= date('Y') ?> Sistem Penitipan Hewan</span>
+    </div>
+</footer>
 
 </div> <!-- /.app-wrapper -->
 
@@ -17,7 +16,9 @@
         crossorigin="anonymous"></script>
 
 <!-- AdminLTE v4 JS -->
-<script src="<?= $base_url ?>/public/js/adminlte.js"></script>
+<!-- <script src="<?= $base_url ?>/public/js/adminlte.js"></script> -->
+<script src="/js/adminlte.js"></script>
+<script src="/js/dashboard.js"></script>
 
 <!-- Sidebar dropdown "Data" (Hewan / Pelanggan / Layanan) -->
 <script>

@@ -1,4 +1,5 @@
 <?php
+<<<<<<< HEAD
 // public/index.php - VERSION FINAL
 
 // ==================================================
@@ -131,11 +132,67 @@ if ($action) {
             http_response_code(404);
             echo json_encode(['error' => 'Action not found']);
             exit;
+=======
+// public/index.php
+
+// ==================================================
+// 1. START SESSION - HARUS PERTAMA
+// ==================================================
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// ==================================================
+// 2. INCLUDE MODELS (UNTUK LOGIN REAL)
+// ==================================================
+require_once __DIR__ . '/../models/User.php';
+
+// ==================================================
+// 3. HANDLE LOGIN ACTION FIRST (BEFORE ANY OUTPUT)
+// ==================================================
+if (isset($_GET['action']) && $_GET['action'] === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    // SET HEADERS untuk JSON response
+    header('Content-Type: application/json');
+    
+    // LOGIN REAL DENGAN DATABASE
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
+    
+    if (empty($username) || empty($password)) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Username dan password harus diisi'
+        ]);
+        exit;
+    }
+    
+    // Gunakan model User untuk validasi
+    $userModel = new User();
+    $user = $userModel->login($username, $password);
+    
+    if ($user) {
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['nama_lengkap'] = $user['nama_lengkap'] ?? 'Admin';
+        $_SESSION['role'] = $user['role'] ?? 'admin';
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Login berhasil',
+            'redirect' => 'index.php?page=dashboard'
+        ]);
+    } else {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Username atau password salah'
+        ]);
+>>>>>>> 436296297ae3bc4292313dd1b0b95eac90ba58de
     }
     exit;
 }
 
 // ==================================================
+<<<<<<< HEAD
 // 6. PAGE ROUTES - TETAP SAMA
 // ==================================================
 $page = $_GET['page'] ?? 'dashboard';
@@ -148,19 +205,64 @@ switch ($page) {
         require_once __DIR__ . '/../views/login.php';
         break;
 
+=======
+// 4. SIMPLE AUTH CHECK
+// ==================================================
+$page = $_GET['page'] ?? 'login';
+$action = $_GET['action'] ?? '';
+
+// Public pages (no auth required)
+$publicPages = ['login'];
+if ($page === 'login') {
+    // Jika sudah login, redirect ke dashboard
+    if (isset($_SESSION['user_id'])) {
+        header('Location: index.php?page=dashboard');
+        exit;
+    }
+    
+    // Tampilkan halaman login
+    require_once __DIR__ . '/../views/login.php';
+    exit;
+}
+
+// Private pages (require auth)
+// if (!isset($_SESSION['user_id'])) {
+//     header('Location: index.php?page=login&redirect=' . urlencode($page));
+//     exit;
+// }
+
+// ==================================================
+// 5. HANDLE ACTIONS FIRST (BEFORE PAGE ROUTING)
+// ==================================================
+if ($action === 'createTransaksi' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_once __DIR__ . '/../controllers/TransaksiController.php';
+    $controller = new TransaksiController();
+    $controller->createTransaksi();
+    exit;
+}
+
+if ($action === 'checkoutTransaksi') {
+    require_once __DIR__ . '/../controllers/TransaksiController.php';
+    $controller = new TransaksiController();
+    $controller->checkout();
+    exit;
+}
+
+
+// ==================================================
+// 6. ROUTE PAGES YANG SUDAH LOGIN
+// ==================================================
+switch ($page) {
+>>>>>>> 436296297ae3bc4292313dd1b0b95eac90ba58de
     case 'dashboard':
         require_once __DIR__ . '/../views/dashboard.php';
         break;
         
     case 'transaksi':
         require_once __DIR__ . '/../controllers/TransaksiController.php';
-        (new TransaksiController())->index();
+        $controller = new TransaksiController();
+        $controller->index();
         break;
-        
-    case 'logout':
-        session_destroy();
-        header('Location: index.php?page=login');
-        exit;
         
     case 'hewan':
         require_once __DIR__ . '/../views/hewan.php';
@@ -175,11 +277,13 @@ switch ($page) {
         break;
         
     case 'pemilik':
+    case 'pelanggan':
         require_once __DIR__ . '/../views/pelanggan.php';
         break;
         
-    case 'laporan':
-        require_once __DIR__ . '/../views/laporan.php';
+    case 'logout':
+        session_destroy();
+        header('Location: index.php?page=login');
         break;
         
     default:
