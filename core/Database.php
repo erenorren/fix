@@ -1,52 +1,89 @@
 <?php
-
-require_once __DIR__ . '/../helper/helper.php';
-
 class Database {
-    private $conn;
-
+    private $connection;
+    
     public function __construct() {
+        require_once __DIR__ . '/../config/database.php';
         $config = getDatabaseConfig();
-
-        $driver = $config['driver'];
-        $host   = $config['host'];
-        $port   = $config['port'];
-        $dbname = $config['dbname'];
-        $user   = $config['username'];
-        $pass   = $config['password'];
-
-        if ($driver === 'pgsql') {
-            $dsn = "pgsql:host=$host;port=$port;dbname=$dbname;sslmode=require";
-        } else {
-            $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
+        
+        try {
+            // Build DSN berdasarkan driver
+            $dsn = $this->buildDSN($config);
+            
+            $options = [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ];
+            
+            $this->connection = new PDO(
+                $dsn, 
+                $config['username'], 
+                $config['password'], 
+                $options
+            );
+            
+        } catch (PDOException $e) {
+            die("Database connection failed: " . $e->getMessage());
         }
-
-        $this->conn = new PDO($dsn, $user, $pass, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-        ]);
     }
-
+    
+    private function buildDSN($config) {
+        $driver = $config['driver'];
+        
+        if ($driver === 'mysql') {
+            return "mysql:host={$config['host']};port={$config['port']};dbname={$config['dbname']};charset=utf8mb4";
+        }
+        
+        if ($driver === 'pgsql') {
+            $dsn = "pgsql:host={$config['host']};port={$config['port']};dbname={$config['dbname']}";
+            if (isset($config['sslmode'])) {
+                $dsn .= ";sslmode={$config['sslmode']}";
+            }
+            return $dsn;
+        }
+        
+        throw new Exception("Unsupported database driver: {$driver}");
+    }
+    
     public function query($sql, $params = []) {
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute($params);
-        return $stmt;
+        try {
+            $stmt = $this->connection->prepare($sql);
+            $stmt->execute($params);
+            return $stmt;
+        } catch (PDOException $e) {
+            error_log("Query error: " . $e->getMessage() . " - SQL: " . $sql);
+            throw $e;
+        }
     }
-
+    
+    /**
+     * WRAPPER untuk CUD (CREATE, UPDATE, DELETE)
+     */
     public function execute($sql, $params = []) {
-        $stmt = $this->conn->prepare($sql);
-        return $stmt->execute($params);
+        try {
+            $stmt = $this->connection->prepare($sql);
+            return $stmt->execute($params);
+        } catch (PDOException $e) {
+            die("Execute failed: " . $e->getMessage() . " - SQL: " . $sql);
+        }
     }
-
+    
+    public function lastInsertId() {
+        return $this->connection->lastInsertId();
+    }
+    
     public function beginTransaction() {
-        return $this->conn->beginTransaction();
+        return $this->connection->beginTransaction();
     }
-
+    
     public function commit() {
-        return $this->conn->commit();
+        return $this->connection->commit();
     }
-
+    
     public function rollBack() {
-        return $this->conn->rollBack();
+        return $this->connection->rollBack();
     }
 }
+
+?>
