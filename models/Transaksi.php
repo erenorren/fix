@@ -1,5 +1,5 @@
 <?php
-require_once _DIR_ . '/../core/Database.php';
+require_once __DIR__ . '/../core/Database.php';
 
 class Transaksi 
 {
