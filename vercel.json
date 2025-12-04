@@ -10,7 +10,7 @@
     { "src": "/css/(.*)", "dest": "/public/css/$1" },
     { "src": "/js/(.*)", "dest": "/public/js/$1" },
     { "src": "/img/(.*)", "dest": "/public/img/$1" },
-    { "src": "/(.*)", "dest": "index.php" }
+    { "src": "/(.*)", "dest": "/public/index.php" }
   ],
   "env": {
     "APP_ENV": "production"
