@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Data Kandang';
+$pageTitle = 'Data Kandang | Sistem Penitipan Hewan';
 $activeMenu = 'kandang';
 include __DIR__ . '/template/header.php';
 

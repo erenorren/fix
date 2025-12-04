@@ -1,5 +1,5 @@
 <?php
-$pageTitle  = 'Data Pelanggan';
+$pageTitle  = 'Data Pelanggan | Sistem Penitipan Hewan';
 $activeMenu = 'pemilik';
 
 // Load template header
