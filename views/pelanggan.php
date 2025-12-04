@@ -20,8 +20,8 @@ $pelangganList = $pelangganModel->getAll();
     <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
 
         <div>
-            <h5 class="card-title mb-1">Daftar Pelanggan</h5>
-            <small class="text-muted"><br>
+            <h5 class="card-title mb-1">Daftar Pelanggan</h5><br><br>
+            <small class="text-muted">
                 Data pemilik hewan yang pernah melakukan penitipan.
             </small>
         </div>
