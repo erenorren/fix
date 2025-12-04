@@ -44,7 +44,7 @@ if (session_status() == PHP_SESSION_NONE) {
             <form id="loginForm">
                 <div class="input-group mb-3">
                     <input type="text" name="username" class="form-control form-control-lg bg-light" 
-                           placeholder="Username" required autofocus>
+                        placeholder="Username" required autofocus>
                     <div class="input-group-text bg-light border-start-0 text-muted">
                         <span class="bi bi-person-fill"></span>
                     </div>
@@ -52,7 +52,7 @@ if (session_status() == PHP_SESSION_NONE) {
 
                 <div class="input-group mb-3">
                     <input type="password" name="password" class="form-control form-control-lg bg-light" 
-                           placeholder="Password" required>
+                        placeholder="Password" required>
                     <div class="input-group-text bg-light border-start-0 text-muted">
                         <span class="bi bi-lock-fill"></span>
                     </div>
@@ -94,8 +94,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const userInput = document.querySelector('input[name="username"]');
         const passInput = document.querySelector('input[name="password"]');
         if(userInput && passInput) {
-             userInput.value = 'admin';
-             passInput.value = 'password123';
+            userInput.value = 'admin';
+            passInput.value = 'password123';
         }
         
         loginForm.addEventListener('submit', async function(e) {
