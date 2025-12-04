@@ -74,7 +74,7 @@ if ($mode === 'edit' && isset($_GET['id'])) {
 $layananList = $layananModel->getAll();
 
 // BARU INCLUDE HEADER DI SINI
-include _DIR_ . '/template/header.php';
+include __DIR__ . '/template/header.php';
 ?>
 
 <h2 class="mb-3">Data Layanan</h2>
@@ -222,4 +222,4 @@ include _DIR_ . '/template/header.php';
     </div>
 </div>
 
-<?php include _DIR_ . '/template/footer.php'; ?>
+<?php include __DIR__ . '/template/footer.php'; ?>
