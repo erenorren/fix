@@ -1,11 +1,4 @@
 <?php
-echo "INDEX DIR: " . __DIR__ . "<br>";
-echo "PROJECT ROOT: " . dirname(__DIR__) . "<br>";
-echo "HELPER PATH EXISTS? " . (file_exists(dirname(__DIR__) . '/helper/helper.php') ? 'YES' : 'NO');
-
-exit;
-
-
 // ==================================================
 // 1. START SESSION
 // ==================================================
