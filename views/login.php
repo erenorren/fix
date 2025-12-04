@@ -88,19 +88,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const alertContainer = document.getElementById('alert-container');
     
     if (loginForm) {
-        console.log('Login form ready');
-        
-        // Auto-fill for testing (bisa dihapus di production)
+        // Auto-fill for testing (bisa dihapus nanti)
         const userInput = document.querySelector('input[name="username"]');
         const passInput = document.querySelector('input[name="password"]');
-        if(userInput && passInput) {
+        if(userInput && passInput && !userInput.value) {
              userInput.value = 'admin';
              passInput.value = 'password123';
         }
         
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            console.log('Login form submitted');
             
             // Clear previous alerts
             if (alertContainer) alertContainer.innerHTML = '';
@@ -122,44 +119,31 @@ document.addEventListener('DOMContentLoaded', function() {
             btnSpinner.classList.remove('d-none');
             
             try {
-                console.log('Sending login request for:', username);
-                
                 // Use FormData untuk compatibility
                 const response = await fetch('index.php?action=login', {
                     method: 'POST',
                     body: formData,
-                    credentials: 'include' // SANGAT PENTING untuk session di Vercel
+                    credentials: 'include' // PENTING: agar session tersimpan di Vercel
                 });
                 
-                console.log('Response status:', response.status);
-                
-                // Cek content type
                 const contentType = response.headers.get('content-type');
                 
                 let data;
                 if (contentType && contentType.includes('application/json')) {
                     data = await response.json();
                 } else {
+                    // Jika error bukan JSON (misal error PHP text)
                     const text = await response.text();
                     console.error('Non-JSON response:', text);
-                    throw new Error('Server returned non-JSON response');
+                    throw new Error('Terjadi kesalahan server (Non-JSON response)');
                 }
                 
-                console.log('Response data:', data);
-                
                 if (data.success) {
-                    console.log('Login successful, redirecting to:', data.redirect);
-                    
-                    // Show success message
                     showAlert('Login berhasil! Mengalihkan...', 'success');
-                    
-                    // Wait a moment then redirect
                     setTimeout(() => {
                         window.location.href = data.redirect || 'index.php?page=dashboard';
                     }, 1000);
-                    
                 } else {
-                    console.log('Login failed:', data.message);
                     showAlert(data.message || 'Username atau password salah', 'danger');
                     loginBtn.disabled = false;
                     btnText.textContent = 'Sign In';
@@ -168,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             } catch (error) {
                 console.error('Login error:', error);
-                showAlert('Terjadi kesalahan koneksi. Coba refresh halaman.', 'danger');
+                showAlert('Terjadi kesalahan koneksi atau server.', 'danger');
                 loginBtn.disabled = false;
                 btnText.textContent = 'Sign In';
                 btnSpinner.classList.add('d-none');
@@ -177,26 +161,18 @@ document.addEventListener('DOMContentLoaded', function() {
         
         function showAlert(message, type = 'danger') {
             if (!alertContainer) return;
-            
             const alertId = 'alert-' + Date.now();
             const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill';
-            
             const alertHTML = `
                 <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show shadow-sm" role="alert">
-                    <i class="bi ${icon} me-2"></i>
-                    ${message}
+                    <i class="bi ${icon} me-2"></i> ${message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             `;
-            
             alertContainer.innerHTML = alertHTML;
-            
-            // Auto remove after 5 seconds
             setTimeout(() => {
                 const alertEl = document.getElementById(alertId);
-                if (alertEl) {
-                    alertEl.remove();
-                }
+                if (alertEl) alertEl.remove();
             }, 5000);
         }
     }
