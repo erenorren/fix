@@ -1,9 +1,17 @@
 <?php
+<<<<<<< HEAD
 // views/login.php
 // Cek session agar aman, meski di index.php sudah ada
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
+=======
+// views/login.php - TIDAK DIUBAH TAMPILAN, hanya backend
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+>>>>>>> b2994e4a04fb493954eef6fad3720ac684ce40fb
 ?>
 <!DOCTYPE html>
 <html lang="id">
