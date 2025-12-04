@@ -60,6 +60,7 @@ class AuthController {
             session_regenerate_id(true);
 
             // Set session lengkap
+            /** @var array $user */
             $_SESSION['user_id']      = $user['id'];
             $_SESSION['username']     = $user['username'];
             $_SESSION['nama_lengkap'] = $user['nama_lengkap'] ?? '';

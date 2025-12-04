@@ -137,13 +137,13 @@ public function create($data) {
     public function search($keyword)
     {
         $sql = "SELECT h.id_hewan as id, h.nama_hewan as nama, h.jenis, h.ras, 
-                       p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.catatan 
+                    p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.catatan 
                 FROM hewan h 
                 LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan 
                 WHERE h.nama_hewan ILIKE :key 
-                   OR h.jenis ILIKE :key 
-                   OR h.ras ILIKE :key 
-                   OR p.nama_pelanggan ILIKE :key 
+                OR h.jenis ILIKE :key 
+                OR h.ras ILIKE :key 
+                OR p.nama_pelanggan ILIKE :key 
                 ORDER BY h.created_at DESC";
         $stmt = $this->db->query($sql, ["key" => "%{$keyword}%"]);
         return $stmt->fetchAll();
@@ -158,7 +158,7 @@ public function create($data) {
     public function getByJenis($jenis)
     {
         $sql = "SELECT h.id_hewan as id, h.nama_hewan as nama, h.jenis, h.ras, 
-                       p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan 
+                    p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan 
                 FROM hewan h 
                 LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan 
                 WHERE h.jenis = :jenis 
@@ -176,7 +176,7 @@ public function create($data) {
     public function getByPemilik($id_pelanggan)
     {
         $sql = "SELECT h.id_hewan as id, h.nama_hewan as nama, h.jenis, h.ras, 
-                       p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan 
+                    p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan 
                 FROM hewan h 
                 LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan 
                 WHERE h.id_pelanggan = :id_pelanggan 
@@ -193,7 +193,7 @@ public function create($data) {
     public function getAvailable()
     {
         $sql = "SELECT h.id_hewan as id, h.nama_hewan as nama, h.jenis, h.ras, 
-                       p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan 
+                    p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan 
                 FROM hewan h 
                 LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan 
                 WHERE h.status = 'tersedia' 
@@ -210,7 +210,7 @@ public function create($data) {
     public function getInCare()
     {
         $sql = "SELECT h.id_hewan as id, h.nama_hewan as nama, h.jenis, h.ras, 
-                       p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan 
+                    p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan 
                 FROM hewan h 
                 LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan 
                 WHERE h.status = 'sedang_dititipkan' 
@@ -242,7 +242,7 @@ public function create($data) {
     public function getWithPagination($limit = 10, $offset = 0)
     {
         $sql = "SELECT h.id_hewan as id, h.nama_hewan as nama, h.jenis, h.ras, 
-                       p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan 
+                    p.nama_pelanggan as pemilik, p.no_hp as no_telp, h.keterangan as catatan 
                 FROM hewan h 
                 LEFT JOIN pelanggan p ON h.id_pelanggan = p.id_pelanggan 
                 ORDER BY h.created_at DESC 
