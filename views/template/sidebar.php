@@ -50,8 +50,8 @@ $activePage = isset($page) ? $page : (isset($activeMenu) ? $activeMenu : 'dashbo
               <i class="bi bi-emoji-smile me-1"></i> Data Hewan
             </a>
 
-            <a href="index.php?page=pemilik"
-               class="nav-link sub-link <?= $activePage === 'pemilik' || $activePage === 'pelanggan' ? 'active' : '' ?>">
+            <a href="index.php?page=pelanggan" 
+               class="nav-link sub-link <?= $activePage === 'pelanggan' || $activePage === 'pelanggan' ? 'active' : '' ?>">
               <i class="bi bi-people me-1"></i> Data Pelanggan
             </a>
 
