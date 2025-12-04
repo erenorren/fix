@@ -1,30 +1,7 @@
 <?php
-echo "<pre>";
-print_r(scandir(__DIR__ . '/../helper'));
-echo "</pre>";
-
-// PAKSA LOAD helper.php
-require_once __DIR__ . '/../helper/helper.php';
-require_once __DIR__ . '/../helper/auth.php';
-
-// Jika masih error, cek apakah file-nya benar-benar bisa ditemukan
-if (!function_exists('getDatabaseConfig')) {
-    die("helper.php TIDAK DITEMUKAN");
-}
-
-$config = getDatabaseConfig();
-
-$dsn = "pgsql:host={$config['host']};port={$config['port']};dbname={$config['dbname']};sslmode={$config['sslmode']}";
-
-try {
-    $pdo = new PDO($dsn, $config['username'], $config['password'], [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
-    echo "KONEKSI BERHASIL ✔";
-} catch (PDOException $e) {
-    echo "KONEKSI GAGAL ❌<br>";
-    echo $e->getMessage();
-}
+echo "INDEX DIR: " . __DIR__ . "<br>";
+echo "PROJECT ROOT: " . dirname(__DIR__) . "<br>";
+echo "HELPER PATH EXISTS? " . (file_exists(dirname(__DIR__) . '/helper/helper.php') ? 'YES' : 'NO');
 
 exit;
 
