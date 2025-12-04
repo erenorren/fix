@@ -75,12 +75,12 @@ class AuthController {
             'samesite' => 'Lax' // Lax biasanya bekerja; jika cross-site req diperlukan, gunakan 'None' + secure
             ];
 
-// PHP < 7.3 fallback
-if (PHP_VERSION_ID >= 70300) {
-    setcookie('user_id', $user['id'], $cookieOptions);
-} else {
-    setcookie('user_id', $user['id'], $cookieOptions['expires'], $cookieOptions['path']);
-}
+        // PHP < 7.3 fallback
+        if (PHP_VERSION_ID >= 70300) {
+            setcookie('user_id', $user['id'], $cookieOptions);
+        } else {
+            setcookie('user_id', $user['id'], $cookieOptions['expires'], $cookieOptions['path']);
+        }
 
             echo json_encode([
                 'success'  => true,
