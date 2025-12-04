@@ -1,21 +1,14 @@
 <?php
-// views/template/sidebar.php - TETAP SAMA PERSIS
+// pastikan variabel halaman ada
+$currentPage = $page ?? ($activeMenu ?? 'dashboard');
 ?>
-<<<<<<< HEAD
-<aside class="app-sidebar bg-body shadow-sm">
-    <div class="sidebar-brand">
-        <a href="index.php?page=dashboard" class="brand-link text-decoration-none text-dark">
-            <i class="bi bi-heart-pulse brand-icon"></i>
-            <span class="brand-text fw-bold">PetCare System</span>
-        </a>
-=======
 
 <aside class="app-sidebar modern-sidebar bg-primary-blue">
 
   <!-- Brand -->
   <div class="sidebar-brand d-flex align-items-center">
-    <div class="brand-logo-circle me-2">
-      <img src="<?= $base_url ?>/img/logo.png" class="brand-logo-img" alt="Logo">
+    <div class="brand-logo me-2">
+      <img src="<?= $base_url ?>/img/kucing.png" class="brand-logo-img" alt="Logo">
     </div>
     <div class="d-flex flex-column">
       <span class="brand-name text-white fw-bold">SIP Hewan</span>
@@ -54,10 +47,12 @@
                class="nav-link sub-link <?= $currentPage === 'hewan' ? 'active' : '' ?>">
               <i class="bi bi-dot me-1"></i> Data Hewan
             </a>
+
             <a href="index.php?page=pemilik"
                class="nav-link sub-link <?= $currentPage === 'pemilik' || $currentPage === 'pelanggan' ? 'active' : '' ?>">
               <i class="bi bi-dot me-1"></i> Data Pelanggan
             </a>
+
             <a href="index.php?page=layanan"
                class="nav-link sub-link <?= $currentPage === 'layanan' ? 'active' : '' ?>">
               <i class="bi bi-dot me-1"></i> Jenis Layanan
@@ -76,7 +71,7 @@
 
         <!-- LOGOUT -->
         <li class="nav-item mt-2">
-          <a href="/index.php?page=logout" class="nav-link modern-link text-warning">
+          <a href="index.php?page=logout" class="nav-link modern-link text-warning">
             <i class="bi bi-box-arrow-right modern-icon"></i>
             <span>Logout</span>
           </a>
