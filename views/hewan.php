@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Data Hewan';
+$pageTitle = 'Data Hewan | Sistem Penitipan Hewan';
 $activeMenu = 'hewan';
 include __DIR__ . '/template/header.php';
 

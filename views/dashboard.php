@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Dashboard';
+$pageTitle = 'Dashboard | Sistem Penitipan Hewan';
 $activeMenu = 'dashboard';
 
 // Load data

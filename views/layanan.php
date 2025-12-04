@@ -1,5 +1,5 @@
 <?php
-$pageTitle  = 'Data Layanan';
+$pageTitle  = 'Data Layanan | Sistem Penitipan Hewan';
 $activeMenu = 'layanan';
 
 // Load model dulu

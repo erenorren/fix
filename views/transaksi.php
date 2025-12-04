@@ -2,7 +2,7 @@
 // views/transaksi.php
 // FILE INI HANYA MENAMPILKAN DATA (VIEW)
 
-$pageTitle = 'Transaksi Penitipan Hewan';
+$pageTitle = 'Transaksi Penitipan Hewan | Sistem Penitipan Hewan';
 $activeMenu = 'transaksi';
 
 // Nilai default dari Controller (Wajib)
