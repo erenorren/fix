@@ -1,6 +1,6 @@
 <?php
 echo "<pre>";
-print_r(scandir(__DIR__ . '/..'));
+print_r(scandir(__DIR__ . '/../helper'));
 echo "</pre>";
 
 // PAKSA LOAD helper.php
