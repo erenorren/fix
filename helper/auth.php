@@ -3,10 +3,10 @@
 
 function start_session_safe() {
     if (session_status() === PHP_SESSION_NONE) {
-        // jika environment serverless, set save path ke /tmp (saat perlu)
-        if (is_dir('/tmp') && ini_get('session.save_path') === '') {
-            session_save_path('/tmp');
-        }
+        // Komentari baris path /tmp ini untuk pengujian
+        // if (is_dir('/tmp') && ini_get('session.save_path') === '') {
+        //    session_save_path('/tmp');
+        // }
         session_start();
     }
 }
