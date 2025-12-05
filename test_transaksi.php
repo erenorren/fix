@@ -1,7 +1,7 @@
 <?php
 /**
- * TEST DUAL DATABASE SETUP
- * Local: MySQL | Production: PostgreSQL
+ * DEBUG MySQL Local Connection
+ * Upload ke root project
  */
 
 error_reporting(E_ALL);
@@ -10,15 +10,43 @@ header('Content-Type: application/json');
 
 $results = [
     'timestamp' => date('Y-m-d H:i:s'),
+    'php_version' => PHP_VERSION,
     'tests' => []
 ];
 
-// TEST 1: Load Config
+// TEST 1: Check PDO Extensions
+$results['tests']['extensions'] = [
+    'pdo' => extension_loaded('pdo'),
+    'pdo_mysql' => extension_loaded('pdo_mysql'),
+    'pdo_pgsql' => extension_loaded('pdo_pgsql'),
+];
+
+if (!$results['tests']['extensions']['pdo']) {
+    $results['tests']['extensions']['error'] = 'PDO extension not loaded!';
+    echo json_encode($results, JSON_PRETTY_PRINT);
+    exit;
+}
+
+if (!$results['tests']['extensions']['pdo_mysql']) {
+    $results['tests']['extensions']['error'] = 'PDO_MYSQL extension not loaded! Enable it in php.ini';
+    $results['tests']['extensions']['solution'] = 'Edit php.ini: extension=pdo_mysql';
+    echo json_encode($results, JSON_PRETTY_PRINT);
+    exit;
+}
+
+$results['tests']['extensions']['status'] = 'success';
+
+// TEST 2: Load Config
 try {
     require_once __DIR__ . '/config/database.php';
+    
+    // Force local environment
+    putenv('VERCEL=');
+    unset($_ENV['VERCEL']);
+    unset($_SERVER['VERCEL']);
+    
     $config = getDatabaseConfig();
     
-    $results['environment'] = getEnvironment();
     $results['tests']['config'] = [
         'status' => 'success',
         'driver' => $config['driver'],
@@ -26,190 +54,200 @@ try {
         'port' => $config['port'],
         'dbname' => $config['dbname'],
         'username' => $config['username'],
+        'password_length' => strlen($config['password'] ?? ''),
+        'password_set' => !empty($config['password']),
     ];
     
-    // Show different message based on driver
-    if ($config['driver'] === 'mysql') {
-        $results['tests']['config']['note'] = '✅ Using MySQL (Local Development)';
-    } else {
-        $results['tests']['config']['note'] = '✅ Using PostgreSQL (Production/Vercel)';
-        $results['tests']['config']['sslmode'] = $config['sslmode'] ?? 'not set';
+    if ($config['driver'] !== 'mysql') {
+        $results['tests']['config']['error'] = 'Expected MySQL driver for local, got: ' . $config['driver'];
+        echo json_encode($results, JSON_PRETTY_PRINT);
+        exit;
     }
     
 } catch (Exception $e) {
     $results['tests']['config'] = [
         'status' => 'error',
-        'message' => $e->getMessage()
+        'message' => $e->getMessage(),
+        'trace' => explode("\n", $e->getTraceAsString()),
     ];
     echo json_encode($results, JSON_PRETTY_PRINT);
     exit;
 }
 
-// TEST 2: Database Connection
+// TEST 3: Check if MySQL/MariaDB is Running
+try {
+    $results['tests']['mysql_service'] = [
+        'status' => 'checking',
+    ];
+    
+    // Try to connect to MySQL port
+    $socket = @fsockopen($config['host'], $config['port'], $errno, $errstr, 5);
+    
+    if ($socket) {
+        fclose($socket);
+        $results['tests']['mysql_service']['status'] = 'success';
+        $results['tests']['mysql_service']['message'] = 'MySQL port is open';
+    } else {
+        $results['tests']['mysql_service']['status'] = 'error';
+        $results['tests']['mysql_service']['error_code'] = $errno;
+        $results['tests']['mysql_service']['error_message'] = $errstr;
+        $results['tests']['mysql_service']['solution'] = 'Start MySQL/MariaDB service in Laragon';
+        echo json_encode($results, JSON_PRETTY_PRINT);
+        exit;
+    }
+    
+} catch (Exception $e) {
+    $results['tests']['mysql_service'] = [
+        'status' => 'error',
+        'message' => $e->getMessage(),
+    ];
+}
+
+// TEST 4: Raw PDO Connection Test
+try {
+    $dsn = sprintf(
+        "mysql:host=%s;port=%d;charset=utf8mb4",
+        $config['host'],
+        $config['port']
+    );
+    
+    $results['tests']['raw_connection'] = [
+        'status' => 'attempting',
+        'dsn' => $dsn,
+        'username' => $config['username'],
+    ];
+    
+    // Try without database first
+    $pdo = new PDO(
+        $dsn,
+        $config['username'],
+        $config['password'],
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]
+    );
+    
+    $results['tests']['raw_connection']['status'] = 'success';
+    $results['tests']['raw_connection']['message'] = 'Connected to MySQL server';
+    
+    // Get MySQL version
+    $stmt = $pdo->query("SELECT VERSION() as version");
+    $version = $stmt->fetch();
+    $results['tests']['raw_connection']['mysql_version'] = $version['version'];
+    
+} catch (PDOException $e) {
+    $results['tests']['raw_connection']['status'] = 'error';
+    $results['tests']['raw_connection']['error_code'] = $e->getCode();
+    $results['tests']['raw_connection']['error_message'] = $e->getMessage();
+    
+    // Specific error hints
+    if ($e->getCode() == 1045) {
+        $results['tests']['raw_connection']['hint'] = 'Wrong username or password';
+        $results['tests']['raw_connection']['solution'] = [
+            '1. Check password in config/database.php',
+            '2. Try empty password for root',
+            '3. Reset MySQL root password in Laragon'
+        ];
+    } elseif ($e->getCode() == 2002) {
+        $results['tests']['raw_connection']['hint'] = 'MySQL service not running';
+        $results['tests']['raw_connection']['solution'] = 'Start MySQL in Laragon: Menu → MySQL → Start';
+    }
+    
+    echo json_encode($results, JSON_PRETTY_PRINT);
+    exit;
+}
+
+// TEST 5: Check if Database Exists
+try {
+    $stmt = $pdo->query("SHOW DATABASES LIKE '{$config['dbname']}'");
+    $dbExists = $stmt->fetch();
+    
+    if ($dbExists) {
+        $results['tests']['database'] = [
+            'status' => 'success',
+            'message' => "Database '{$config['dbname']}' exists",
+        ];
+        
+        // Connect to specific database
+        $pdo->exec("USE {$config['dbname']}");
+        
+        // Get tables
+        $stmt = $pdo->query("SHOW TABLES");
+        $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        $results['tests']['database']['tables'] = $tables;
+        $results['tests']['database']['table_count'] = count($tables);
+        
+    } else {
+        $results['tests']['database'] = [
+            'status' => 'error',
+            'message' => "Database '{$config['dbname']}' NOT FOUND!",
+            'solution' => "Create database in Laragon → HeidiSQL or MySQL console"
+        ];
+        
+        // Show available databases
+        $stmt = $pdo->query("SHOW DATABASES");
+        $databases = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $results['tests']['database']['available_databases'] = $databases;
+        
+        echo json_encode($results, JSON_PRETTY_PRINT);
+        exit;
+    }
+    
+} catch (PDOException $e) {
+    $results['tests']['database'] = [
+        'status' => 'error',
+        'message' => $e->getMessage(),
+    ];
+}
+
+// TEST 6: Test Database Class
 try {
     require_once __DIR__ . '/core/Database.php';
     $db = new Database();
     
-    // Get database info
-    if ($db->isMySQL()) {
-        $stmt = $db->query("SELECT VERSION() as version, DATABASE() as dbname");
-    } else {
-        $stmt = $db->query("SELECT version(), current_database() as dbname");
-    }
-    
-    $info = $stmt->fetch();
-    
-    $results['tests']['connection'] = [
+    $results['tests']['database_class'] = [
         'status' => 'success',
+        'message' => 'Database class initialized',
         'driver' => $db->getDriver(),
-        'is_mysql' => $db->isMySQL(),
-        'is_postgresql' => $db->isPostgreSQL(),
-        'version' => $info['version'],
-        'database' => $info['dbname'],
         'is_connected' => $db->isConnected(),
     ];
     
-} catch (Exception $e) {
-    $results['tests']['connection'] = [
-        'status' => 'error',
-        'message' => $e->getMessage(),
-    ];
-    echo json_encode($results, JSON_PRETTY_PRINT);
-    exit;
-}
-
-// TEST 3: Check Required Tables
-try {
-    $tables = ['transaksi', 'pelanggan', 'hewan', 'kandang'];
-    $tableStatus = [];
+    // Test query
+    $stmt = $db->query("SELECT DATABASE() as dbname, USER() as user");
+    $info = $stmt->fetch();
     
-    foreach ($tables as $table) {
-        if ($db->isMySQL()) {
-            $sql = "SHOW TABLES LIKE :table";
-        } else {
-            $sql = "SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = :table
-            )";
-        }
-        
-        $stmt = $db->query($sql, [':table' => $table]);
-        $result = $stmt->fetch();
-        
-        if ($db->isMySQL()) {
-            $tableStatus[$table] = !empty($result);
-        } else {
-            $tableStatus[$table] = ($result['exists'] === true || $result['exists'] === 't');
-        }
-    }
-    
-    $results['tests']['tables'] = [
-        'status' => 'success',
-        'tables' => $tableStatus,
-        'all_exist' => !in_array(false, $tableStatus),
-    ];
-    
-    if (!$results['tests']['tables']['all_exist']) {
-        $missing = array_keys(array_filter($tableStatus, function($v) { return !$v; }));
-        $results['tests']['tables']['warning'] = 'Missing tables: ' . implode(', ', $missing);
-    }
+    $results['tests']['database_class']['current_database'] = $info['dbname'];
+    $results['tests']['database_class']['current_user'] = $info['user'];
     
 } catch (Exception $e) {
-    $results['tests']['tables'] = [
+    $results['tests']['database_class'] = [
         'status' => 'error',
         'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
     ];
-}
-
-// TEST 4: Test CRUD Operations
-try {
-    // Test INSERT
-    $testName = 'TEST_' . time();
-    
-    if ($db->isMySQL()) {
-        $sql = "INSERT INTO pelanggan (nama, alamat, nomor_telepon) 
-                VALUES (:nama, :alamat, :nomor_telepon)";
-    } else {
-        $sql = "INSERT INTO pelanggan (nama, alamat, nomor_telepon) 
-                VALUES (:nama, :alamat, :nomor_telepon) 
-                RETURNING id_pelanggan";
-    }
-    
-    $params = [
-        ':nama' => $testName,
-        ':alamat' => 'Test Address',
-        ':nomor_telepon' => '081234567890'
-    ];
-    
-    $insertedId = $db->insertAndGetId($sql, $params, 'id_pelanggan');
-    
-    if ($insertedId) {
-        // Test SELECT
-        $selectSql = "SELECT * FROM pelanggan WHERE id_pelanggan = :id";
-        $stmt = $db->query($selectSql, [':id' => $insertedId]);
-        $insertedData = $stmt->fetch();
-        
-        // Test DELETE
-        $deleteSql = "DELETE FROM pelanggan WHERE id_pelanggan = :id";
-        $db->execute($deleteSql, [':id' => $insertedId]);
-        
-        $results['tests']['crud'] = [
-            'status' => 'success',
-            'message' => '✅ INSERT, SELECT, DELETE berhasil!',
-            'test_id' => $insertedId,
-            'inserted_data' => $insertedData,
-        ];
-    } else {
-        $results['tests']['crud'] = [
-            'status' => 'error',
-            'message' => 'Insert returned no ID',
-        ];
-    }
-    
-} catch (Exception $e) {
-    $results['tests']['crud'] = [
-        'status' => 'error',
-        'message' => $e->getMessage(),
-    ];
-}
-
-// TEST 5: Test Transaksi Model (jika tabel ada)
-if ($results['tests']['tables']['all_exist']) {
-    try {
-        require_once __DIR__ . '/models/Transaksi.php';
-        $transaksi = new Transaksi();
-        
-        // Coba get all
-        $allTransaksi = $transaksi->getAll(['limit' => 5]);
-        
-        $results['tests']['transaksi_model'] = [
-            'status' => 'success',
-            'message' => '✅ Model Transaksi berfungsi!',
-            'total_records' => count($allTransaksi),
-            'sample_data' => array_slice($allTransaksi, 0, 2), // Ambil 2 data pertama
-        ];
-        
-    } catch (Exception $e) {
-        $results['tests']['transaksi_model'] = [
-            'status' => 'error',
-            'message' => $e->getMessage(),
-        ];
-    }
 }
 
 // Summary
 $results['summary'] = [
-    'environment' => $results['environment'],
-    'database_type' => $config['driver'] === 'mysql' ? 'MySQL (Local)' : 'PostgreSQL (Vercel)',
     'all_tests_passed' => true,
+    'recommendations' => []
 ];
 
-foreach ($results['tests'] as $test) {
+foreach ($results['tests'] as $testName => $test) {
     if (isset($test['status']) && $test['status'] === 'error') {
         $results['summary']['all_tests_passed'] = false;
+        $results['summary']['failed_test'] = $testName;
         break;
     }
+}
+
+if ($results['summary']['all_tests_passed']) {
+    $results['summary']['message'] = '✅ All tests passed! MySQL connection is working!';
+} else {
+    $results['summary']['message'] = '❌ Some tests failed. Check details above.';
 }
 
 echo json_encode($results, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
