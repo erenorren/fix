@@ -1,59 +1,72 @@
 <?php
+/**
+ * Database Class
+ * Support: MySQL (Local) & PostgreSQL (Production)
+ */
+
 class Database {
     private $connection;
     private $driver;
+    private $config;
     
     public function __construct() {
         require_once __DIR__ . '/../config/database.php';
-        $config = getDatabaseConfig();
-        $this->driver = $config['driver'];
+        $this->config = getDatabaseConfig();
+        $this->driver = $this->config['driver'];
         
         try {
-            $dsn = $this->buildDSN($config);
-            
-            $options = [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false,
-            ];
-            
-            // Tambahan untuk PostgreSQL/Supabase
-            if ($this->driver === 'pgsql') {
-                $options[PDO::ATTR_PERSISTENT] = false;
-                $options[PDO::ATTR_TIMEOUT] = 30;
-            }
+            $dsn = $this->buildDSN($this->config);
+            $options = $this->config['options'] ?? $this->getDefaultOptions();
             
             $this->connection = new PDO(
                 $dsn, 
-                $config['username'], 
-                $config['password'], 
+                $this->config['username'], 
+                $this->config['password'], 
                 $options
             );
             
-            // Set timezone untuk PostgreSQL
+            // Set timezone
             if ($this->driver === 'pgsql') {
                 $this->connection->exec("SET TIME ZONE 'Asia/Jakarta'");
+            } elseif ($this->driver === 'mysql') {
+                $this->connection->exec("SET time_zone = '+07:00'");
             }
             
         } catch (PDOException $e) {
-            error_log("Database connection failed: " . $e->getMessage());
+            $this->logError("Connection failed", $e);
             die("Database connection failed. Please check your configuration.");
         }
     }
     
+    /**
+     * Build DSN berdasarkan driver
+     */
     private function buildDSN($config) {
         $driver = $config['driver'];
         
         if ($driver === 'mysql') {
-            return "mysql:host={$config['host']};port={$config['port']};dbname={$config['dbname']};charset=utf8mb4";
+            $charset = $config['charset'] ?? 'utf8mb4';
+            return sprintf(
+                "mysql:host=%s;port=%d;dbname=%s;charset=%s",
+                $config['host'],
+                $config['port'],
+                $config['dbname'],
+                $charset
+            );
         }
         
         if ($driver === 'pgsql') {
-            $dsn = "pgsql:host={$config['host']};port={$config['port']};dbname={$config['dbname']}";
+            $dsn = sprintf(
+                "pgsql:host=%s;port=%d;dbname=%s",
+                $config['host'],
+                $config['port'],
+                $config['dbname']
+            );
             
-            // SSL Mode WAJIB untuk Supabase
-            $sslmode = $config['sslmode'] ?? 'require';
-            $dsn .= ";sslmode={$sslmode}";
+            // SSL Mode untuk Supabase
+            if (isset($config['sslmode'])) {
+                $dsn .= ";sslmode=" . $config['sslmode'];
+            }
             
             return $dsn;
         }
@@ -61,20 +74,41 @@ class Database {
         throw new Exception("Unsupported database driver: {$driver}");
     }
     
+    /**
+     * Get default PDO options
+     */
+    private function getDefaultOptions() {
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ];
+        
+        // PostgreSQL specific
+        if ($this->driver === 'pgsql') {
+            $options[PDO::ATTR_PERSISTENT] = false;
+            $options[PDO::ATTR_TIMEOUT] = 30;
+        }
+        
+        return $options;
+    }
+    
+    /**
+     * Execute SELECT query
+     */
     public function query($sql, $params = []) {
         try {
             $stmt = $this->connection->prepare($sql);
             $stmt->execute($params);
             return $stmt;
         } catch (PDOException $e) {
-            error_log("Query error: " . $e->getMessage() . " - SQL: " . $sql . " - Params: " . json_encode($params));
+            $this->logError("Query failed", $e, $sql, $params);
             throw $e;
         }
     }
     
     /**
-     * WRAPPER untuk CUD (CREATE, UPDATE, DELETE)
-     * Dengan error handling yang lebih baik
+     * Execute INSERT/UPDATE/DELETE
      */
     public function execute($sql, $params = []) {
         try {
@@ -88,60 +122,67 @@ class Database {
             
             return $result;
         } catch (PDOException $e) {
-            error_log("Execute failed: " . $e->getMessage() . " - SQL: " . $sql . " - Params: " . json_encode($params));
+            $this->logError("Execute failed", $e, $sql, $params);
             throw new Exception("Database execute error: " . $e->getMessage());
         }
     }
     
     /**
-     * Get last insert ID dengan support PostgreSQL sequence
-     * Untuk PostgreSQL, bisa pass nama sequence atau table
+     * Get last insert ID (cross-database)
+     * MySQL: Auto-increment ID
+     * PostgreSQL: Sequence atau RETURNING clause
      */
     public function lastInsertId($sequenceName = null) {
         try {
             if ($this->driver === 'pgsql' && $sequenceName !== null) {
-                // Untuk PostgreSQL dengan explicit sequence
                 return $this->connection->lastInsertId($sequenceName);
             }
             
-            // Untuk MySQL atau PostgreSQL dengan SERIAL
             return $this->connection->lastInsertId();
         } catch (PDOException $e) {
-            error_log("lastInsertId error: " . $e->getMessage());
+            $this->logError("lastInsertId failed", $e);
             return null;
         }
     }
     
     /**
-     * Helper untuk get last insert ID dari tabel tertentu (PostgreSQL)
+     * Helper untuk INSERT dengan RETURNING (PostgreSQL) atau fallback (MySQL)
+     * 
+     * Usage:
+     * $id = $db->insertAndGetId($sql, $params, 'id_transaksi');
      */
-    public function getLastInsertId($tableName, $idColumn = 'id') {
-        if ($this->driver === 'pgsql') {
-            try {
-                $sql = "SELECT currval(pg_get_serial_sequence(:table, :column))";
-                $stmt = $this->query($sql, [
-                    ':table' => $tableName,
-                    ':column' => $idColumn
-                ]);
-                $result = $stmt->fetch();
-                return $result['currval'] ?? null;
-            } catch (PDOException $e) {
-                // Fallback: query langsung ID terakhir
-                $sql = "SELECT {$idColumn} FROM {$tableName} ORDER BY {$idColumn} DESC LIMIT 1";
-                $stmt = $this->query($sql);
+    public function insertAndGetId($sql, $params, $idColumn = 'id') {
+        try {
+            if ($this->driver === 'pgsql') {
+                // PostgreSQL: Gunakan RETURNING
+                if (stripos($sql, 'RETURNING') === false) {
+                    $sql = rtrim($sql, ';') . " RETURNING {$idColumn}";
+                }
+                
+                $stmt = $this->query($sql, $params);
                 $result = $stmt->fetch();
                 return $result[$idColumn] ?? null;
+                
+            } else {
+                // MySQL: Execute kemudian get last insert ID
+                $this->execute($sql, $params);
+                return $this->lastInsertId();
             }
+            
+        } catch (Exception $e) {
+            $this->logError("insertAndGetId failed", $e, $sql, $params);
+            throw $e;
         }
-        
-        return $this->lastInsertId();
     }
     
+    /**
+     * Transaction methods
+     */
     public function beginTransaction() {
         try {
             return $this->connection->beginTransaction();
         } catch (PDOException $e) {
-            error_log("Begin transaction failed: " . $e->getMessage());
+            $this->logError("Begin transaction failed", $e);
             throw $e;
         }
     }
@@ -150,7 +191,7 @@ class Database {
         try {
             return $this->connection->commit();
         } catch (PDOException $e) {
-            error_log("Commit failed: " . $e->getMessage());
+            $this->logError("Commit failed", $e);
             $this->rollBack();
             throw $e;
         }
@@ -162,12 +203,12 @@ class Database {
                 return $this->connection->rollBack();
             }
         } catch (PDOException $e) {
-            error_log("Rollback failed: " . $e->getMessage());
+            $this->logError("Rollback failed", $e);
         }
     }
     
     /**
-     * Helper untuk check koneksi
+     * Check connection status
      */
     public function isConnected() {
         try {
@@ -184,5 +225,48 @@ class Database {
     public function getDriver() {
         return $this->driver;
     }
+    
+    /**
+     * Check if using PostgreSQL
+     */
+    public function isPostgreSQL() {
+        return $this->driver === 'pgsql';
+    }
+    
+    /**
+     * Check if using MySQL
+     */
+    public function isMySQL() {
+        return $this->driver === 'mysql';
+    }
+    
+    /**
+     * Get raw PDO connection
+     */
+    public function getConnection() {
+        return $this->connection;
+    }
+    
+    /**
+     * Error logging helper
+     */
+    private function logError($message, $exception, $sql = null, $params = null) {
+        $logMessage = sprintf(
+            "[%s] [%s] %s: %s",
+            date('Y-m-d H:i:s'),
+            $this->driver,
+            $message,
+            $exception->getMessage()
+        );
+        
+        if ($sql) {
+            $logMessage .= " | SQL: " . $sql;
+        }
+        
+        if ($params) {
+            $logMessage .= " | Params: " . json_encode($params);
+        }
+        
+        error_log($logMessage);
+    }
 }
-?>
