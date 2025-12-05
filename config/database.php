@@ -35,9 +35,9 @@ function getDatabaseConfig() {
             'driver'   => 'mysql',
             'host'     => 'localhost',
             'port'     => 3306,
-            'dbname'   => 'db_penitipan_hewan',
+            'dbname'   => 'penitipan_hewan',  // ← FIXED: Nama database yang benar
             'username' => 'root',
-            'password' => 'Sh3Belajar!SQL',
+            'password' => '',
             'charset'  => 'utf8mb4',
             'options'  => [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
