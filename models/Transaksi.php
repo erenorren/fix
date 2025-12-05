@@ -59,119 +59,82 @@ class Transaksi
     }
 
     /**
-     * Buat transaksi baru - kompatibel PostgreSQL (RETURNING) + fallback
-     * Mengembalikan id_transaksi jika berhasil, atau false jika gagal.
+     * ✅ FIXED: Buat transaksi baru (SIMPLE & CLEAR)
+     * Kompatibel PostgreSQL dengan RETURNING
      */
     public function create($data) {
         try {
+            // Generate kode transaksi
             $kodeTransaksi = $this->generateKodeTransaksi();
 
-            // Ambil status dari $data jika ada, default ke 'menginap'
-            // (controller sebelumnya mengisi 'menginap' saat membuat transaksi)
-            $status = $data['status'] ?? 'menginap';
-
-            // Parameter yang akan di-bind
-            $params = [
-                "kode_transaksi" => $kodeTransaksi,
-                "id_pelanggan" => $data["id_pelanggan"] ?? null,
-                "id_hewan" => $data["id_hewan"] ?? null,
-                "id_kandang" => $data["id_kandang"] ?? null,
-                "id_layanan" => $data["id_layanan"] ?? null,
-                "biaya_paket" => $data["biaya_paket"] ?? 0,
-                "tanggal_masuk" => $data["tanggal_masuk"] ?? date('Y-m-d'),
-                "durasi" => $data["durasi"] ?? 1,
-                "total_biaya" => $data["total_biaya"] ?? 0,
-                "status" => $status
-            ];
-
-            // 1) Coba INSERT dengan RETURNING (Postgres / Supabase)
-            $sqlReturning = "INSERT INTO transaksi 
-                     (kode_transaksi, id_pelanggan, id_hewan, id_kandang, id_layanan, 
-                      biaya_paket, tanggal_masuk, durasi, total_biaya, status)
-                     VALUES 
-                     (:kode_transaksi, :id_pelanggan, :id_hewan, :id_kandang, :id_layanan,
-                      :biaya_paket, :tanggal_masuk, :durasi, :total_biaya, :status)
-                     RETURNING id_transaksi";
-
-            try {
-                $stmt = $this->db->query($sqlReturning, $params);
-                if ($stmt) {
-                    $result = $stmt->fetch();
-                    if ($result && isset($result["id_transaksi"])) {
-                        return $result["id_transaksi"];
-                    }
-                }
-            } catch (Exception $e) {
-                // Catat error tapi lanjut ke fallback
-                error_log("CREATE (RETURNING) failed: " . $e->getMessage());
+            // ✅ FIX: Validasi status - harus sesuai ENUM
+            $validStatuses = ['active', 'completed', 'sedang_dititipkan', 'selesai'];
+            $status = $data['status'] ?? 'active';
+            
+            if (!in_array($status, $validStatuses)) {
+                $status = 'active'; // Default ke 'active' kalau invalid
             }
 
-            // 2) Fallback: INSERT tanpa RETURNING (untuk MySQL / driver lain)
-            $sqlInsert = "INSERT INTO transaksi 
-                     (kode_transaksi, id_pelanggan, id_hewan, id_kandang, id_layanan, 
-                      biaya_paket, tanggal_masuk, durasi, total_biaya, status)
-                     VALUES 
-                     (:kode_transaksi, :id_pelanggan, :id_hewan, :id_kandang, :id_layanan,
-                      :biaya_paket, :tanggal_masuk, :durasi, :total_biaya, :status)";
+            // ✅ FIX: Prepare parameters dengan validasi
+            $params = [
+                ':kode_transaksi' => $kodeTransaksi,
+                ':id_pelanggan' => $data['id_pelanggan'] ?? null,
+                ':id_hewan' => $data['id_hewan'] ?? null,
+                ':id_kandang' => $data['id_kandang'] ?? null,
+                ':id_layanan' => $data['id_layanan'] ?? null,
+                ':biaya_paket' => floatval($data['biaya_paket'] ?? 0),
+                ':tanggal_masuk' => $data['tanggal_masuk'] ?? date('Y-m-d'),
+                ':durasi' => intval($data['durasi'] ?? 1),
+                ':durasi_hari' => intval($data['durasi_hari'] ?? $data['durasi'] ?? 1),
+                ':total_biaya' => floatval($data['total_biaya'] ?? 0),
+                ':status' => $status
+            ];
 
-            try {
-                // gunakan execute jika tersedia, jika tidak gunakan query
-                if (method_exists($this->db, 'execute')) {
-                    $this->db->execute($sqlInsert, $params);
-                } else {
-                    $this->db->query($sqlInsert, $params);
-                }
-            } catch (Exception $e) {
-                error_log("CREATE fallback insert error: " . $e->getMessage());
+            // Log untuk debugging
+            error_log("Transaksi::create() - Params: " . json_encode($params));
+
+            // ✅ SIMPLE: Pakai RETURNING langsung (PostgreSQL style)
+            $sql = "INSERT INTO transaksi 
+                    (kode_transaksi, id_pelanggan, id_hewan, id_kandang, id_layanan, 
+                     biaya_paket, tanggal_masuk, durasi, durasi_hari, total_biaya, status)
+                    VALUES 
+                    (:kode_transaksi, :id_pelanggan, :id_hewan, :id_kandang, :id_layanan,
+                     :biaya_paket, :tanggal_masuk, :durasi, :durasi_hari, :total_biaya, :status)
+                    RETURNING id_transaksi";
+
+            // Execute query
+            $stmt = $this->db->query($sql, $params);
+            
+            if (!$stmt) {
+                error_log("Transaksi::create() - Query returned null");
                 return false;
             }
 
-            // Ambil last insert id lewat beberapa cara kompatibel
-            $lastId = null;
-            if (method_exists($this->db, 'getLastInsertId')) {
-                $lastId = $this->db->getLastInsertId();
-            } elseif (method_exists($this->db, 'lastInsertId')) {
-                try {
-                    $lastId = $this->db->lastInsertId();
-                } catch (Exception $e) {
-                    error_log("lastInsertId() error: " . $e->getMessage());
-                }
-            } else {
-                // Coba SQL untuk MySQL
-                try {
-                    $res = $this->db->query("SELECT LAST_INSERT_ID() as id")->fetch();
-                    $lastId = $res['id'] ?? null;
-                } catch (Exception $e) {
-                    error_log("Fallback LAST_INSERT_ID error: " . $e->getMessage());
-                }
+            // Ambil ID dari RETURNING
+            $result = $stmt->fetch();
+            
+            if ($result && isset($result['id_transaksi'])) {
+                $newId = $result['id_transaksi'];
+                error_log("Transaksi::create() - SUCCESS! ID: " . $newId);
+                return $newId;
             }
 
-            // Jika masih null dan DB driver Postgres aktif, coba currval
-            if (empty($lastId)) {
-                try {
-                    $res2 = $this->db->query("SELECT currval(pg_get_serial_sequence('transaksi','id_transaksi')) AS id")->fetch();
-                    $lastId = $res2['id'] ?? $lastId;
-                } catch (Exception $e) {
-                    // ignore, karena ini hanya upaya terakhir
-                    error_log("currval fallback error: " . $e->getMessage());
-                }
-            }
-
-            if ($lastId) {
-                return $lastId;
-            }
-
-            error_log("ERROR create transaksi: ID tidak keluar (semua fallback gagal)");
+            error_log("Transaksi::create() - No ID returned from RETURNING clause");
             return false;
 
+        } catch (PDOException $e) {
+            error_log("Transaksi::create() - PDO ERROR: " . $e->getMessage());
+            error_log("SQL State: " . $e->getCode());
+            return false;
+            
         } catch (Exception $e) {
-            error_log("MODEL ERROR create transaksi: " . $e->getMessage());
+            error_log("Transaksi::create() - ERROR: " . $e->getMessage());
             return false;
         }
     }
 
     /**
-     * Checkout transaksi - FIXED RETURNING untuk Supabase
+     * ✅ FIXED: Checkout transaksi dengan RETURNING
      */
     public function checkout($id)
     {
@@ -183,8 +146,12 @@ class Transaksi
                     RETURNING id_transaksi";
 
             $stmt = $this->db->query($sql, [':id' => $id]);
+            
+            if (!$stmt) {
+                return false;
+            }
+            
             $result = $stmt->fetch();
-
             return $result ? true : false;
 
         } catch (Exception $e) {
@@ -240,21 +207,30 @@ class Transaksi
     }
 
     /**
-     * Generate kode transaksi - FIX PostgreSQL (SUBSTRING)
+     * ✅ FIXED: Generate kode transaksi - PostgreSQL compatible
      */
     private function generateKodeTransaksi()
     {
-        $sql = "SELECT 
-                    COALESCE(MAX(CAST(SUBSTRING(kode_transaksi FROM 4) AS INTEGER)), 0) AS max_number
-                FROM transaksi 
-                WHERE kode_transaksi LIKE 'TRX%'";
-        
-        $result = $this->db->query($sql)->fetch();
-        return 'TRX' . str_pad($result['max_number'] + 1, 3, '0', STR_PAD_LEFT);
+        try {
+            $sql = "SELECT 
+                        COALESCE(MAX(CAST(SUBSTRING(kode_transaksi FROM 4) AS INTEGER)), 0) AS max_number
+                    FROM transaksi 
+                    WHERE kode_transaksi LIKE 'TRX%'";
+            
+            $result = $this->db->query($sql)->fetch();
+            $nextNumber = ($result['max_number'] ?? 0) + 1;
+            
+            return 'TRX' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+            
+        } catch (Exception $e) {
+            error_log("Error generateKodeTransaksi: " . $e->getMessage());
+            // Fallback: generate random
+            return 'TRX' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+        }
     }
 
     /**
-     * Search transaksi - FIX Supabase: parameter harus di-pass saat query()
+     * Search transaksi
      */
     public function getByNomor($nomorTransaksi) {
         $sql = "SELECT t.*, p.nama_pelanggan, p.no_hp, p.alamat, h.nama_hewan, h.jenis, h.ras, 
@@ -262,10 +238,10 @@ class Transaksi
                 FROM transaksi t
                 LEFT JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan
                 LEFT JOIN hewan h ON t.id_hewan = h.id_hewan
-                LEFT JOIN user u ON t.id_user = u.id_user
-                WHERE t.nomor_transaksi = :nomor";
+                LEFT JOIN \"user\" u ON t.id_user = u.id_user
+                WHERE t.kode_transaksi = :nomor";
         
-        $stmt = $this->db->query($sql, ['nomor' => $nomorTransaksi]);
+        $stmt = $this->db->query($sql, [':nomor' => $nomorTransaksi]);
         $transaksi = $stmt->fetch();
 
         if ($transaksi) {
@@ -276,18 +252,14 @@ class Transaksi
     }
 
     public function getDetailLayanan($idTransaksi) {
-        $sql = "SELECT dt.*, l.kode_layanan, l.nama_layanan, l.kategori_layanan, 
-                       dt.harga_satuan, dt.jumlah, dt.subtotal
+        $sql = "SELECT dt.*, l.nama_layanan
                 FROM detail_transaksi dt
                 LEFT JOIN layanan l ON dt.id_layanan = l.id_layanan
                 WHERE dt.id_transaksi = :id";
         
-        return $this->db->query($sql, ['id' => $idTransaksi])->fetchAll();
+        return $this->db->query($sql, [':id' => $idTransaksi])->fetchAll();
     }
 
-    /**
-     * FIX SEARCH BUG — parameter harus di-pass ke query()
-     */
     public function search($keyword) {
         $sql = "SELECT t.*, 
                        p.nama_pelanggan,
@@ -295,16 +267,16 @@ class Transaksi
                 FROM transaksi t
                 LEFT JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan
                 LEFT JOIN hewan h ON t.id_hewan = h.id_hewan
-                WHERE t.nomor_transaksi LIKE :keyword
-                OR p.nama_pelanggan LIKE :keyword
-                OR h.nama_hewan LIKE :keyword
+                WHERE t.kode_transaksi ILIKE :keyword
+                OR p.nama_pelanggan ILIKE :keyword
+                OR h.nama_hewan ILIKE :keyword
                 ORDER BY t.created_at DESC";
 
-        return $this->db->query($sql, ['keyword' => "%{$keyword}%"])->fetchAll();
+        return $this->db->query($sql, [':keyword' => "%{$keyword}%"])->fetchAll();
     }
 
     /**
-     * Checkout update - PostgreSQL compatible
+     * ✅ FIXED: Checkout update dengan transaction
      */
     public function updateCheckout($id, $data) {
         try {
@@ -312,7 +284,11 @@ class Transaksi
 
             $transaksi = $this->getById($id);
 
-            // Perhitungan biaya tetap milik kamu (tidak diubah)
+            if (!$transaksi) {
+                throw new Exception("Transaksi tidak ditemukan");
+            }
+
+            // Perhitungan biaya
             if (!isset($data['total_biaya']) || empty($data['total_biaya'])) {
                 $detailLayananStored = $transaksi['detail_layanan'] ?? [];
                 $detailForCalc = [];
@@ -347,32 +323,35 @@ class Transaksi
                     WHERE id_transaksi = :id";
 
             $this->db->execute($sql, [
-                'id' => $id,
-                'tanggal_keluar' => $data['tanggal_keluar_aktual'],
-                'jam_keluar' => $data['jam_keluar_aktual'] ?? date('H:i:s'),
-                'durasi_hari' => $data['durasi_hari'],
-                'diskon' => $data['diskon'],
-                'total_biaya' => $data['total_biaya'],
-                'metode_pembayaran' => $data['metode_pembayaran'] ?? ''
+                ':id' => $id,
+                ':tanggal_keluar' => $data['tanggal_keluar_aktual'],
+                ':jam_keluar' => $data['jam_keluar_aktual'] ?? date('H:i:s'),
+                ':durasi_hari' => $data['durasi_hari'],
+                ':diskon' => $data['diskon'],
+                ':total_biaya' => $data['total_biaya'],
+                ':metode_pembayaran' => $data['metode_pembayaran'] ?? 'tunai'
             ]);
 
             // Update status hewan
             $sqlHewan = "UPDATE hewan SET status = 'sudah_diambil' WHERE id_hewan = :id";
-            $this->db->execute($sqlHewan, ['id' => $transaksi['id_hewan']]);
+            $this->db->execute($sqlHewan, [':id' => $transaksi['id_hewan']]);
+
+            // Update status kandang
+            if ($transaksi['id_kandang']) {
+                $sqlKandang = "UPDATE kandang SET status = 'tersedia' WHERE id_kandang = :id";
+                $this->db->execute($sqlKandang, [':id' => $transaksi['id_kandang']]);
+            }
 
             $this->db->commit();
             return true;
 
         } catch (Exception $e) {
             $this->db->rollBack();
-            error_log("Error checkout: " . $e->getMessage());
+            error_log("Error updateCheckout: " . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Hewan sedang dititipkan
-     */
     public function getSedangDititipkan() {
         $sql = "SELECT t.*, p.nama_pelanggan, h.nama_hewan
                 FROM transaksi t
@@ -384,22 +363,18 @@ class Transaksi
         return $this->db->query($sql)->fetchAll();
     }
 
-    /**
-     * Hitung pendapatan - PostgreSQL perlu CAST DATE
-     */
     public function hitungPendapatan($tanggalMulai, $tanggalAkhir) {
-        $sql = "SELECT SUM(total_biaya) as total 
+        $sql = "SELECT COALESCE(SUM(total_biaya), 0) as total 
                 FROM transaksi 
                 WHERE tanggal_masuk::DATE BETWEEN :mulai AND :akhir
                 AND status_pembayaran = 'lunas'";
 
         return $this->db->query($sql, [
-            'mulai' => $tanggalMulai,
-            'akhir' => $tanggalAkhir
+            ':mulai' => $tanggalMulai,
+            ':akhir' => $tanggalAkhir
         ])->fetch()['total'] ?? 0;
     }
 
-    /** Perhitungan sesuai punya kamu */
     public function calculateTotalFromInputs(int $durasiHari, array $detailLayanan, float $paketPerHari = 0.0, float $diskon = 0.0) {
         $subtotalLayanan = 0.0;
         foreach ($detailLayanan as $d) {
@@ -421,3 +396,4 @@ class Transaksi
         ];
     }
 }
+?>
