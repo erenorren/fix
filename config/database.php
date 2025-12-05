@@ -8,8 +8,8 @@ function getDatabaseConfig() {
     if ($isVercel) {
         return [
             'driver'   => 'pgsql',
-            'host'     => getenv('DB_HOST'),
-            'port'     => getenv('DB_PORT') ?: 5432,
+            'host'     => getenv('DB_HOST'), 
+            'port'     => getenv('DB_PORT') ?: 6543,
             'dbname'   => getenv('DB_NAME'),
             'username' => getenv('DB_USER'),
             'password' => getenv('DB_PASS'),
