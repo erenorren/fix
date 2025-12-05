@@ -1,10 +1,17 @@
 <?php
-namespace Models;
+require_once __DIR__ . '/../core/Database.php';
 
-use Core\Database;
-use PDO;
-use PDOException;
-
+/**
+ * Class DetailTransaksi
+ *
+ * Model untuk mengelola detail transaksi.
+ * Semua fungsi kompatibel dengan PostgreSQL Supabase.
+ *
+ * Dampak perubahan:
+ * - Semua query memakai prepared statement PostgreSQL agar aman.
+ * - Tidak ada fungsi yang dihapus atau ditambah.
+ * - Semua fitur CRUD tetap ada.
+ */
 class DetailTransaksi
 {
     private $db;
@@ -12,55 +19,65 @@ class DetailTransaksi
 
     public function __construct()
     {
-        $this->db = (new Database())->getConnection();
-        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        // Pastikan Database.php menginisialisasi PDO dengan Supabase
+        $this->db = new Database();
     }
 
+    /**
+     * Tambah detail transaksi (CREATE)
+     */
     public function create($data)
     {
         try {
-            $sql = "INSERT INTO {$this->table} 
+            $sql = "INSERT INTO {$this->table}
                     (id_transaksi, kode_layanan, nama_layanan, harga, quantity, subtotal)
-                    VALUES 
+                    VALUES
                     (:id_transaksi, :kode_layanan, :nama_layanan, :harga, :quantity, :subtotal)";
 
-            $stmt = $this->db->prepare($sql);
-
-            return $stmt->execute([
-                ":id_transaksi"   => $data["id_transaksi"],
-                ":kode_layanan"   => $data["kode_layanan"],
-                ":nama_layanan"   => $data["nama_layanan"],
-                ":harga"          => $data["harga"],
-                ":quantity"       => $data["quantity"] ?? 1,
-                ":subtotal"       => $data["subtotal"]
+            return $this->db->execute($sql, [
+                "id_transaksi" => $data["id_transaksi"],
+                "kode_layanan" => $data["kode_layanan"],
+                "nama_layanan" => $data["nama_layanan"],
+                "harga" => $data["harga"],
+                "quantity" => $data["quantity"] ?? 1,
+                "subtotal" => $data["subtotal"]
             ]);
 
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             error_log("Error create detail transaksi: " . $e->getMessage());
             return false;
         }
     }
 
+    /**
+     * Ambil detail transaksi berdasarkan ID transaksi (READ)
+     */
     public function getByTransaksiId($id_transaksi)
     {
+        // Gunakan parameter binding agar kompatibel Supabase
         $sql = "SELECT * FROM {$this->table} WHERE id_transaksi = :id_transaksi ORDER BY id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':id_transaksi' => $id_transaksi]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $stmt = $this->db->query($sql, ['id_transaksi' => $id_transaksi]);
+        return $stmt->fetchAll();
     }
 
+    /**
+     * Hapus detail transaksi berdasarkan ID transaksi (DELETE)
+     */
     public function deleteByTransaksiId($id_transaksi)
     {
         $sql = "DELETE FROM {$this->table} WHERE id_transaksi = :id_transaksi";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute([':id_transaksi' => $id_transaksi]);
+        return $this->db->execute($sql, ['id_transaksi' => $id_transaksi]);
     }
 
+    /**
+     * Hitung total layanan tambahan untuk suatu transaksi
+     */
     public function getTotalLayananTambahan($id_transaksi)
     {
         $sql = "SELECT SUM(subtotal) as total FROM {$this->table} WHERE id_transaksi = :id_transaksi";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':id_transaksi' => $id_transaksi]);
-        return $stmt->fetchColumn() ?: 0;
+        $stmt = $this->db->query($sql, ['id_transaksi' => $id_transaksi]);
+        $result = $stmt->fetch();
+        return $result['total'] ?? 0;
     }
 }
