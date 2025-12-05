@@ -59,45 +59,109 @@ class Transaksi
     }
 
     /**
-     * Buat transaksi baru - FIXED for PostgreSQL (SUPABASE)
-     * - Menggunakan RETURNING id_transaksi agar ID bisa didapat.
-     * - INSERT tidak jalan di Supabase kalau tidak pakai RETURNING.
+     * Buat transaksi baru - kompatibel PostgreSQL (RETURNING) + fallback
+     * Mengembalikan id_transaksi jika berhasil, atau false jika gagal.
      */
     public function create($data) {
         try {
             $kodeTransaksi = $this->generateKodeTransaksi();
 
-            // --- FIX SERIUS: Supabase WAJIB RETURNING ---
-            $sql = "INSERT INTO transaksi 
+            // Ambil status dari $data jika ada, default ke 'menginap'
+            // (controller sebelumnya mengisi 'menginap' saat membuat transaksi)
+            $status = $data['status'] ?? 'menginap';
+
+            // Parameter yang akan di-bind
+            $params = [
+                "kode_transaksi" => $kodeTransaksi,
+                "id_pelanggan" => $data["id_pelanggan"] ?? null,
+                "id_hewan" => $data["id_hewan"] ?? null,
+                "id_kandang" => $data["id_kandang"] ?? null,
+                "id_layanan" => $data["id_layanan"] ?? null,
+                "biaya_paket" => $data["biaya_paket"] ?? 0,
+                "tanggal_masuk" => $data["tanggal_masuk"] ?? date('Y-m-d'),
+                "durasi" => $data["durasi"] ?? 1,
+                "total_biaya" => $data["total_biaya"] ?? 0,
+                "status" => $status
+            ];
+
+            // 1) Coba INSERT dengan RETURNING (Postgres / Supabase)
+            $sqlReturning = "INSERT INTO transaksi 
                      (kode_transaksi, id_pelanggan, id_hewan, id_kandang, id_layanan, 
                       biaya_paket, tanggal_masuk, durasi, total_biaya, status)
                      VALUES 
                      (:kode_transaksi, :id_pelanggan, :id_hewan, :id_kandang, :id_layanan,
-                      :biaya_paket, :tanggal_masuk, :durasi, :total_biaya, 'active')
+                      :biaya_paket, :tanggal_masuk, :durasi, :total_biaya, :status)
                      RETURNING id_transaksi";
 
-            // Perbaikan parameter
-            $params = [
-                "kode_transaksi" => $kodeTransaksi,
-                "id_pelanggan" => $data["id_pelanggan"],
-                "id_hewan" => $data["id_hewan"],
-                "id_kandang" => $data["id_kandang"],
-                "id_layanan" => $data["id_layanan"],
-                "biaya_paket" => $data["biaya_paket"],
-                "tanggal_masuk" => $data["tanggal_masuk"],
-                "durasi" => $data["durasi"],
-                "total_biaya" => $data["total_biaya"]
-            ];
-
-            // --- FIX: Query langsung mendapatkan RETURNING ---
-            $stmt = $this->db->query($sql, $params);
-            $result = $stmt->fetch();
-
-            if ($result && isset($result["id_transaksi"])) {
-                return $result["id_transaksi"]; // return ID ke controller
+            try {
+                $stmt = $this->db->query($sqlReturning, $params);
+                if ($stmt) {
+                    $result = $stmt->fetch();
+                    if ($result && isset($result["id_transaksi"])) {
+                        return $result["id_transaksi"];
+                    }
+                }
+            } catch (Exception $e) {
+                // Catat error tapi lanjut ke fallback
+                error_log("CREATE (RETURNING) failed: " . $e->getMessage());
             }
 
-            error_log("ERROR create transaksi: ID tidak keluar");
+            // 2) Fallback: INSERT tanpa RETURNING (untuk MySQL / driver lain)
+            $sqlInsert = "INSERT INTO transaksi 
+                     (kode_transaksi, id_pelanggan, id_hewan, id_kandang, id_layanan, 
+                      biaya_paket, tanggal_masuk, durasi, total_biaya, status)
+                     VALUES 
+                     (:kode_transaksi, :id_pelanggan, :id_hewan, :id_kandang, :id_layanan,
+                      :biaya_paket, :tanggal_masuk, :durasi, :total_biaya, :status)";
+
+            try {
+                // gunakan execute jika tersedia, jika tidak gunakan query
+                if (method_exists($this->db, 'execute')) {
+                    $this->db->execute($sqlInsert, $params);
+                } else {
+                    $this->db->query($sqlInsert, $params);
+                }
+            } catch (Exception $e) {
+                error_log("CREATE fallback insert error: " . $e->getMessage());
+                return false;
+            }
+
+            // Ambil last insert id lewat beberapa cara kompatibel
+            $lastId = null;
+            if (method_exists($this->db, 'getLastInsertId')) {
+                $lastId = $this->db->getLastInsertId();
+            } elseif (method_exists($this->db, 'lastInsertId')) {
+                try {
+                    $lastId = $this->db->lastInsertId();
+                } catch (Exception $e) {
+                    error_log("lastInsertId() error: " . $e->getMessage());
+                }
+            } else {
+                // Coba SQL untuk MySQL
+                try {
+                    $res = $this->db->query("SELECT LAST_INSERT_ID() as id")->fetch();
+                    $lastId = $res['id'] ?? null;
+                } catch (Exception $e) {
+                    error_log("Fallback LAST_INSERT_ID error: " . $e->getMessage());
+                }
+            }
+
+            // Jika masih null dan DB driver Postgres aktif, coba currval
+            if (empty($lastId)) {
+                try {
+                    $res2 = $this->db->query("SELECT currval(pg_get_serial_sequence('transaksi','id_transaksi')) AS id")->fetch();
+                    $lastId = $res2['id'] ?? $lastId;
+                } catch (Exception $e) {
+                    // ignore, karena ini hanya upaya terakhir
+                    error_log("currval fallback error: " . $e->getMessage());
+                }
+            }
+
+            if ($lastId) {
+                return $lastId;
+            }
+
+            error_log("ERROR create transaksi: ID tidak keluar (semua fallback gagal)");
             return false;
 
         } catch (Exception $e) {
